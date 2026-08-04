@@ -836,9 +836,8 @@ async function update(){
 let res=
 await fetch(
 
-"http://localhost:3000/stats?url="
-
-+encodeURIComponent(url)
+"/stats?url="
+  +encodeURIComponent(url)
 
 );
 
