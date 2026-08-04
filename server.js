@@ -1,11 +1,16 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { chromium } = require("playwright");
 
 
 const app = express();
 
 app.use(cors());
+
+
+// Sert le fichier index.html
+app.use(express.static(__dirname));
 
 
 let browser;
@@ -15,15 +20,25 @@ let cache = {};
 
 
 
+// Initialisation navigateur Playwright
 async function init(){
 
     browser = await chromium.launch({
-        headless:true
+
+        headless:true,
+
+        args:[
+            "--no-sandbox",
+            "--disable-setuid-sandbox"
+        ]
+
     });
+
 
     console.log("Navigateur prêt");
 
 }
+
 
 
 
@@ -43,10 +58,7 @@ async function getTikTokStats(url){
 
 
 
-
-
-    const page =
-    await browser.newPage();
+    const page = await browser.newPage();
 
 
 
@@ -65,8 +77,7 @@ async function getTikTokStats(url){
 
 
 
-        const html =
-        await page.content();
+        const html = await page.content();
 
 
 
@@ -102,8 +113,7 @@ async function getTikTokStats(url){
 
 
 
-
-        let data = {
+        const data = {
 
 
             views:
@@ -119,14 +129,12 @@ async function getTikTokStats(url){
 
 
             title:
-            title 
-            ? title[1]
-            .replace(/\\n/g," ")
+            title
+            ? title[1].replace(/\\n/g," ")
             : "Titre introuvable"
 
 
         };
-
 
 
 
@@ -147,12 +155,18 @@ async function getTikTokStats(url){
 
 
     }
-
-
     catch(error){
 
 
         return {
+
+            views:0,
+
+            likes:0,
+
+            shares:0,
+
+            title:"Erreur TikTok",
 
             error:error.message
 
@@ -160,8 +174,6 @@ async function getTikTokStats(url){
 
 
     }
-
-
     finally{
 
 
@@ -169,7 +181,6 @@ async function getTikTokStats(url){
 
 
     }
-
 
 
 }
@@ -180,12 +191,11 @@ async function getTikTokStats(url){
 
 
 
+// Route API
+app.get("/stats", async(req,res)=>{
 
-app.get("/stats",async(req,res)=>{
 
-
-    const url =
-    req.query.url;
+    const url = req.query.url;
 
 
 
@@ -201,9 +211,7 @@ app.get("/stats",async(req,res)=>{
 
 
 
-
-    const result =
-    await getTikTokStats(url);
+    const result = await getTikTokStats(url);
 
 
 
@@ -218,14 +226,11 @@ app.get("/stats",async(req,res)=>{
 
 
 
-
-
-
+// Nettoyage cache
 setInterval(()=>{
 
 
-    const now =
-    Date.now();
+    const now = Date.now();
 
 
 
@@ -233,7 +238,7 @@ setInterval(()=>{
 
 
         if(
-            now-cache[key].time > 60000
+            now - cache[key].time > 60000
         ){
 
             delete cache[key];
@@ -242,7 +247,6 @@ setInterval(()=>{
 
 
     }
-
 
 
 },60000);
@@ -254,18 +258,36 @@ setInterval(()=>{
 
 
 
-init().then(()=>{
+
+// Démarrage serveur
+init()
+.then(()=>{
 
 
-app.listen(3000,()=>{
+    const PORT = process.env.PORT || 3000;
 
 
-console.log(
-"Serveur lancé sur http://localhost:3000"
-);
+
+    app.listen(PORT,()=>{
 
 
-});
+        console.log(
+            `Serveur lancé sur le port ${PORT}`
+        );
+
+
+    });
+
+
+
+})
+.catch(error=>{
+
+
+    console.error(
+        "Erreur lancement serveur:",
+        error
+    );
 
 
 });
