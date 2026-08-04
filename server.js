@@ -1,27 +1,31 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 const { chromium } = require("playwright");
 
 
 const app = express();
 
+
 app.use(cors());
 
 
-// Sert le fichier index.html
+// Sert index.html
 app.use(express.static(__dirname));
 
 
+
 let browser;
+let page;
 
 let cache = {};
 
+let isLoading = false;
 
 
 
-// Initialisation navigateur Playwright
+// Initialisation navigateur
 async function init(){
+
 
     browser = await chromium.launch({
 
@@ -35,7 +39,48 @@ async function init(){
     });
 
 
+
+    page = await browser.newPage({
+
+        userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+
+    });
+
+
+
+    // Bloque les ressources inutiles
+    await page.route("**/*", route=>{
+
+
+        const type =
+        route.request().resourceType();
+
+
+
+        if(
+            type === "image" ||
+            type === "font" ||
+            type === "stylesheet" ||
+            type === "media"
+        ){
+
+            route.abort();
+
+        }
+        else{
+
+            route.continue();
+
+        }
+
+
+    });
+
+
+
     console.log("Navigateur prêt");
+
 
 }
 
@@ -47,9 +92,11 @@ async function init(){
 async function getTikTokStats(url){
 
 
+
+    // Cache court
     if(
         cache[url] &&
-        Date.now() - cache[url].time < 10000
+        Date.now() - cache[url].time < 3000
     ){
 
         return cache[url].data;
@@ -58,74 +105,84 @@ async function getTikTokStats(url){
 
 
 
-    const page = await browser.newPage();
+
+    // évite deux chargements simultanés
+    while(isLoading){
+
+        await new Promise(r=>setTimeout(r,100));
+
+    }
+
+
+    isLoading=true;
+
 
 
 
     try{
 
 
+        console.log("Chargement TikTok...");
+
+
+
         await page.goto(url,{
 
             waitUntil:"domcontentloaded",
 
-            timeout:30000
+            timeout:15000
 
         });
 
 
 
 
-
-        const html = await page.content();
+        const html =
+        await page.content();
 
 
 
 
 
         const views =
-        html.match(
-            /"playCount":(\d+)/
-        );
+        html.match(/"playCount":(\d+)/);
 
 
 
         const likes =
-        html.match(
-            /"diggCount":(\d+)/
-        );
+        html.match(/"diggCount":(\d+)/);
 
 
 
         const shares =
-        html.match(
-            /"shareCount":(\d+)/
-        );
+        html.match(/"shareCount":(\d+)/);
 
 
 
         const title =
-        html.match(
-            /"desc":"(.*?)"/
-        );
+        html.match(/"desc":"(.*?)"/);
 
 
 
 
 
-        const data = {
+
+        const data={
 
 
             views:
             views ? Number(views[1]) : 0,
 
 
+
             likes:
             likes ? Number(likes[1]) : 0,
 
 
+
             shares:
             shares ? Number(shares[1]) : 0,
+
 
 
             title:
@@ -158,6 +215,12 @@ async function getTikTokStats(url){
     catch(error){
 
 
+        console.log(
+            "Erreur TikTok:",
+            error.message
+        );
+
+
         return {
 
             views:0,
@@ -177,10 +240,11 @@ async function getTikTokStats(url){
     finally{
 
 
-        await page.close();
+        isLoading=false;
 
 
     }
+
 
 
 }
@@ -191,11 +255,13 @@ async function getTikTokStats(url){
 
 
 
-// Route API
-app.get("/stats", async(req,res)=>{
 
 
-    const url = req.query.url;
+// API stats
+app.get("/stats",async(req,res)=>{
+
+
+    const url=req.query.url;
 
 
 
@@ -211,7 +277,8 @@ app.get("/stats", async(req,res)=>{
 
 
 
-    const result = await getTikTokStats(url);
+    const result =
+    await getTikTokStats(url);
 
 
 
@@ -226,11 +293,13 @@ app.get("/stats", async(req,res)=>{
 
 
 
+
+
 // Nettoyage cache
 setInterval(()=>{
 
 
-    const now = Date.now();
+    const now=Date.now();
 
 
 
@@ -238,7 +307,7 @@ setInterval(()=>{
 
 
         if(
-            now - cache[key].time > 60000
+            now-cache[key].time > 60000
         ){
 
             delete cache[key];
@@ -259,12 +328,13 @@ setInterval(()=>{
 
 
 
-// Démarrage serveur
+// Start
 init()
 .then(()=>{
 
 
-    const PORT = process.env.PORT || 3000;
+    const PORT =
+    process.env.PORT || 3000;
 
 
 
@@ -281,12 +351,12 @@ init()
 
 
 })
-.catch(error=>{
+.catch(err=>{
 
 
     console.error(
-        "Erreur lancement serveur:",
-        error
+        "Erreur serveur:",
+        err
     );
 
 
