@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "npx playwright install chromium"
   },
   "dependencies": {
     "express": "^5.1.0",
     "cors": "^2.8.5",
-    "playwright": "^1.55.0"
   }
 }
