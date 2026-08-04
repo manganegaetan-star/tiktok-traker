@@ -793,11 +793,10 @@ clearInterval(timerInterval);
 
 
 
-timerInterval=setInterval(()=>{
+timerInterval=setInterval(async()=>{
 
 
 countdown--;
-
 
 updateTimer();
 
@@ -806,14 +805,19 @@ updateTimer();
 if(countdown<=0){
 
 
-update();
+clearInterval(timerInterval);
+
+
+await update();
 
 
 countdown=10;
 
 
 updateTimer();
-update();
+
+
+startTimer();
 
 
 }
@@ -824,7 +828,6 @@ update();
 
 
 }
-
 
 
 
