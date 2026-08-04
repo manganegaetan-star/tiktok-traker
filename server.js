@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const { chromium } = require("playwright");
 
 
 const app = express();
@@ -8,92 +7,18 @@ const app = express();
 
 app.use(cors());
 
-
-// Sert index.html
 app.use(express.static(__dirname));
 
 
-
-let browser;
-let page;
-
 let cache = {};
 
-let isLoading = false;
 
 
 
-// Initialisation navigateur
-async function init(){
-
-
-    browser = await chromium.launch({
-
-        headless:true,
-
-        args:[
-            "--no-sandbox",
-            "--disable-setuid-sandbox"
-        ]
-
-    });
-
-
-
-    page = await browser.newPage({
-
-        userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-
-    });
-
-
-
-    // Bloque les ressources inutiles
-    await page.route("**/*", route=>{
-
-
-        const type =
-        route.request().resourceType();
-
-
-
-        if(
-            type === "image" ||
-            type === "font" ||
-            type === "stylesheet" ||
-            type === "media"
-        ){
-
-            route.abort();
-
-        }
-        else{
-
-            route.continue();
-
-        }
-
-
-    });
-
-
-
-    console.log("Navigateur prêt");
-
-
-}
-
-
-
-
-
-
+// Récupération TikTok avec fetch
 async function getTikTokStats(url){
 
 
-
-    // Cache court
     if(
         cache[url] &&
         Date.now() - cache[url].time < 3000
@@ -105,62 +30,57 @@ async function getTikTokStats(url){
 
 
 
-
-    // évite deux chargements simultanés
-    while(isLoading){
-
-        await new Promise(r=>setTimeout(r,100));
-
-    }
-
-
-    isLoading=true;
-
-
-
-
     try{
 
 
-        console.log("Chargement TikTok...");
+        const response = await fetch(url,{
 
+            headers:{
 
+                "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
 
-        await page.goto(url,{
+                "Accept-Language":
+                "fr-FR,fr;q=0.9"
 
-            waitUntil:"domcontentloaded",
+            }
 
-            timeout:15000
 
         });
 
 
 
-
-        const html =
-        await page.content();
+        const html = await response.text();
 
 
 
 
 
         const views =
-        html.match(/"playCount":(\d+)/);
+        html.match(
+            /"playCount":(\d+)/
+        );
 
 
 
         const likes =
-        html.match(/"diggCount":(\d+)/);
+        html.match(
+            /"diggCount":(\d+)/
+        );
 
 
 
         const shares =
-        html.match(/"shareCount":(\d+)/);
+        html.match(
+            /"shareCount":(\d+)/
+        );
 
 
 
         const title =
-        html.match(/"desc":"(.*?)"/);
+        html.match(
+            /"desc":"(.*?)"/
+        );
 
 
 
@@ -207,6 +127,10 @@ async function getTikTokStats(url){
 
 
 
+        console.log("Stats récupérées:", data);
+
+
+
         return data;
 
 
@@ -216,7 +140,7 @@ async function getTikTokStats(url){
 
 
         console.log(
-            "Erreur TikTok:",
+            "Erreur fetch TikTok:",
             error.message
         );
 
@@ -237,14 +161,6 @@ async function getTikTokStats(url){
 
 
     }
-    finally{
-
-
-        isLoading=false;
-
-
-    }
-
 
 
 }
@@ -255,10 +171,7 @@ async function getTikTokStats(url){
 
 
 
-
-
-// API stats
-app.get("/stats",async(req,res)=>{
+app.get("/stats", async(req,res)=>{
 
 
     const url=req.query.url;
@@ -285,7 +198,6 @@ app.get("/stats",async(req,res)=>{
     res.json(result);
 
 
-
 });
 
 
@@ -294,8 +206,6 @@ app.get("/stats",async(req,res)=>{
 
 
 
-
-// Nettoyage cache
 setInterval(()=>{
 
 
@@ -327,36 +237,16 @@ setInterval(()=>{
 
 
 
-
-// Start
-init()
-.then(()=>{
-
-
-    const PORT =
-    process.env.PORT || 3000;
+const PORT =
+process.env.PORT || 3000;
 
 
 
-    app.listen(PORT,()=>{
+app.listen(PORT,()=>{
 
 
-        console.log(
-            `Serveur lancé sur le port ${PORT}`
-        );
-
-
-    });
-
-
-
-})
-.catch(err=>{
-
-
-    console.error(
-        "Erreur serveur:",
-        err
+    console.log(
+        `Serveur lancé sur le port ${PORT}`
     );
 
 
