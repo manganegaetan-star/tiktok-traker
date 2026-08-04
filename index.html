@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -14,413 +15,125 @@
 box-sizing:border-box;
 }
 
-
 body{
-
 margin:0;
-
 min-height:100vh;
-
 background:radial-gradient(circle at top,#252525,#050505);
-
 font-family:Arial,sans-serif;
-
 color:white;
-
 }
-
-
 
 .container{
-
 width:90%;
-
 max-width:700px;
-
 margin:40px auto;
-
 }
-
-
 
 h1{
-
 text-align:center;
-
 font-size:42px;
-
 }
-
-
 
 .live{
-
 width:max-content;
-
 margin:auto;
-
 background:#ff0050;
-
 padding:8px 20px;
-
 border-radius:30px;
-
 font-weight:bold;
-
 }
-
-
-
 
 .card{
-
 background:rgba(255,255,255,.08);
-
 backdrop-filter:blur(15px);
-
 border:1px solid rgba(255,255,255,.1);
-
 padding:25px;
-
 border-radius:25px;
-
 margin-top:25px;
-
 box-shadow:0 20px 50px #000;
-
 }
-
-
-
-
 
 input{
-
 width:100%;
-
 padding:16px;
-
 border-radius:15px;
-
 border:none;
-
 background:#111;
-
 color:white;
-
 font-size:16px;
-
 }
-
-
 
 button{
-
 width:100%;
-
 margin-top:15px;
-
 padding:16px;
-
 border-radius:15px;
-
 border:none;
-
 background:#00f2ea;
-
 font-size:18px;
-
 font-weight:bold;
-
+cursor:pointer;
 }
-
-
-
-
 
 .title{
-
 text-align:center;
-
 color:#00f2ea;
-
 font-weight:bold;
-
 word-break:break-word;
-
 }
 
-
-
-
-
-
-/* TIMER ROULEAU */
-
-
-.timer-area{
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-margin:25px;
-
-}
-
-
-
-.timer-circle{
-
-
-width:80px;
-
-height:80px;
-
-border-radius:50%;
-
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-
-background:
-conic-gradient(
-#ff0050 360deg,
-#333 0deg
-);
-
-
-}
-
-
-
-
-.timer-window{
-
-
-width:60px;
-
-height:60px;
-
-border-radius:50%;
-
-
-background:#050505;
-
-
-overflow:hidden;
-
-
-display:flex;
-
-justify-content:center;
-
-
-}
-
-
-
-.timer-roller{
-
-
-transition:
-
-transform .7s cubic-bezier(.22,1,.36,1);
-
-
-}
-
-
-
-.timer-number{
-
-
-height:60px;
-
-width:60px;
-
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-
-font-size:28px;
-
+.timer{
+text-align:center;
+font-size:50px;
 font-weight:bold;
-
+margin:25px;
+color:#ff0050;
 }
-
-
-
-
-
-/* VUES */
-
 
 .counter{
-
-display:flex;
-
-justify-content:center;
-
-height:90px;
-
-overflow:hidden;
-
+text-align:center;
 font-size:75px;
-
 font-weight:900;
-
 color:#00f2ea;
-
 }
-
-
-
-.digit{
-
-width:50px;
-
-height:90px;
-
-overflow:hidden;
-
-}
-
-
-
-.roller{
-
-transition:
-
-transform .8s cubic-bezier(.22,1,.36,1);
-
-}
-
-
-
-.number{
-
-height:90px;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-}
-
-
-
-
-
-.flash{
-
-animation:flash .5s;
-
-}
-
-
-
-@keyframes flash{
-
-50%{
-
-color:#00ff88;
-
-transform:scale(1.12);
-
-}
-
-}
-
-
-
-
 
 .views-label{
-
 text-align:center;
-
 color:#888;
-
 letter-spacing:5px;
-
 font-size:13px;
-
 }
-
-
-
-
 
 .stats{
-
 display:flex;
-
 justify-content:space-around;
-
 margin-top:25px;
-
 text-align:center;
-
 }
-
-
 
 .stat-number{
-
 font-size:30px;
-
 font-weight:bold;
-
 }
-
-
 
 .likes{
-
 color:#ff4d8d;
-
 }
-
-
 
 .shares{
-
 color:#00f2ea;
-
 }
-
-
 
 .stat-title{
-
 color:#888;
-
-font-size:14px;
-
 }
-
 
 </style>
 
 </head>
 
 
-
 <body>
-
 
 
 <div class="container">
@@ -437,119 +150,31 @@ font-size:14px;
 
 
 
-
 <div class="card">
 
-
-<input id="url"
-placeholder="Colle ton lien TikTok">
-
+<input id="url" placeholder="Colle ton lien TikTok">
 
 <button onclick="startTracking()">
-
 🚀 Suivre
-
 </button>
-
 
 </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-<div class="timer-area">
-
-
-<div id="timerCircle"
-class="timer-circle">
-
-
-<div class="timer-window">
-
-
-<div id="timerRoller"
-class="timer-roller">
-
-
-<div class="timer-number">
+<div class="timer" id="timer">
 10
 </div>
 
-<div class="timer-number">
-9
-</div>
 
-<div class="timer-number">
-8
-</div>
-
-<div class="timer-number">
-7
-</div>
-
-<div class="timer-number">
-6
-</div>
-
-<div class="timer-number">
-5
-</div>
-
-<div class="timer-number">
-4
-</div>
-
-<div class="timer-number">
-3
-</div>
-
-<div class="timer-number">
-2
-</div>
-
-<div class="timer-number">
-1
-</div>
-
-<div class="timer-number">
-0
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</div>
 
 <div class="card">
 
-
 <div id="title" class="title">
-
 Titre vidéo
-
 </div>
 
-
 </div>
-
-
 
 
 
@@ -557,17 +182,13 @@ Titre vidéo
 
 
 <div id="counter" class="counter">
-
+0
 </div>
 
 
 <div class="views-label">
-
 VUES
-
 </div>
-
-
 
 
 
@@ -585,7 +206,6 @@ VUES
 </div>
 
 </div>
-
 
 
 
@@ -608,13 +228,7 @@ VUES
 </div>
 
 
-
 </div>
-
-
-
-
-
 
 
 
@@ -625,97 +239,37 @@ let url="";
 
 let oldViews=0;
 
-let rollers=[];
-
 let countdown=10;
 
 let timerInterval;
 
+let running=false;
 
 
 
+async function update(){
 
 
-/* COMPTEUR VUES */
+try{
 
 
-function createCounter(value){
-
-
-let text=String(value);
-
-let box=document.getElementById("counter");
-
-box.innerHTML="";
-
-rollers=[];
+let res = await fetch(
+"/stats?url=" + encodeURIComponent(url)
+);
 
 
 
-for(let char of text){
-
-
-let digit=document.createElement("div");
-
-digit.className="digit";
-
-
-let roller=document.createElement("div");
-
-roller.className="roller";
+let data = await res.json();
 
 
 
-for(let i=0;i<=9;i++){
-
-
-let n=document.createElement("div");
-
-n.className="number";
-
-n.innerHTML=i;
-
-
-roller.appendChild(n);
-
-
-}
+console.log(data);
 
 
 
-roller.style.transform=
+if(data.error){
 
-`translateY(-${Number(char)*90}px)`;
-
-
-digit.appendChild(roller);
-
-box.appendChild(digit);
-
-
-rollers.push(roller);
-
-
-}
-
-
-}
-
-
-
-
-
-
-
-function animateCounter(value){
-
-
-let text=String(value);
-
-
-if(rollers.length!==text.length){
-
-createCounter(value);
+console.log(data.error);
 
 return;
 
@@ -723,13 +277,41 @@ return;
 
 
 
-for(let i=0;i<text.length;i++){
+let views = Number(data.views);
 
 
-rollers[i].style.transform=
 
-`translateY(-${Number(text[i])*90}px)`;
+if(views !== oldViews){
 
+document.getElementById("counter").innerHTML =
+views.toLocaleString();
+
+oldViews = views;
+
+}
+
+
+
+document.getElementById("likes").innerHTML =
+Number(data.likes).toLocaleString();
+
+
+
+document.getElementById("shares").innerHTML =
+Number(data.shares).toLocaleString();
+
+
+
+document.getElementById("title").innerHTML =
+data.title;
+
+
+
+}
+
+catch(error){
+
+console.log("Erreur API :",error);
 
 }
 
@@ -737,41 +319,12 @@ rollers[i].style.transform=
 }
 
 
-
-
-
-
-
-/* TIMER ROULEAU */
 
 
 function updateTimer(){
 
-
-let roller=document.getElementById("timerRoller");
-
-
-roller.style.transform=
-
-`translateY(-${(10-countdown)*60}px)`;
-
-
-
-
-let deg=
-
-(countdown/10)*360;
-
-
-
-document.getElementById("timerCircle")
-.style.background=
-
-`conic-gradient(
-#ff0050 ${deg}deg,
-#333 ${deg}deg
-)`;
-
+document.getElementById("timer").innerHTML =
+countdown;
 
 }
 
@@ -780,8 +333,10 @@ document.getElementById("timerCircle")
 
 
 
+async function startTimer(){
 
-function startTimer(){
+
+clearInterval(timerInterval);
 
 
 countdown=10;
@@ -789,15 +344,11 @@ countdown=10;
 updateTimer();
 
 
-clearInterval(timerInterval);
 
-
-
-timerInterval=setInterval(()=>{
+timerInterval=setInterval(async()=>{
 
 
 countdown--;
-
 
 updateTimer();
 
@@ -806,16 +357,23 @@ updateTimer();
 if(countdown<=0){
 
 
-update();
+clearInterval(timerInterval);
+
+
+
+await update();
+
 
 
 countdown=10;
 
 
-updateTimer();
+startTimer();
+
 
 
 }
+
 
 
 },1000);
@@ -828,111 +386,32 @@ updateTimer();
 
 
 
-
-
-async function update(){
-
-
-let res=
-await fetch(
-
-"/stats?url="
-  +encodeURIComponent(url)
-
-);
-
-
-
-let data=
-await res.json();
-
-
-
-let views=
-Number(data.views);
-
-
-
-if(views!==oldViews){
-
-
-let box=document.getElementById("counter");
-
-
-box.classList.remove("flash");
-
-
-void box.offsetWidth;
-
-
-box.classList.add("flash");
-
-
-
-animateCounter(views);
-
-
-oldViews=views;
-
-
-}
-
-
-
-
-document.getElementById("likes").innerHTML=
-
-Number(data.likes).toLocaleString();
-
-
-
-document.getElementById("shares").innerHTML=
-
-Number(data.shares).toLocaleString();
-
-
-
-document.getElementById("title").innerHTML=
-
-data.title;
-
-
-
-}
-
-
-
-
-
-
 function startTracking(){
 
 
 url=document.getElementById("url").value.trim();
 
 
+
 if(!url)return;
+
 
 
 oldViews=0;
 
 
-createCounter(0);
 
+document.getElementById("counter").innerHTML="0";
 
-update();
 
 
 startTimer();
 
 
+
 }
 
 
-
-
-
-createCounter(0);
 
 
 </script>
@@ -941,3 +420,4 @@ createCounter(0);
 </body>
 
 </html>
+
