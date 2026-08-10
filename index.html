@@ -145,16 +145,38 @@ button{cursor:pointer}
   position:relative;
   z-index:1;
   font-family:"Space Grotesk";
-  font-size:clamp(42px,9vw,72px);
   font-weight:700;
-  line-height:.9;
-  letter-spacing:-.07em;
+  line-height:1;
+  letter-spacing:-.04em;
   display:flex;
   justify-content:center;
   align-items:center;
+  height:1.15em;
+  max-width:78%;
+  overflow:hidden;
   text-shadow:0 0 45px rgba(37,244,238,.11);
+  /* taille de base, ajustée en JS */
+  font-size:clamp(28px, 8.5vw, 68px);
 }
-.views .digit{display:inline-block;min-width:.58em}
+.digit-slot{
+  display:inline-block;
+  position:relative;
+  height:1.15em;
+  overflow:hidden;
+  vertical-align:top;
+  width:0.62em;
+  text-align:center;
+}
+.digit-slot .digit-inner{
+  display:block;
+  transition:transform .45s cubic-bezier(.22,1,.36,1);
+  will-change:transform;
+}
+.digit-slot .digit-inner span{
+  display:block;
+  height:1.15em;
+  line-height:1.15em;
+}
 .views-label{margin-top:18px;color:#777787;font-size:11px;letter-spacing:.35em;font-weight:700}
 .delta{margin:15px auto 0;width:max-content;max-width:100%;padding:7px 10px;border-radius:999px;background:rgba(87,242,135,.08);color:var(--green);font-size:11px;font-weight:700}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -178,9 +200,7 @@ button{cursor:pointer}
   transform:translateX(-100%);animation:shimmer 4s infinite;pointer-events:none
 }
 .flash{animation:flash .5s ease}
-.grow{animation:grow .4s cubic-bezier(.22,1,.36,1)}
-@keyframes flash{50%{color:var(--green);transform:scale(1.045)}}
-@keyframes grow{0%{transform:scale(.93);opacity:.5}100%{transform:scale(1);opacity:1}}
+@keyframes flash{50%{color:var(--green);transform:scale(1.03)}}
 @keyframes shimmer{50%,100%{transform:translateX(100%)}}
 @keyframes pulse{50%{opacity:.35;transform:scale(.72)}}
 .error{
@@ -209,7 +229,7 @@ footer b{color:#777787}
   .live-badge{top:20px;right:20px}
   .views-wrap{padding:40px 0 28px}
   .views-circle{width:min(240px,72vw);height:min(240px,72vw)}
-  .views{font-size:clamp(36px,8vw,56px)}
+  .views{font-size:clamp(24px,7.5vw,52px)}
   .stats-grid{gap:8px}
   .stat{padding:16px}
   .stat-value{font-size:23px}
@@ -243,7 +263,7 @@ footer b{color:#777787}
       <div class="video-title" id="title">Colle un lien pour commencer</div>
       <div class="views-wrap">
         <div class="views-circle" id="timerCircle">
-          <div class="views" id="counter"><span class="digit">0</span></div>
+          <div class="views" id="counter"></div>
         </div>
         <div class="views-label">VUES EN DIRECT</div>
         <div class="delta" id="delta">● En attente des premières données</div>
@@ -279,51 +299,118 @@ let oldShares = 0;
 let countdown = 10;
 let timerInterval = null;
 let isTracking = false;
+let currentDigits = []; // array of current digit chars
 const $ = id => document.getElementById(id);
+
 function formatNumber(value){
   return Number(value || 0).toLocaleString("fr-FR");
 }
-function renderCounter(value){
-  const box = $("counter");
-  const text = String(Math.max(0, Number(value) || 0));
-  box.innerHTML = [...text].map(n => `<span class="digit">${n}</span>`).join("");
+
+function adjustFontSize(digitCount){
+  const el = $("counter");
+  // base size decreases when there are many digits so it never overflows the circle
+  let size;
+  if(digitCount <= 4) size = "clamp(36px, 9vw, 68px)";
+  else if(digitCount === 5) size = "clamp(32px, 8vw, 58px)";
+  else if(digitCount === 6) size = "clamp(28px, 7vw, 48px)";
+  else if(digitCount === 7) size = "clamp(24px, 6vw, 40px)";
+  else if(digitCount === 8) size = "clamp(20px, 5.2vw, 34px)";
+  else if(digitCount === 9) size = "clamp(18px, 4.6vw, 30px)";
+  else size = "clamp(15px, 4vw, 26px)"; // 10+ digits
+  el.style.fontSize = size;
 }
-function animateCounter(value){
+
+function createDigitSlot(digit){
+  const slot = document.createElement("span");
+  slot.className = "digit-slot";
+  const inner = document.createElement("div");
+  inner.className = "digit-inner";
+  // two spans stacked: current on top, next below
+  const top = document.createElement("span");
+  top.textContent = digit;
+  const bottom = document.createElement("span");
+  bottom.textContent = digit;
+  inner.appendChild(top);
+  inner.appendChild(bottom);
+  slot.appendChild(inner);
+  return slot;
+}
+
+function renderCounter(value, animate = false){
   const box = $("counter");
-  const next = String(Math.max(0, Number(value) || 0));
-  const current = box.textContent.trim();
-  if(current.length !== next.length){
-    renderCounter(value);
-    box.classList.remove("grow");
-    void box.offsetWidth;
-    box.classList.add("grow");
+  const text = String(Math.max(0, Math.floor(Number(value) || 0)));
+  const newDigits = [...text];
+
+  adjustFontSize(newDigits.length);
+
+  // if length changed → full rebuild (no partial animation)
+  if(newDigits.length !== currentDigits.length){
+    box.innerHTML = "";
+    newDigits.forEach(d => box.appendChild(createDigitSlot(d)));
+    currentDigits = newDigits;
     return;
   }
-  [...next].forEach((n, i) => {
-    const digit = box.children[i];
-    if(digit && digit.textContent !== n){
-      digit.textContent = n;
-      digit.classList.remove("grow");
-      void digit.offsetWidth;
-      digit.classList.add("grow");
+
+  // same length → animate only changed digits
+  newDigits.forEach((newD, i) => {
+    const oldD = currentDigits[i];
+    const slot = box.children[i];
+    if(!slot) return;
+
+    const inner = slot.querySelector(".digit-inner");
+    const top = inner.children[0];
+    const bottom = inner.children[1];
+
+    if(oldD === newD){
+      // no change
+      top.textContent = newD;
+      bottom.textContent = newD;
+      inner.style.transition = "none";
+      inner.style.transform = "translateY(0)";
+      return;
     }
+
+    // prepare animation: old on top, new on bottom
+    top.textContent = oldD;
+    bottom.textContent = newD;
+    inner.style.transition = "none";
+    inner.style.transform = "translateY(0)";
+
+    // force reflow then animate up
+    void inner.offsetWidth;
+    inner.style.transition = "transform .45s cubic-bezier(.22,1,.36,1)";
+    inner.style.transform = "translateY(-50%)";
+
+    // after animation, reset to clean state
+    setTimeout(() => {
+      top.textContent = newD;
+      bottom.textContent = newD;
+      inner.style.transition = "none";
+      inner.style.transform = "translateY(0)";
+    }, 460);
   });
+
+  currentDigits = newDigits;
 }
+
 function updateTimer(){
   const deg = (countdown / 10) * 360;
   $("timerCircle").style.background =
     `conic-gradient(var(--pink) ${deg}deg, #292934 ${deg}deg)`;
 }
+
 function setError(message=""){
   $("errorBox").textContent = message;
   $("errorBox").classList.toggle("show", !!message);
 }
+
 function setTrackingState(active){
   isTracking = active;
   $("trackingStatus").textContent = active ? "Actif" : "En attente";
   $("trackingStatus").style.color = active ? "var(--green)" : "";
 }
-function updateMeta(views, likes, shares){
+
+function updateMeta(views){
   const now = new Date();
   $("lastUpdate").textContent = now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
   if(oldViews !== null){
@@ -340,9 +427,8 @@ function updateMeta(views, likes, shares){
       $("delta").style.color = "";
     }
   }
-  oldLikes = likes;
-  oldShares = shares;
 }
+
 async function update(){
   if(!url) return;
   try{
@@ -356,17 +442,19 @@ async function update(){
     const views = Number(data.views) || 0;
     const likes = Number(data.likes) || 0;
     const shares = Number(data.shares) || 0;
+
     if(oldViews === null || views !== oldViews){
       const counter = $("counter");
       counter.classList.remove("flash");
       void counter.offsetWidth;
       counter.classList.add("flash");
-      animateCounter(views);
+      renderCounter(views, true);
     }
+
     $("likes").textContent = formatNumber(likes);
     $("shares").textContent = formatNumber(shares);
     $("title").textContent = data.title || "Vidéo TikTok";
-    updateMeta(views, likes, shares);
+    updateMeta(views);
     oldViews = views;
     setTrackingState(true);
   }catch(error){
@@ -375,6 +463,7 @@ async function update(){
     setError("Impossible de récupérer les statistiques pour le moment. Vérifie le lien ou ton serveur /stats.");
   }
 }
+
 function startTimer(){
   clearInterval(timerInterval);
   countdown = 10;
@@ -389,6 +478,7 @@ function startTimer(){
     }
   },1000);
 }
+
 function startTracking(){
   const value = $("url").value.trim();
   if(!value){
@@ -400,6 +490,7 @@ function startTracking(){
   oldViews = null;
   oldLikes = 0;
   oldShares = 0;
+  currentDigits = [];
   renderCounter(0);
   $("likes").textContent = "0";
   $("shares").textContent = "0";
@@ -411,9 +502,12 @@ function startTracking(){
   update();
   startTimer();
 }
+
 $("url").addEventListener("keydown", e => {
   if(e.key === "Enter") startTracking();
 });
+
+// init
 renderCounter(0);
 updateTimer();
 </script>
