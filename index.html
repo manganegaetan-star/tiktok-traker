@@ -128,7 +128,7 @@ button{cursor:pointer}
   border-radius:50%;
   display:grid;
   place-items:center;
-  background:conic-gradient(var(--pink) 360deg,#292934 0deg);
+  background:conic-gradient(var(--pink) 0deg,#292934 0deg);
   transition:background .3s linear;
   position:relative;
   box-shadow:0 0 40px rgba(255,45,112,.18);
@@ -155,7 +155,6 @@ button{cursor:pointer}
   max-width:78%;
   overflow:hidden;
   text-shadow:0 0 45px rgba(37,244,238,.11);
-  /* taille de base, ajustée en JS */
   font-size:clamp(28px, 8.5vw, 68px);
 }
 .digit-slot{
@@ -299,7 +298,7 @@ let oldShares = 0;
 let countdown = 10;
 let timerInterval = null;
 let isTracking = false;
-let currentDigits = []; // array of current digit chars
+let currentDigits = [];
 const $ = id => document.getElementById(id);
 
 function formatNumber(value){
@@ -308,7 +307,6 @@ function formatNumber(value){
 
 function adjustFontSize(digitCount){
   const el = $("counter");
-  // base size decreases when there are many digits so it never overflows the circle
   let size;
   if(digitCount <= 4) size = "clamp(36px, 9vw, 68px)";
   else if(digitCount === 5) size = "clamp(32px, 8vw, 58px)";
@@ -316,7 +314,7 @@ function adjustFontSize(digitCount){
   else if(digitCount === 7) size = "clamp(24px, 6vw, 40px)";
   else if(digitCount === 8) size = "clamp(20px, 5.2vw, 34px)";
   else if(digitCount === 9) size = "clamp(18px, 4.6vw, 30px)";
-  else size = "clamp(15px, 4vw, 26px)"; // 10+ digits
+  else size = "clamp(15px, 4vw, 26px)";
   el.style.fontSize = size;
 }
 
@@ -325,7 +323,6 @@ function createDigitSlot(digit){
   slot.className = "digit-slot";
   const inner = document.createElement("div");
   inner.className = "digit-inner";
-  // two spans stacked: current on top, next below
   const top = document.createElement("span");
   top.textContent = digit;
   const bottom = document.createElement("span");
@@ -336,14 +333,13 @@ function createDigitSlot(digit){
   return slot;
 }
 
-function renderCounter(value, animate = false){
+function renderCounter(value){
   const box = $("counter");
   const text = String(Math.max(0, Math.floor(Number(value) || 0)));
   const newDigits = [...text];
 
   adjustFontSize(newDigits.length);
 
-  // if length changed → full rebuild (no partial animation)
   if(newDigits.length !== currentDigits.length){
     box.innerHTML = "";
     newDigits.forEach(d => box.appendChild(createDigitSlot(d)));
@@ -351,7 +347,6 @@ function renderCounter(value, animate = false){
     return;
   }
 
-  // same length → animate only changed digits
   newDigits.forEach((newD, i) => {
     const oldD = currentDigits[i];
     const slot = box.children[i];
@@ -362,7 +357,6 @@ function renderCounter(value, animate = false){
     const bottom = inner.children[1];
 
     if(oldD === newD){
-      // no change
       top.textContent = newD;
       bottom.textContent = newD;
       inner.style.transition = "none";
@@ -370,18 +364,15 @@ function renderCounter(value, animate = false){
       return;
     }
 
-    // prepare animation: old on top, new on bottom
     top.textContent = oldD;
     bottom.textContent = newD;
     inner.style.transition = "none";
     inner.style.transform = "translateY(0)";
 
-    // force reflow then animate up
     void inner.offsetWidth;
     inner.style.transition = "transform .45s cubic-bezier(.22,1,.36,1)";
     inner.style.transform = "translateY(-50%)";
 
-    // after animation, reset to clean state
     setTimeout(() => {
       top.textContent = newD;
       bottom.textContent = newD;
@@ -394,7 +385,8 @@ function renderCounter(value, animate = false){
 }
 
 function updateTimer(){
-  const deg = (countdown / 10) * 360;
+  // Remplissage progressif (0 → 100%)
+  const deg = ((10 - countdown) / 10) * 360;
   $("timerCircle").style.background =
     `conic-gradient(var(--pink) ${deg}deg, #292934 ${deg}deg)`;
 }
@@ -448,7 +440,7 @@ async function update(){
       counter.classList.remove("flash");
       void counter.offsetWidth;
       counter.classList.add("flash");
-      renderCounter(views, true);
+      renderCounter(views);
     }
 
     $("likes").textContent = formatNumber(likes);
@@ -507,7 +499,6 @@ $("url").addEventListener("keydown", e => {
   if(e.key === "Enter") startTracking();
 });
 
-// init
 renderCounter(0);
 updateTimer();
 </script>
