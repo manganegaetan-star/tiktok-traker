@@ -1,1035 +1,456 @@
-
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>TikTok Tracker</title>
-
+<meta name="theme-color" content="#08080d">
+<title>TikTok Pulse — Live Tracker</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-/* =========================
-   GLOBAL
-========================= */
-
-* {
-    box-sizing: border-box;
+:root{
+  --bg:#07070b;
+  --panel:rgba(17,17,25,.72);
+  --panel-strong:rgba(22,22,32,.9);
+  --line:rgba(255,255,255,.09);
+  --text:#f7f7fb;
+  --muted:#8e8e9e;
+  --cyan:#25f4ee;
+  --pink:#ff2d70;
+  --violet:#8b5cf6;
+  --green:#57f287;
+  --shadow:0 30px 90px rgba(0,0,0,.45);
 }
 
-body {
-    margin: 0;
-    min-height: 100vh;
-
-    background:
-        radial-gradient(circle at top, #252525, #050505);
-
-    font-family: Arial, sans-serif;
-    color: white;
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--text);
+  font-family:"DM Sans",Arial,sans-serif;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(255,45,112,.17),transparent 28%),
+    radial-gradient(circle at 88% 8%,rgba(37,244,238,.14),transparent 30%),
+    radial-gradient(circle at 50% 100%,rgba(139,92,246,.12),transparent 35%),
+    var(--bg);
+  overflow-x:hidden;
 }
-
-.container {
-    width: 90%;
-    max-width: 700px;
-    margin: 40px auto;
+body:before{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:linear-gradient(to bottom,black,transparent 85%);
 }
+button,input{font:inherit}
+button{cursor:pointer}
 
-h1 {
-    text-align: center;
-    font-size: 42px;
+.shell{width:min(1120px,92%);margin:0 auto;padding:34px 0 70px;position:relative;z-index:1}
+
+/* Header */
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:72px;
 }
-
-.live {
-    width: max-content;
-    margin: auto;
-
-    background: #ff0050;
-
-    padding: 8px 20px;
-
-    border-radius: 30px;
-
-    font-weight: bold;
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:-.03em}
+.brand-mark{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--pink),var(--violet) 52%,var(--cyan));
+  box-shadow:0 0 28px rgba(255,45,112,.25);
 }
-
-
-/* =========================
-   CARDS
-========================= */
-
-.card {
-    background: rgba(255,255,255,.08);
-
-    backdrop-filter: blur(15px);
-
-    border: 1px solid rgba(255,255,255,.1);
-
-    padding: 25px;
-
-    border-radius: 25px;
-
-    margin-top: 25px;
-
-    box-shadow: 0 20px 50px #000;
+.brand-mark:after{content:"▶";font-size:14px;transform:translateX(1px)}
+.brand span{font-family:"Space Grotesk";font-size:18px}
+.status{
+  display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--line);
+  background:rgba(255,255,255,.045);border-radius:999px;color:#d8d8df;font-size:12px;font-weight:600;
+  backdrop-filter:blur(14px)
 }
+.status i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green);animation:pulse 1.6s infinite}
 
-
-/* =========================
-   INPUT
-========================= */
-
-input {
-    width: 100%;
-
-    padding: 16px;
-
-    border-radius: 15px;
-
-    border: none;
-
-    background: #111;
-
-    color: white;
-
-    font-size: 16px;
-
-    outline: none;
+/* Hero */
+.hero{text-align:center;max-width:900px;margin:0 auto 42px}
+.eyebrow{
+  display:inline-flex;gap:8px;align-items:center;padding:7px 11px;border:1px solid rgba(37,244,238,.18);
+  border-radius:999px;color:var(--cyan);background:rgba(37,244,238,.06);font-size:11px;
+  font-weight:700;letter-spacing:.12em;text-transform:uppercase
 }
-
-input:focus {
-    box-shadow: 0 0 0 2px #00f2ea;
+.hero h1{
+  margin:20px 0 16px;font-family:"Space Grotesk";font-size:clamp(48px,8vw,88px);
+  line-height:.92;letter-spacing:-.07em;
 }
-
-
-/* =========================
-   BUTTON
-========================= */
-
-button {
-    width: 100%;
-
-    margin-top: 15px;
-
-    padding: 16px;
-
-    border-radius: 15px;
-
-    border: none;
-
-    background: #00f2ea;
-
-    font-size: 18px;
-
-    font-weight: bold;
-
-    cursor: pointer;
-
-    transition: .2s;
+.gradient{
+  background:linear-gradient(100deg,#fff 10%,#fff 28%,var(--cyan) 58%,var(--pink) 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent
 }
+.hero p{margin:0 auto;color:var(--muted);font-size:16px;max-width:600px;line-height:1.7}
 
-button:hover {
-    transform: translateY(-2px);
-
-    filter: brightness(1.1);
+/* Search */
+.search-card{
+  width:min(760px,100%);margin:0 auto 38px;padding:8px;
+  border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.045);
+  box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(24px);
 }
-
-button:active {
-    transform: scale(.98);
+.search-inner{display:flex;gap:8px}
+.search-inner input{
+  min-width:0;flex:1;border:0;outline:0;color:#fff;background:#0e0e15;border-radius:17px;
+  padding:17px 18px;font-size:15px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
 }
-
-
-/* =========================
-   TITLE
-========================= */
-
-.title {
-    text-align: center;
-
-    color: #00f2ea;
-
-    font-weight: bold;
-
-    word-break: break-word;
+.search-inner input::placeholder{color:#666675}
+.search-inner input:focus{box-shadow:inset 0 0 0 1px rgba(37,244,238,.45),0 0 0 4px rgba(37,244,238,.06)}
+.cta{
+  border:0;border-radius:17px;padding:0 24px;color:#050508;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),#8ffefa);
+  box-shadow:0 10px 35px rgba(37,244,238,.2);transition:.25s transform,.25s box-shadow;
+  white-space:nowrap
 }
+.cta:hover{transform:translateY(-2px);box-shadow:0 15px 45px rgba(37,244,238,.3)}
+.cta:active{transform:scale(.98)}
+.hint{text-align:center;color:#656574;font-size:11px;margin-top:12px}
 
-
-/* =========================
-   TIMER ROULEAU
-========================= */
-
-.timer-area {
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    margin: 25px;
+/* Dashboard */
+.dashboard{display:grid;grid-template-columns:1.55fr .9fr;gap:16px}
+.card{
+  position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;
+  background:var(--panel);box-shadow:var(--shadow);backdrop-filter:blur(24px);
 }
-
-.timer-circle {
-    width: 80px;
-    height: 80px;
-
-    border-radius: 50%;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    background:
-        conic-gradient(
-            #ff0050 360deg,
-            #333 0deg
-        );
-
-    transition: background .3s linear;
+.card:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.06),transparent 32%);
 }
-
-.timer-window {
-    width: 60px;
-    height: 60px;
-
-    border-radius: 50%;
-
-    background: #050505;
-
-    overflow: hidden;
-
-    display: flex;
-
-    justify-content: center;
+.main-card{grid-row:span 2;padding:34px;min-height:460px}
+.card-label{color:#777787;font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+.video-title{margin-top:12px;font-family:"Space Grotesk";font-size:clamp(18px,2.5vw,25px);font-weight:600;line-height:1.25}
+.live-badge{
+  position:absolute;right:24px;top:24px;display:flex;align-items:center;gap:7px;padding:7px 10px;
+  border-radius:999px;background:rgba(255,45,112,.1);border:1px solid rgba(255,45,112,.2);
+  color:#ff7ea5;font-size:10px;font-weight:800;letter-spacing:.1em
 }
+.live-badge i{width:6px;height:6px;border-radius:50%;background:var(--pink);box-shadow:0 0 10px var(--pink);animation:pulse 1.2s infinite}
 
-.timer-roller {
-    transition:
-        transform .7s cubic-bezier(.22,1,.36,1);
+.views-wrap{text-align:center;padding:58px 0 38px}
+.views{
+  font-family:"Space Grotesk";font-size:clamp(64px,10vw,112px);font-weight:700;line-height:.9;
+  letter-spacing:-.07em;display:flex;justify-content:center;align-items:center;
+  text-shadow:0 0 45px rgba(37,244,238,.11)
 }
+.views .digit{display:inline-block;min-width:.58em}
+.views-label{margin-top:16px;color:#777787;font-size:11px;letter-spacing:.35em;font-weight:700}
+.delta{margin:15px auto 0;width:max-content;max-width:100%;padding:7px 10px;border-radius:999px;background:rgba(87,242,135,.08);color:var(--green);font-size:11px;font-weight:700}
 
-.timer-number {
-    height: 60px;
-    width: 60px;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    font-size: 28px;
-
-    font-weight: bold;
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{
+  padding:20px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.035)
 }
+.stat-top{display:flex;justify-content:space-between;align-items:center;color:#777787;font-size:11px}
+.stat-icon{font-size:16px}
+.stat-value{margin-top:9px;font-family:"Space Grotesk";font-size:27px;font-weight:700}
+.likes .stat-value{color:#ff76a2}.shares .stat-value{color:var(--cyan)}
 
+.side-card{padding:25px}
+.side-title{font-family:"Space Grotesk";font-size:17px;font-weight:600;margin:8px 0 20px}
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}
+.metric-row:last-child{border-bottom:0}
+.metric-row span:first-child{color:#777787}
+.metric-row strong{font-weight:700}
 
-/* =========================
-   COMPTEUR DE VUES
-========================= */
-
-.counter {
-    display: flex;
-
-    justify-content: center;
-
-    align-items: flex-start;
-
-    height: 90px;
-
-    overflow: hidden;
-
-    font-size: 75px;
-
-    font-weight: 900;
-
-    color: #00f2ea;
-
-    direction: ltr;
-
-    white-space: nowrap;
+.timer-card{padding:25px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.timer-copy{min-width:0}.timer-copy .side-title{margin-bottom:5px}.timer-copy p{margin:0;color:#777787;font-size:12px;line-height:1.5}
+.timer-circle{
+  flex:0 0 78px;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--pink) 360deg,#292934 0deg);transition:background .3s linear;
+  position:relative
 }
+.timer-circle:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#0b0b11}
+.timer-number{position:relative;z-index:1;font-family:"Space Grotesk";font-size:22px;font-weight:700}
 
-
-/*
-   UNE COLONNE = UN CHIFFRE
-*/
-
-.digit {
-    width: 50px;
-
-    height: 90px;
-
-    overflow: hidden;
-
-    position: relative;
-
-    flex-shrink: 0;
+/* Empty state / motion */
+.dashboard.paused .main-card{opacity:.82}
+.shimmer{
+  position:absolute;inset:-100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
+  transform:translateX(-100%);animation:shimmer 4s infinite;pointer-events:none
 }
+.flash{animation:flash .5s ease}
+.grow{animation:grow .4s cubic-bezier(.22,1,.36,1)}
+@keyframes flash{50%{color:var(--green);transform:scale(1.045)}}
+@keyframes grow{0%{transform:scale(.93);opacity:.5}100%{transform:scale(1);opacity:1}}
+@keyframes shimmer{50%,100%{transform:translateX(100%)}}
+@keyframes pulse{50%{opacity:.35;transform:scale(.72)}}
 
-
-/*
-   ROULEAU DE 0 À 9
-*/
-
-.roller {
-    transition:
-        transform .8s cubic-bezier(.22,1,.36,1);
-
-    will-change: transform;
+.error{
+  display:none;margin:15px auto 0;width:min(760px,100%);padding:11px 14px;border-radius:14px;
+  border:1px solid rgba(255,45,112,.2);background:rgba(255,45,112,.07);color:#ff9ab7;text-align:center;font-size:12px
 }
+.error.show{display:block}
 
+/* Footer */
+footer{text-align:center;color:#50505c;font-size:11px;margin-top:32px}
+footer b{color:#777787}
 
-/*
-   CHAQUE CHIFFRE
-*/
-
-.number {
-    height: 90px;
-
-    width: 50px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
+/* Mobile */
+@media(max-width:800px){
+  .shell{padding-top:22px}
+  .nav{margin-bottom:54px}
+  .dashboard{grid-template-columns:1fr}
+  .main-card{grid-row:auto;min-height:0}
 }
-
-
-/* =========================
-   ANIMATION FLASH
-========================= */
-
-.flash {
-    animation: flash .5s;
+@media(max-width:560px){
+  .shell{width:94%}
+  .brand span{display:none}
+  .hero h1{font-size:54px}
+  .hero p{font-size:14px}
+  .search-inner{flex-direction:column}
+  .cta{height:54px}
+  .main-card{padding:24px}
+  .live-badge{top:20px;right:20px}
+  .views-wrap{padding:50px 0 32px}
+  .stats-grid{gap:8px}
+  .stat{padding:16px}
+  .stat-value{font-size:23px}
 }
-
-@keyframes flash {
-
-    50% {
-        color: #00ff88;
-
-        transform: scale(1.12);
-    }
-
-}
-
-
-/* =========================
-   LABEL VUES
-========================= */
-
-.views-label {
-    text-align: center;
-
-    color: #888;
-
-    letter-spacing: 5px;
-
-    font-size: 13px;
-}
-
-
-/* =========================
-   STATS
-========================= */
-
-.stats {
-    display: flex;
-
-    justify-content: space-around;
-
-    margin-top: 25px;
-
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 30px;
-
-    font-weight: bold;
-}
-
-.likes {
-    color: #ff4d8d;
-}
-
-.shares {
-    color: #00f2ea;
-}
-
-.stat-title {
-    color: #888;
-
-    font-size: 14px;
-}
-
-
-/* =========================
-   ANIMATION NOUVEAU CHIFFRE
-========================= */
-
-.counter-grow {
-    animation:
-        counterGrow .4s cubic-bezier(.22,1,.36,1);
-}
-
-@keyframes counterGrow {
-
-    0% {
-        transform: scale(.9);
-        opacity: .5;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-}
-
-
-/* =========================
-   RESPONSIVE MOBILE
-========================= */
-
-@media (max-width: 500px) {
-
-    h1 {
-        font-size: 32px;
-    }
-
-    .counter {
-        font-size: 55px;
-        height: 70px;
-    }
-
-    .digit {
-        width: 38px;
-        height: 70px;
-    }
-
-    .number {
-        width: 38px;
-        height: 70px;
-    }
-
-    .card {
-        padding: 20px;
-    }
-
-}
-
 </style>
-
 </head>
-
-
 <body>
+<div class="shell">
+  <nav class="nav">
+    <div class="brand"><div class="brand-mark"></div><span>TikTok Pulse</span></div>
+    <div class="status"><i></i> SYSTÈME EN DIRECT</div>
+  </nav>
 
+  <header class="hero">
+    <div class="eyebrow">✦ Real-time social analytics</div>
+    <h1>Regarde une vidéo<br><span class="gradient">prendre vie.</span></h1>
+    <p>Colle un lien TikTok et transforme ses statistiques en une expérience live, fluide et spectaculaire.</p>
+  </header>
 
-<div class="container">
-
-
-    <!-- =========================
-         TITRE
-    ========================== -->
-
-    <h1>
-        🎵 TikTok Tracker
-    </h1>
-
-
-    <div class="live">
-        ● LIVE
+  <section class="search-card">
+    <div class="search-inner">
+      <input id="url" type="url" autocomplete="off" placeholder="https://www.tiktok.com/@createur/video/...">
+      <button class="cta" id="trackBtn" onclick="startTracking()">Lancer le suivi ↗</button>
     </div>
+    <div class="hint">Actualisation automatique toutes les 10 secondes · aucune page à recharger</div>
+  </section>
+  <div class="error" id="errorBox"></div>
 
+  <section class="dashboard" id="dashboard">
+    <article class="card main-card">
+      <div class="shimmer"></div>
+      <div class="live-badge"><i></i> LIVE TRACKING</div>
+      <div class="card-label">Vidéo suivie</div>
+      <div class="video-title" id="title">Colle un lien pour commencer</div>
 
+      <div class="views-wrap">
+        <div class="views" id="counter"><span class="digit">0</span></div>
+        <div class="views-label">VUES EN DIRECT</div>
+        <div class="delta" id="delta">● En attente des premières données</div>
+      </div>
 
-    <!-- =========================
-         RECHERCHE
-    ========================== -->
-
-    <div class="card">
-
-        <input
-            id="url"
-            placeholder="Colle ton lien TikTok"
-        >
-
-        <button onclick="startTracking()">
-            🚀 Suivre
-        </button>
-
-    </div>
-
-
-
-    <!-- =========================
-         TIMER
-    ========================== -->
-
-    <div class="timer-area">
-
-        <div
-            id="timerCircle"
-            class="timer-circle"
-        >
-
-            <div class="timer-window">
-
-                <div
-                    id="timerRoller"
-                    class="timer-roller"
-                >
-
-                    <div class="timer-number">
-                        10
-                    </div>
-
-                    <div class="timer-number">
-                        9
-                    </div>
-
-                    <div class="timer-number">
-                        8
-                    </div>
-
-                    <div class="timer-number">
-                        7
-                    </div>
-
-                    <div class="timer-number">
-                        6
-                    </div>
-
-                    <div class="timer-number">
-                        5
-                    </div>
-
-                    <div class="timer-number">
-                        4
-                    </div>
-
-                    <div class="timer-number">
-                        3
-                    </div>
-
-                    <div class="timer-number">
-                        2
-                    </div>
-
-                    <div class="timer-number">
-                        1
-                    </div>
-
-                    <div class="timer-number">
-                        0
-                    </div>
-
-                </div>
-
-            </div>
-
+      <div class="stats-grid">
+        <div class="stat likes">
+          <div class="stat-top"><span>ENGAGEMENT</span><span class="stat-icon">♥</span></div>
+          <div class="stat-value" id="likes">0</div>
+          <div class="card-label" style="margin-top:4px">Likes</div>
         </div>
-
-    </div>
-
-
-
-    <!-- =========================
-         TITRE VIDEO
-    ========================== -->
-
-    <div class="card">
-
-        <div
-            id="title"
-            class="title"
-        >
-            Titre vidéo
+        <div class="stat shares">
+          <div class="stat-top"><span>VIRALITÉ</span><span class="stat-icon">↗</span></div>
+          <div class="stat-value" id="shares">0</div>
+          <div class="card-label" style="margin-top:4px">Partages</div>
         </div>
+      </div>
+    </article>
 
-    </div>
+    <aside class="card side-card">
+      <div class="card-label">Instantané</div>
+      <div class="side-title">Performance</div>
+      <div class="metric-row"><span>Statut</span><strong id="trackingStatus">En attente</strong></div>
+      <div class="metric-row"><span>Dernière mise à jour</span><strong id="lastUpdate">—</strong></div>
+      <div class="metric-row"><span>Évolution</span><strong id="growth">—</strong></div>
+    </aside>
 
+    <aside class="card timer-card">
+      <div class="timer-copy">
+        <div class="card-label">Prochaine synchro</div>
+        <div class="side-title">Actualisation automatique</div>
+        <p>Les statistiques sont resynchronisées en continu.</p>
+      </div>
+      <div class="timer-circle" id="timerCircle"><div class="timer-number" id="timerNumber">10</div></div>
+    </aside>
+  </section>
 
-
-    <!-- =========================
-         VUES
-    ========================== -->
-
-    <div class="card">
-
-        <div
-            id="counter"
-            class="counter"
-        >
-        </div>
-
-
-        <div class="views-label">
-            VUES
-        </div>
-
-
-
-        <!-- =========================
-             STATS
-        ========================== -->
-
-        <div class="stats">
-
-
-            <div>
-
-                <div
-                    id="likes"
-                    class="stat-number likes"
-                >
-                    0
-                </div>
-
-                <div class="stat-title">
-                    ❤️ Likes
-                </div>
-
-            </div>
-
-
-
-            <div>
-
-                <div
-                    id="shares"
-                    class="stat-number shares"
-                >
-                    0
-                </div>
-
-                <div class="stat-title">
-                    🔄 Partages
-                </div>
-
-            </div>
-
-
-        </div>
-
-    </div>
-
-
+  <footer>Propulsé par <b>TikTok Pulse</b> · données fournies par votre endpoint de statistiques</footer>
 </div>
 
-
-
 <script>
-
-
-/* =========================
-   VARIABLES
-========================= */
-
 let url = "";
-
-let oldViews = 0;
-
-let rollers = [];
-
+let oldViews = null;
+let oldLikes = 0;
+let oldShares = 0;
 let countdown = 10;
+let timerInterval = null;
+let isTracking = false;
 
-let timerInterval;
+const $ = id => document.getElementById(id);
 
-
-/* =========================
-   CRÉATION DU COMPTEUR
-========================= */
-
-function createCounter(value) {
-
-    const box = document.getElementById("counter");
-
-    box.innerHTML = "";
-
-    rollers = [];
-
-    const text = String(value);
-
-
-    /*
-       On crée une colonne
-       pour chaque chiffre.
-    */
-
-    for (let char of text) {
-
-        const digit = document.createElement("div");
-
-        digit.className = "digit";
-
-
-        const roller = document.createElement("div");
-
-        roller.className = "roller";
-
-
-        /*
-           Création des chiffres 0 → 9
-        */
-
-        for (let i = 0; i <= 9; i++) {
-
-            const number = document.createElement("div");
-
-            number.className = "number";
-
-            number.textContent = i;
-
-            roller.appendChild(number);
-        }
-
-
-        /*
-           Position initiale
-        */
-
-        roller.style.transform =
-            `translateY(-${Number(char) * 90}px)`;
-
-
-        digit.appendChild(roller);
-
-        box.appendChild(digit);
-
-        rollers.push(roller);
-    }
-
+function formatNumber(value){
+  return Number(value || 0).toLocaleString("fr-FR");
 }
 
-
-/* =========================
-   ANIMATION DU COMPTEUR
-========================= */
-
-function animateCounter(value) {
-
-    const text = String(value);
-
-
-    /*
-       Si le nombre de chiffres change,
-       on recrée les colonnes.
-       
-       Exemple :
-       
-       99
-       ↓
-       100
-    */
-
-    if (rollers.length !== text.length) {
-
-        const oldLength = rollers.length;
-
-        createCounter(value);
-
-
-        /*
-           Animation d'apparition
-           lorsqu'un nouveau chiffre apparaît.
-        */
-
-        if (text.length > oldLength) {
-
-            const box =
-                document.getElementById("counter");
-
-
-            box.classList.remove("counter-grow");
-
-            void box.offsetWidth;
-
-            box.classList.add("counter-grow");
-        }
-
-        return;
-    }
-
-
-    /*
-       Sinon on anime chaque colonne.
-    */
-
-    for (let i = 0; i < text.length; i++) {
-
-        const digit = Number(text[i]);
-
-
-        rollers[i].style.transform =
-            `translateY(-${digit * 90}px)`;
-    }
-
+function renderCounter(value){
+  const box = $("counter");
+  const text = String(Math.max(0, Number(value) || 0));
+  box.innerHTML = [...text].map(n => `<span class="digit">${n}</span>`).join("");
 }
 
+function animateCounter(value){
+  const box = $("counter");
+  const next = String(Math.max(0, Number(value) || 0));
+  const current = box.textContent.trim();
 
-/* =========================
-   TIMER
-========================= */
+  if(current.length !== next.length){
+    renderCounter(value);
+    box.classList.remove("grow");
+    void box.offsetWidth;
+    box.classList.add("grow");
+    return;
+  }
 
-function updateTimer() {
-
-    const roller =
-        document.getElementById("timerRoller");
-
-
-    /*
-       Position du chiffre.
-    */
-
-    roller.style.transform =
-        `translateY(-${(10 - countdown) * 60}px)`;
-
-
-    /*
-       Cercle rouge.
-    */
-
-    const deg =
-        (countdown / 10) * 360;
-
-
-    document
-        .getElementById("timerCircle")
-        .style.background =
-        `conic-gradient(
-            #ff0050 ${deg}deg,
-            #333 ${deg}deg
-        )`;
-
+  [...next].forEach((n, i) => {
+    const digit = box.children[i];
+    if(digit && digit.textContent !== n){
+      digit.textContent = n;
+      digit.classList.remove("grow");
+      void digit.offsetWidth;
+      digit.classList.add("grow");
+    }
+  });
 }
 
+function updateTimer(){
+  $("timerNumber").textContent = countdown;
+  const deg = (countdown / 10) * 360;
+  $("timerCircle").style.background =
+    `conic-gradient(var(--pink) ${deg}deg, #292934 ${deg}deg)`;
+}
 
-/* =========================
-   DÉMARRAGE TIMER
-========================= */
+function setError(message=""){
+  $("errorBox").textContent = message;
+  $("errorBox").classList.toggle("show", !!message);
+}
 
-function startTimer() {
+function setTrackingState(active){
+  isTracking = active;
+  $("trackingStatus").textContent = active ? "Actif" : "En attente";
+  $("trackingStatus").style.color = active ? "var(--green)" : "";
+}
 
-    countdown = 10;
+function updateMeta(views, likes, shares){
+  const now = new Date();
+  $("lastUpdate").textContent = now.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 
+  if(oldViews !== null){
+    const diff = views - oldViews;
+    if(diff > 0){
+      $("growth").textContent = `+${formatNumber(diff)}`;
+      $("growth").style.color = "var(--green)";
+      $("delta").textContent = `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`;
+      $("delta").style.color = "var(--green)";
+    }else{
+      $("growth").textContent = "Stable";
+      $("growth").style.color = "";
+      $("delta").textContent = "● En attente de nouvelles vues";
+      $("delta").style.color = "";
+    }
+  }
+  oldLikes = likes;
+  oldShares = shares;
+}
+
+async function update(){
+  if(!url) return;
+
+  try{
+    setError("");
+    const res = await fetch("/stats?url=" + encodeURIComponent(url), {
+      headers:{ "Accept":"application/json" },
+      cache:"no-store"
+    });
+
+    if(!res.ok) throw new Error("Le serveur a répondu avec le statut " + res.status);
+
+    const data = await res.json();
+    const views = Number(data.views) || 0;
+    const likes = Number(data.likes) || 0;
+    const shares = Number(data.shares) || 0;
+
+    if(oldViews === null || views !== oldViews){
+      const counter = $("counter");
+      counter.classList.remove("flash");
+      void counter.offsetWidth;
+      counter.classList.add("flash");
+      animateCounter(views);
+    }
+
+    $("likes").textContent = formatNumber(likes);
+    $("shares").textContent = formatNumber(shares);
+    $("title").textContent = data.title || "Vidéo TikTok";
+    updateMeta(views, likes, shares);
+    oldViews = views;
+    setTrackingState(true);
+  }catch(error){
+    console.error("Erreur stats:", error);
+    setTrackingState(false);
+    setError("Impossible de récupérer les statistiques pour le moment. Vérifie le lien ou ton serveur /stats.");
+  }
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  countdown = 10;
+  updateTimer();
+
+  timerInterval = setInterval(async () => {
+    countdown--;
     updateTimer();
 
-
-    clearInterval(timerInterval);
-
-
-    timerInterval = setInterval(async () => {
-
-        countdown--;
-
-        updateTimer();
-
-
-        if (countdown <= 0) {
-
-            clearInterval(timerInterval);
-
-
-            /*
-               Récupération des statistiques.
-            */
-
-            await update();
-
-
-            /*
-               Nouveau cycle.
-            */
-
-            countdown = 10;
-
-            updateTimer();
-
-            startTimer();
-        }
-
-    }, 1000);
-
-}
-
-
-/* =========================
-   RÉCUPÉRATION DES STATS
-========================= */
-
-async function update() {
-
-    try {
-
-        const res =
-            await fetch(
-                "/stats?url=" +
-                encodeURIComponent(url)
-            );
-
-
-        /*
-           Vérification HTTP.
-        */
-
-        if (!res.ok) {
-
-            throw new Error(
-                "Erreur serveur : " + res.status
-            );
-        }
-
-
-        const data =
-            await res.json();
-
-
-        /*
-           Nombre de vues.
-        */
-
-        const views =
-            Number(data.views) || 0;
-
-
-        /*
-           Animation uniquement
-           si le nombre a changé.
-        */
-
-        if (views !== oldViews) {
-
-            const box =
-                document.getElementById("counter");
-
-
-            /*
-               Flash vert.
-            */
-
-            box.classList.remove("flash");
-
-            void box.offsetWidth;
-
-            box.classList.add("flash");
-
-
-            /*
-               Animation rouleau.
-            */
-
-            animateCounter(views);
-
-
-            oldViews = views;
-        }
-
-
-        /*
-           Likes.
-        */
-
-        document.getElementById("likes").textContent =
-            Number(data.likes || 0).toLocaleString();
-
-
-        /*
-           Partages.
-        */
-
-        document.getElementById("shares").textContent =
-            Number(data.shares || 0).toLocaleString();
-
-
-        /*
-           Titre.
-        */
-
-        document.getElementById("title").textContent =
-            data.title || "Titre vidéo";
-
-
-    } catch (error) {
-
-        console.error(
-            "Erreur lors de la récupération des statistiques :",
-            error
-        );
-
+    if(countdown <= 0){
+      clearInterval(timerInterval);
+      await update();
+      startTimer();
     }
-
+  },1000);
 }
 
+function startTracking(){
+  const value = $("url").value.trim();
+  if(!value){
+    setError("Ajoute un lien TikTok pour lancer le suivi.");
+    $("url").focus();
+    return;
+  }
 
-/* =========================
-   DÉMARRER LE TRACKING
-========================= */
-
-function startTracking() {
-
-    url =
-        document
-            .getElementById("url")
-            .value
-            .trim();
-
-
-    /*
-       Aucun lien.
-    */
-
-    if (!url) {
-
-        return;
-    }
-
-
-    /*
-       Réinitialisation.
-    */
-
-    oldViews = 0;
-
-
-    createCounter(0);
-
-
-    /*
-       Première récupération
-       immédiate.
-    */
-
-    update();
-
-
-    /*
-       Puis timer.
-    */
-
-    startTimer();
-
+  url = value;
+  oldViews = null;
+  oldLikes = 0;
+  oldShares = 0;
+  renderCounter(0);
+  $("likes").textContent = "0";
+  $("shares").textContent = "0";
+  $("title").textContent = "Chargement des données…";
+  $("lastUpdate").textContent = "Synchronisation…";
+  $("growth").textContent = "—";
+  $("delta").textContent = "● Connexion aux statistiques…";
+  setError("");
+  update();
+  startTimer();
 }
 
+$("url").addEventListener("keydown", e => {
+  if(e.key === "Enter") startTracking();
+});
 
-/* =========================
-   INITIALISATION
-========================= */
-
-createCounter(0);
-
+renderCounter(0);
 updateTimer();
-
-
 </script>
-
 </body>
-
 </html>
-
