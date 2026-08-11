@@ -294,8 +294,6 @@ footer b{color:#777787}
 <script>
 let url = "";
 let oldViews = null;
-let oldLikes = 0;
-let oldShares = 0;
 let countdown = 10;
 let timerInterval = null;
 let isTracking = false;
@@ -335,7 +333,33 @@ function createDigitSlot(digit){
   return slot;
 }
 
-function renderCounter(value){
+// Mode instantané (sans animation) – utilisé pendant le comptage
+function renderInstant(value){
+  const box = $("counter");
+  const text = String(Math.max(0, Math.floor(Number(value) || 0)));
+  const newDigits = [...text];
+  adjustFontSize(newDigits.length);
+
+  if(newDigits.length !== currentDigits.length){
+    box.innerHTML = "";
+    newDigits.forEach(d => box.appendChild(createDigitSlot(d)));
+  } else {
+    newDigits.forEach((d, i) => {
+      const slot = box.children[i];
+      if(!slot) return;
+      const inner = slot.querySelector(".digit-inner");
+      // Force clean state
+      inner.style.transition = "none";
+      inner.style.transform = "translateY(0)";
+      inner.children[0].textContent = d;
+      inner.children[1].textContent = d;
+    });
+  }
+  currentDigits = newDigits;
+}
+
+// Mode animé (slide) – utilisé uniquement pour la valeur finale
+function renderAnimated(value){
   const box = $("counter");
   const text = String(Math.max(0, Math.floor(Number(value) || 0)));
   const newDigits = [...text];
@@ -355,6 +379,7 @@ function renderCounter(value){
     const inner = slot.querySelector(".digit-inner");
     const top = inner.children[0];
     const bottom = inner.children[1];
+
     if(oldD === newD){
       top.textContent = newD;
       bottom.textContent = newD;
@@ -362,6 +387,7 @@ function renderCounter(value){
       inner.style.transform = "translateY(0)";
       return;
     }
+
     top.textContent = oldD;
     bottom.textContent = newD;
     inner.style.transition = "none";
@@ -369,6 +395,7 @@ function renderCounter(value){
     void inner.offsetWidth;
     inner.style.transition = "transform .45s cubic-bezier(.22,1,.36,1)";
     inner.style.transform = "translateY(-50%)";
+
     setTimeout(() => {
       top.textContent = newD;
       bottom.textContent = newD;
@@ -379,27 +406,28 @@ function renderCounter(value){
   currentDigits = newDigits;
 }
 
-// Animation fluide qui passe par les valeurs intermédiaires
 async function animateTo(target){
   if(animating) return;
   const from = oldViews === null ? 0 : oldViews;
   if(target <= from){
-    renderCounter(target);
+    renderAnimated(target);
     return;
   }
 
   animating = true;
   const diff = target - from;
-  const steps = Math.min(diff, 50);
+  const steps = Math.min(diff, 45);
   const stepSize = Math.ceil(diff / steps);
-  const delay = diff <= 20 ? 55 : diff <= 80 ? 40 : 28;
+  const delay = diff <= 15 ? 60 : diff <= 60 ? 38 : 26;
 
   for(let i = 1; i <= steps; i++){
     const next = Math.min(from + stepSize * i, target);
-    renderCounter(next);
+    renderInstant(next);               // ← instantané pendant le trajet
     await new Promise(r => setTimeout(r, delay));
   }
-  renderCounter(target);
+
+  // Dernière valeur avec le beau slide
+  renderAnimated(target);
   animating = false;
 }
 
@@ -507,11 +535,9 @@ function startTracking(){
   }
   url = value;
   oldViews = null;
-  oldLikes = 0;
-  oldShares = 0;
   currentDigits = [];
   animating = false;
-  renderCounter(0);
+  renderInstant(0);
   $("likes").textContent = "0";
   $("shares").textContent = "0";
   $("title").textContent = "Chargement des données…";
@@ -528,7 +554,7 @@ $("url").addEventListener("keydown", e => {
   if(e.key === "Enter") startTracking();
 });
 
-renderCounter(0);
+renderInstant(0);
 updateTimer();
 </script>
 </body>
