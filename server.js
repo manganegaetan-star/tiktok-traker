@@ -13,7 +13,7 @@ CONFIGURATION
 =========================================================
 */
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyDQNrpnW3W6Ezu34Ngcv7_mFYoefhNYa2A";
 
 const PORT = process.env.PORT || 3000;
 
