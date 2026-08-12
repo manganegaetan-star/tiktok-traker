@@ -300,8 +300,17 @@ const TIMER_DURATION = 20;
 let countdown = TIMER_DURATION;
 let timerInterval = null;
 let isTracking = false;
+let nextTickAt = null; // timestamp (ms) de la prochaine actualisation — base réelle, pas un simple compteur
+
+const BASE_TITLE = document.title;
 
 const $ = id => document.getElementById(id);
+
+function updateTabTitle(views){
+  document.title = views != null
+    ? `👁 ${formatNumber(views)} vues · ${BASE_TITLE}`
+    : BASE_TITLE;
+}
 
 function formatNumber(value){
   return Number(value || 0).toLocaleString("fr-FR");
@@ -321,85 +330,103 @@ function adjustFontSize(digitCount){
 }
 
 /* ---------------------------------------------------------
-   VRAI ODOMÈTRE
-   Chaque chiffre est une bande verticale "0 1 2 3 4 5 6 7 8 9"
-   qu'on translate verticalement pour révéler le bon chiffre.
-   Si le nombre de chiffres change, on reconstruit les slots.
+   VRAI ODOMÈTRE — effet machine à sous
+   Chaque chiffre est un rouleau vertical contenant DEUX séries
+   "0 1 2 3 4 5 6 7 8 9" bout à bout (20 cases). Le rouleau ne
+   remonte JAMAIS en arrière : pour passer de 7 à 3 par exemple,
+   il continue vers le haut en traversant 8, 9, 0, 1, 2, 3 — un
+   nouveau chiffre apparaît toujours par le bas, comme une bobine
+   de machine à sous. Une fois la transition finie, si on a
+   dépassé la 1ère série (index ≥ 10), on retranche 10 sans
+   transition : la case affichée est identique (les deux séries
+   sont des copies), donc le "retour" est invisible.
 --------------------------------------------------------- */
-let odoLength = 0;
+const ROLL_DURATION = 900;      // ms — durée du défilement d'un rouleau
+const ROLL_STAGGER  = 90;       // ms — décalage entre chaque rouleau (effet de vague, comme une vraie retenue mécanique)
+const ROLL_EASING   = "cubic-bezier(.32,.94,.24,1)";
 
-function buildOdometer(digitCount){
+let odoDigits = []; // [{el, strip, index}] un par position de chiffre, gauche → droite
+
+function buildOdometer(digitCount, initialDigits){
   const box = $("counter");
   box.innerHTML = "";
-  odoLength = digitCount;
+  odoDigits = [];
+
   for(let i = 0; i < digitCount; i++){
     const digitEl = document.createElement("div");
     digitEl.className = "odo-digit";
     const strip = document.createElement("div");
     strip.className = "odo-strip";
-    for(let n = 0; n <= 9; n++){
-      const span = document.createElement("span");
-      span.textContent = n;
-      strip.appendChild(span);
+    strip.style.transition = "none";
+
+    // deux séries 0-9 bout à bout
+    for(let cycle = 0; cycle < 2; cycle++){
+      for(let n = 0; n <= 9; n++){
+        const span = document.createElement("span");
+        span.textContent = n;
+        strip.appendChild(span);
+      }
     }
+
+    const startIndex = initialDigits ? Number(initialDigits[i]) : 0;
+    strip.style.transform = `translateY(-${startIndex * 5}%)`;
+
     digitEl.appendChild(strip);
     box.appendChild(digitEl);
+    odoDigits.push({ el: digitEl, strip, index: startIndex });
   }
 }
 
-function setOdometer(value, animate){
+// Pose la valeur instantanément, sans animation (état initial / reset)
+function setOdometer(value){
   const text = String(Math.max(0, Math.floor(Number(value) || 0)));
   const digits = [...text];
-
-  if(digits.length !== odoLength){
-    buildOdometer(digits.length);
-  }
   adjustFontSize(digits.length);
-
-  const box = $("counter");
-  digits.forEach((d, i) => {
-    const digitEl = box.children[i];
-    if(!digitEl) return;
-    const strip = digitEl.querySelector(".odo-strip");
-    strip.style.transition = animate ? "transform 1.4s cubic-bezier(.16,.87,.28,1)" : "none";
-    strip.style.transform = `translateY(-${Number(d) * 10}%)`;
-    if(!animate){
-      // force le recalcul de style pour appliquer instantanément
-      void strip.offsetHeight;
-    }
-  });
+  buildOdometer(digits.length, digits);
 }
 
-// Anime en continu du chiffre actuel vers la cible, en mode odomètre pur
-// (on ne triche plus avec un "instant then slide" : chaque frame fait
-// tourner les rouleaux vers le bon chiffre, exactement comme un vrai
-// compteur mécanique).
-let animFrame = null;
-function animateOdometerTo(target){
-  if(animFrame) cancelAnimationFrame(animFrame);
+// Fait rouler chaque chiffre vers sa nouvelle valeur, TOUJOURS vers le haut
+function rollOdometerTo(target){
+  const text = String(Math.max(0, Math.floor(Number(target) || 0)));
+  const digits = [...text];
 
-  const from = oldViews === null ? target : oldViews;
-  const duration = 1400; // ms, doit matcher la transition CSS
-  const start = performance.now();
-
-  // easing proche de la courbe CSS utilisée (cubic-bezier .16,.87,.28,1)
-  function ease(t){
-    return 1 - Math.pow(1 - t, 3);
+  // Le nombre de chiffres a grandi ou rétréci (ex: 999 999 → 1 000 004) :
+  // pas de retenue à animer proprement dans ce cas, on repose direct.
+  if(digits.length !== odoDigits.length){
+    adjustFontSize(digits.length);
+    buildOdometer(digits.length, digits);
+    return;
   }
 
-  function frame(now){
-    const t = Math.min(1, (now - start) / duration);
-    const eased = ease(t);
-    const current = Math.round(from + (target - from) * eased);
-    setOdometer(current, false);
-    if(t < 1){
-      animFrame = requestAnimationFrame(frame);
-    }else{
-      setOdometer(target, false);
-      animFrame = null;
-    }
-  }
-  animFrame = requestAnimationFrame(frame);
+  digits.forEach((d, i) => {
+    const target = Number(d);
+    const state = odoDigits[i];
+    const current = state.index % 10;
+    let delta = target - current;
+    if(delta < 0) delta += 10;        // on ne recule jamais : on continue vers le haut
+    if(delta === 0) return;           // ce chiffre ne change pas
+
+    const newIndex = state.index + delta; // reste entre 0 et 18 → toujours dans les 2 séries
+    const delay = (digits.length - 1 - i) * ROLL_STAGGER; // la retenue se propage vers la gauche
+
+    setTimeout(() => {
+      state.strip.style.transition = `transform ${ROLL_DURATION}ms ${ROLL_EASING}`;
+      state.strip.style.transform = `translateY(-${newIndex * 5}%)`;
+    }, delay);
+
+    state.index = newIndex;
+
+    // Une fois la transition finie, si on a dépassé la 1ère série,
+    // on retranche 10 sans transition — invisible car même chiffre affiché.
+    setTimeout(() => {
+      if(state.index >= 10){
+        state.index -= 10;
+        state.strip.style.transition = "none";
+        state.strip.style.transform = `translateY(-${state.index * 5}%)`;
+        void state.strip.offsetHeight; // force le reflow avant de réactiver les transitions
+      }
+    }, delay + ROLL_DURATION + 30);
+  });
 }
 
 function updateTimer(){
@@ -466,13 +493,14 @@ async function update(){
       counter.classList.remove("flash");
       void counter.offsetWidth;
       counter.classList.add("flash");
-      animateOdometerTo(views);
+      rollOdometerTo(views);
     }
 
     $("likes").textContent = formatNumber(likes);
     $("shares").textContent = formatNumber(shares);
     $("title").textContent = data.title || "Vidéo TikTok";
     updateMeta(views, data.createTime);
+    updateTabTitle(views);
     oldViews = views;
     setTrackingState(true);
   }catch(error){
@@ -484,18 +512,40 @@ async function update(){
 
 function startTimer(){
   clearInterval(timerInterval);
+  nextTickAt = Date.now() + TIMER_DURATION * 1000;
   countdown = TIMER_DURATION;
   updateTimer();
-  timerInterval = setInterval(async () => {
-    countdown--;
-    updateTimer();
-    if(countdown <= 0){
-      clearInterval(timerInterval);
-      await update();
-      startTimer();
-    }
-  },1000);
+
+  // On vérifie toutes les 250ms le temps RÉEL écoulé (Date.now()), pas un
+  // simple compteur décrémenté à chaque tick. Les navigateurs ralentissent
+  // fortement setInterval sur les onglets en arrière-plan (parfois à
+  // 1 fois par minute), mais Date.now() reste toujours exact : dès que
+  // l'intervalle se déclenche à nouveau (même en retard), on sait combien
+  // de temps s'est réellement écoulé et on rattrape le retard.
+  timerInterval = setInterval(tick, 250);
 }
+
+async function tick(){
+  const remainingMs = nextTickAt - Date.now();
+  countdown = Math.max(0, Math.ceil(remainingMs / 1000));
+  updateTimer();
+
+  if(remainingMs <= 0){
+    clearInterval(timerInterval);
+    await update();
+    startTimer();
+  }
+}
+
+// Quand l'utilisateur revient sur l'onglet, on force une vérification
+// immédiate : si le délai est déjà dépassé pendant qu'il était ailleurs,
+// la mise à jour part tout de suite au lieu d'attendre le prochain tick
+// (potentiellement ralenti) du navigateur.
+document.addEventListener("visibilitychange", () => {
+  if(!document.hidden && isTracking && nextTickAt !== null){
+    tick();
+  }
+});
 
 function startTracking(){
   const value = $("url").value.trim();
@@ -506,8 +556,7 @@ function startTracking(){
   }
   url = value;
   oldViews = null;
-  buildOdometer(1);
-  setOdometer(0, false);
+  setOdometer(0);
   $("likes").textContent = "0";
   $("shares").textContent = "0";
   $("title").textContent = "Chargement des données…";
@@ -524,8 +573,7 @@ $("url").addEventListener("keydown", e => {
   if(e.key === "Enter") startTracking();
 });
 
-buildOdometer(1);
-setOdometer(0, false);
+setOdometer(0);
 updateTimer();
 </script>
 </body>
