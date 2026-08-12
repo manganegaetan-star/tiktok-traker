@@ -7,7 +7,7 @@ app.use(express.static(__dirname));
 // ⚠️ Remplace par ta propre clé API YouTube Data v3
 // (Console Google Cloud → APIs & Services → Identifiants → Créer une clé API,
 // puis active "YouTube Data API v3" sur le projet)
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "TA_CLE_API_YOUTUBE_ICI";
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyDQNrpnW3W6Ezu34Ngcv7_mFYoefhNYa2A";
 
 let cache = {};
 
