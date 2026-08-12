@@ -141,37 +141,37 @@ button{cursor:pointer}
   background:#0b0b11;
   box-shadow:inset 0 0 30px rgba(0,0,0,.4);
 }
+/* ODOMÈTRE */
 .views{
   position:relative;
   z-index:1;
   font-family:"Space Grotesk";
   font-weight:700;
   line-height:1;
-  letter-spacing:-.04em;
+  letter-spacing:-.02em;
   display:flex;
   justify-content:center;
-  align-items:center;
-  height:1.15em;
-  max-width:78%;
-  overflow:hidden;
+  align-items:flex-start;
+  max-width:80%;
   text-shadow:0 0 45px rgba(37,244,238,.11);
   font-size:clamp(28px, 8.5vw, 68px);
 }
-.digit-slot{
-  display:inline-block;
+.odo-digit{
   position:relative;
   height:1.15em;
   overflow:hidden;
-  vertical-align:top;
   width:0.62em;
   text-align:center;
 }
-.digit-slot .digit-inner{
-  display:block;
-  transition:transform .45s cubic-bezier(.22,1,.36,1);
+.odo-strip{
+  position:absolute;
+  left:0; right:0; top:0;
+  display:flex;
+  flex-direction:column;
   will-change:transform;
+  transition:transform 1.4s cubic-bezier(.16,.87,.28,1);
 }
-.digit-slot .digit-inner span{
+.odo-strip span{
   display:block;
   height:1.15em;
   line-height:1.15em;
@@ -251,7 +251,7 @@ footer b{color:#777787}
       <input id="url" type="url" autocomplete="off" placeholder="https://www.tiktok.com/@createur/video/...">
       <button class="cta" id="trackBtn" onclick="startTracking()">Lancer le suivi ↗</button>
     </div>
-    <div class="hint">Actualisation automatique toutes les 10 secondes · aucune page à recharger</div>
+    <div class="hint" id="hintText">Actualisation automatique toutes les 20 secondes · aucune page à recharger</div>
   </section>
   <div class="error" id="errorBox"></div>
   <section class="dashboard" id="dashboard">
@@ -294,11 +294,13 @@ footer b{color:#777787}
 <script>
 let url = "";
 let oldViews = null;
-let countdown = 10;
+
+// Durée du cycle de rafraîchissement (en secondes) — un seul endroit à changer
+const TIMER_DURATION = 20;
+let countdown = TIMER_DURATION;
 let timerInterval = null;
 let isTracking = false;
-let currentDigits = [];
-let animating = false;
+
 const $ = id => document.getElementById(id);
 
 function formatNumber(value){
@@ -318,121 +320,90 @@ function adjustFontSize(digitCount){
   el.style.fontSize = size;
 }
 
-function createDigitSlot(digit){
-  const slot = document.createElement("span");
-  slot.className = "digit-slot";
-  const inner = document.createElement("div");
-  inner.className = "digit-inner";
-  const top = document.createElement("span");
-  top.textContent = digit;
-  const bottom = document.createElement("span");
-  bottom.textContent = digit;
-  inner.appendChild(top);
-  inner.appendChild(bottom);
-  slot.appendChild(inner);
-  return slot;
-}
+/* ---------------------------------------------------------
+   VRAI ODOMÈTRE
+   Chaque chiffre est une bande verticale "0 1 2 3 4 5 6 7 8 9"
+   qu'on translate verticalement pour révéler le bon chiffre.
+   Si le nombre de chiffres change, on reconstruit les slots.
+--------------------------------------------------------- */
+let odoLength = 0;
 
-// Mode instantané (sans animation) – utilisé pendant le comptage
-function renderInstant(value){
+function buildOdometer(digitCount){
   const box = $("counter");
-  const text = String(Math.max(0, Math.floor(Number(value) || 0)));
-  const newDigits = [...text];
-  adjustFontSize(newDigits.length);
-
-  if(newDigits.length !== currentDigits.length){
-    box.innerHTML = "";
-    newDigits.forEach(d => box.appendChild(createDigitSlot(d)));
-  } else {
-    newDigits.forEach((d, i) => {
-      const slot = box.children[i];
-      if(!slot) return;
-      const inner = slot.querySelector(".digit-inner");
-      // Force clean state
-      inner.style.transition = "none";
-      inner.style.transform = "translateY(0)";
-      inner.children[0].textContent = d;
-      inner.children[1].textContent = d;
-    });
-  }
-  currentDigits = newDigits;
-}
-
-// Mode animé (slide) – utilisé uniquement pour la valeur finale
-function renderAnimated(value){
-  const box = $("counter");
-  const text = String(Math.max(0, Math.floor(Number(value) || 0)));
-  const newDigits = [...text];
-  adjustFontSize(newDigits.length);
-
-  if(newDigits.length !== currentDigits.length){
-    box.innerHTML = "";
-    newDigits.forEach(d => box.appendChild(createDigitSlot(d)));
-    currentDigits = newDigits;
-    return;
-  }
-
-  newDigits.forEach((newD, i) => {
-    const oldD = currentDigits[i];
-    const slot = box.children[i];
-    if(!slot) return;
-    const inner = slot.querySelector(".digit-inner");
-    const top = inner.children[0];
-    const bottom = inner.children[1];
-
-    if(oldD === newD){
-      top.textContent = newD;
-      bottom.textContent = newD;
-      inner.style.transition = "none";
-      inner.style.transform = "translateY(0)";
-      return;
+  box.innerHTML = "";
+  odoLength = digitCount;
+  for(let i = 0; i < digitCount; i++){
+    const digitEl = document.createElement("div");
+    digitEl.className = "odo-digit";
+    const strip = document.createElement("div");
+    strip.className = "odo-strip";
+    for(let n = 0; n <= 9; n++){
+      const span = document.createElement("span");
+      span.textContent = n;
+      strip.appendChild(span);
     }
-
-    top.textContent = oldD;
-    bottom.textContent = newD;
-    inner.style.transition = "none";
-    inner.style.transform = "translateY(0)";
-    void inner.offsetWidth;
-    inner.style.transition = "transform .45s cubic-bezier(.22,1,.36,1)";
-    inner.style.transform = "translateY(-50%)";
-
-    setTimeout(() => {
-      top.textContent = newD;
-      bottom.textContent = newD;
-      inner.style.transition = "none";
-      inner.style.transform = "translateY(0)";
-    }, 460);
-  });
-  currentDigits = newDigits;
+    digitEl.appendChild(strip);
+    box.appendChild(digitEl);
+  }
 }
 
-async function animateTo(target){
-  if(animating) return;
-  const from = oldViews === null ? 0 : oldViews;
-  if(target <= from){
-    renderAnimated(target);
-    return;
+function setOdometer(value, animate){
+  const text = String(Math.max(0, Math.floor(Number(value) || 0)));
+  const digits = [...text];
+
+  if(digits.length !== odoLength){
+    buildOdometer(digits.length);
+  }
+  adjustFontSize(digits.length);
+
+  const box = $("counter");
+  digits.forEach((d, i) => {
+    const digitEl = box.children[i];
+    if(!digitEl) return;
+    const strip = digitEl.querySelector(".odo-strip");
+    strip.style.transition = animate ? "transform 1.4s cubic-bezier(.16,.87,.28,1)" : "none";
+    strip.style.transform = `translateY(-${Number(d) * 10}%)`;
+    if(!animate){
+      // force le recalcul de style pour appliquer instantanément
+      void strip.offsetHeight;
+    }
+  });
+}
+
+// Anime en continu du chiffre actuel vers la cible, en mode odomètre pur
+// (on ne triche plus avec un "instant then slide" : chaque frame fait
+// tourner les rouleaux vers le bon chiffre, exactement comme un vrai
+// compteur mécanique).
+let animFrame = null;
+function animateOdometerTo(target){
+  if(animFrame) cancelAnimationFrame(animFrame);
+
+  const from = oldViews === null ? target : oldViews;
+  const duration = 1400; // ms, doit matcher la transition CSS
+  const start = performance.now();
+
+  // easing proche de la courbe CSS utilisée (cubic-bezier .16,.87,.28,1)
+  function ease(t){
+    return 1 - Math.pow(1 - t, 3);
   }
 
-  animating = true;
-  const diff = target - from;
-  const steps = Math.min(diff, 45);
-  const stepSize = Math.ceil(diff / steps);
-  const delay = diff <= 15 ? 60 : diff <= 60 ? 38 : 26;
-
-  for(let i = 1; i <= steps; i++){
-    const next = Math.min(from + stepSize * i, target);
-    renderInstant(next);               // ← instantané pendant le trajet
-    await new Promise(r => setTimeout(r, delay));
+  function frame(now){
+    const t = Math.min(1, (now - start) / duration);
+    const eased = ease(t);
+    const current = Math.round(from + (target - from) * eased);
+    setOdometer(current, false);
+    if(t < 1){
+      animFrame = requestAnimationFrame(frame);
+    }else{
+      setOdometer(target, false);
+      animFrame = null;
+    }
   }
-
-  // Dernière valeur avec le beau slide
-  renderAnimated(target);
-  animating = false;
+  animFrame = requestAnimationFrame(frame);
 }
 
 function updateTimer(){
-  const deg = ((10 - countdown) / 10) * 360;
+  const deg = ((TIMER_DURATION - countdown) / TIMER_DURATION) * 360;
   $("timerCircle").style.background =
     `conic-gradient(var(--pink) ${deg}deg, #292934 ${deg}deg)`;
 }
@@ -495,7 +466,7 @@ async function update(){
       counter.classList.remove("flash");
       void counter.offsetWidth;
       counter.classList.add("flash");
-      await animateTo(views);
+      animateOdometerTo(views);
     }
 
     $("likes").textContent = formatNumber(likes);
@@ -513,7 +484,7 @@ async function update(){
 
 function startTimer(){
   clearInterval(timerInterval);
-  countdown = 20;
+  countdown = TIMER_DURATION;
   updateTimer();
   timerInterval = setInterval(async () => {
     countdown--;
@@ -535,9 +506,8 @@ function startTracking(){
   }
   url = value;
   oldViews = null;
-  currentDigits = [];
-  animating = false;
-  renderInstant(0);
+  buildOdometer(1);
+  setOdometer(0, false);
   $("likes").textContent = "0";
   $("shares").textContent = "0";
   $("title").textContent = "Chargement des données…";
@@ -554,7 +524,8 @@ $("url").addEventListener("keydown", e => {
   if(e.key === "Enter") startTracking();
 });
 
-renderInstant(0);
+buildOdometer(1);
+setOdometer(0, false);
 updateTimer();
 </script>
 </body>
