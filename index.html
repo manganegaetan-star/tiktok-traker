@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#08080d">
-<title>👁️ TikTok Pulse — Live Tracker</title>
+<title>TikTok Pulse — Live Tracker</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -12,40 +12,32 @@
 :root{
   --bg:#07070b;
   --panel:rgba(17,17,25,.72);
-  --panel-strong:rgba(22,22,32,.92);
+  --panel-strong:rgba(22,22,32,.9);
   --line:rgba(255,255,255,.09);
   --text:#f7f7fb;
   --muted:#8e8e9e;
-
   --cyan:#25f4ee;
   --pink:#ff2d70;
   --violet:#8b5cf6;
   --green:#57f287;
   --youtube:#ff0033;
-
   --shadow:0 30px 90px rgba(0,0,0,.45);
 }
 
-*{
-  box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
-html{
-  scroll-behavior:smooth;
-}
+html{scroll-behavior:smooth}
 
 body{
   margin:0;
   min-height:100vh;
   color:var(--text);
   font-family:"DM Sans",Arial,sans-serif;
-
   background:
     radial-gradient(circle at 12% 0%,rgba(255,45,112,.17),transparent 28%),
     radial-gradient(circle at 88% 8%,rgba(37,244,238,.14),transparent 30%),
     radial-gradient(circle at 50% 100%,rgba(139,92,246,.12),transparent 35%),
     var(--bg);
-
   overflow-x:hidden;
 }
 
@@ -55,24 +47,15 @@ body:before{
   inset:0;
   pointer-events:none;
   opacity:.22;
-
   background-image:
     linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-
   background-size:46px 46px;
-
   mask-image:linear-gradient(to bottom,black,transparent 85%);
 }
 
-button,
-input{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
+button,input{font:inherit}
+button{cursor:pointer}
 
 .shell{
   width:min(1120px,92%);
@@ -82,9 +65,7 @@ button{
   z-index:1;
 }
 
-/* =========================================================
-   NAV
-========================================================= */
+/* HEADER */
 
 .nav{
   display:flex;
@@ -105,1058 +86,822 @@ button{
   width:38px;
   height:38px;
   border-radius:12px;
-
   display:grid;
   place-items:center;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--pink),
-      var(--violet) 52%,
-      var(--cyan)
-    );
-
+  background:linear-gradient(135deg,var(--pink),var(--violet) 52%,var(--cyan));
   box-shadow:0 0 28px rgba(255,45,112,.25);
 }
 
 .brand-mark:after{
   content:"▶";
   font-size:14px;
-  transform:translateX(1px);
+  transform:translateX(1px)
 }
 
 .brand span{
   font-family:"Space Grotesk";
-  font-size:18px;
+  font-size:18px
 }
 
 .status{
   display:flex;
   align-items:center;
   gap:8px;
-
   padding:9px 13px;
-
   border:1px solid var(--line);
   background:rgba(255,255,255,.045);
   border-radius:999px;
-
   color:#d8d8df;
   font-size:12px;
   font-weight:600;
-
-  backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px)
 }
 
 .status i{
   width:7px;
   height:7px;
   border-radius:50%;
-
   background:var(--green);
   box-shadow:0 0 14px var(--green);
-
-  animation:pulse 1.6s infinite;
+  animation:pulse 1.6s infinite
 }
 
-/* =========================================================
-   HERO
-========================================================= */
+/* HERO */
 
 .hero{
   text-align:center;
   max-width:900px;
-  margin:0 auto 34px;
+  margin:0 auto 34px
 }
 
 .eyebrow{
   display:inline-flex;
   gap:8px;
   align-items:center;
-
   padding:7px 11px;
-
   border:1px solid rgba(37,244,238,.18);
   border-radius:999px;
-
   color:var(--cyan);
   background:rgba(37,244,238,.06);
-
   font-size:11px;
   font-weight:700;
   letter-spacing:.12em;
-  text-transform:uppercase;
+  text-transform:uppercase
 }
 
 .hero h1{
   margin:20px 0 16px;
-
   font-family:"Space Grotesk";
   font-size:clamp(42px,7vw,76px);
-
   line-height:.95;
   letter-spacing:-.07em;
 }
 
 .gradient{
-  background:
-    linear-gradient(
-      100deg,
-      #fff 10%,
-      #fff 28%,
-      var(--cyan) 58%,
-      var(--pink) 90%
-    );
-
+  background:linear-gradient(100deg,#fff 10%,#fff 28%,var(--cyan) 58%,var(--pink) 90%);
   -webkit-background-clip:text;
   background-clip:text;
-  color:transparent;
+  color:transparent
 }
 
 .hero p{
   margin:0 auto;
-
   color:var(--muted);
-
   font-size:16px;
   max-width:600px;
-  line-height:1.7;
+  line-height:1.7
 }
 
-/* =========================================================
-   MODE SWITCH
-========================================================= */
+/* MODE */
 
 .mode-switch{
   display:flex;
   gap:4px;
-
   width:max-content;
   margin:26px auto 0;
   padding:4px;
-
   border:1px solid var(--line);
   border-radius:999px;
-
   background:rgba(255,255,255,.04);
-
-  backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px)
 }
 
 .mode-btn{
   border:0;
-
   padding:9px 18px;
-
   border-radius:999px;
-
   background:transparent;
   color:#8e8e9e;
-
   font-size:13px;
   font-weight:700;
-
-  transition:.2s;
-}
-
-.mode-btn:hover{
-  color:#fff;
+  transition:.2s
 }
 
 .mode-btn.active{
-  background:
-    linear-gradient(
-      135deg,
-      var(--cyan),
-      #8ffefa
-    );
-
-  color:#050508;
-
-  box-shadow:
-    0 5px 25px rgba(37,244,238,.12);
+  background:linear-gradient(135deg,var(--cyan),#8ffefa);
+  color:#050508
 }
 
-/* =========================================================
-   SEARCH
-========================================================= */
+/* PLATFORM SELECTOR */
+
+.platform-switch{
+  display:flex;
+  gap:5px;
+  width:max-content;
+  padding:4px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+  margin-bottom:8px;
+}
+
+.platform-btn{
+  border:0;
+  padding:8px 13px;
+  border-radius:10px;
+  color:#777787;
+  background:transparent;
+  font-size:11px;
+  font-weight:800;
+  transition:.2s;
+}
+
+.platform-btn:hover{
+  color:#fff;
+}
+
+.platform-btn.active.tiktok{
+  color:#050508;
+  background:var(--cyan);
+}
+
+.platform-btn.active.youtube{
+  color:#fff;
+  background:var(--youtube);
+}
+
+/* SEARCH */
 
 .search-zone{
   width:min(760px,100%);
-  margin:30px auto 38px;
+  margin:30px auto 38px
 }
 
 .search-zone.compare-zone{
-  width:min(940px,100%);
+  width:min(920px,100%)
 }
 
 .search-card{
-  padding:8px;
-
+  padding:10px;
   border:1px solid var(--line);
   border-radius:24px;
-
   background:rgba(255,255,255,.045);
-
-  box-shadow:
-    var(--shadow),
-    inset 0 1px rgba(255,255,255,.05);
-
+  box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.05);
   backdrop-filter:blur(24px);
 }
 
 .search-card + .search-card{
-  margin-top:12px;
+  margin-top:12px
 }
 
 .search-inner{
   display:flex;
   gap:8px;
-  align-items:stretch;
+  align-items:center;
 }
 
 .search-inner input{
   min-width:0;
   flex:1;
-
   border:0;
   outline:0;
-
   color:#fff;
   background:#0e0e15;
-
   border-radius:17px;
-
   padding:17px 18px;
-
   font-size:15px;
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.05);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
 }
 
 .search-inner input::placeholder{
-  color:#666675;
+  color:#666675
 }
 
 .search-inner input:focus{
   box-shadow:
     inset 0 0 0 1px rgba(37,244,238,.45),
-    0 0 0 4px rgba(37,244,238,.06);
+    0 0 0 4px rgba(37,244,238,.06)
 }
-
-/* =========================================================
-   PLATFORM SELECTOR
-========================================================= */
-
-.platform-selector{
-  display:flex;
-  gap:5px;
-
-  padding:4px;
-
-  border-radius:18px;
-
-  background:#0b0b11;
-
-  border:1px solid rgba(255,255,255,.06);
-
-  flex-shrink:0;
-}
-
-.platform-choice{
-  border:0;
-
-  min-width:96px;
-
-  padding:0 15px;
-
-  border-radius:13px;
-
-  background:transparent;
-
-  color:#777787;
-
-  font-size:12px;
-  font-weight:800;
-
-  transition:.2s;
-}
-
-.platform-choice:hover{
-  color:#fff;
-}
-
-.platform-choice.active.tiktok{
-  background:rgba(37,244,238,.12);
-  color:var(--cyan);
-
-  box-shadow:
-    inset 0 0 0 1px rgba(37,244,238,.16);
-}
-
-.platform-choice.active.youtube{
-  background:rgba(255,0,51,.12);
-  color:#ff637d;
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255,0,51,.16);
-}
-
-/* =========================================================
-   CTA
-========================================================= */
 
 .cta{
   border:0;
-
   border-radius:17px;
-
   padding:0 24px;
-
+  min-height:54px;
   color:#050508;
-
   font-weight:800;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--cyan),
-      #8ffefa
-    );
-
-  box-shadow:
-    0 10px 35px rgba(37,244,238,.2);
-
-  transition:
-    .25s transform,
-    .25s box-shadow;
-
-  white-space:nowrap;
+  background:linear-gradient(135deg,var(--cyan),#8ffefa);
+  box-shadow:0 10px 35px rgba(37,244,238,.2);
+  transition:.25s transform,.25s box-shadow;
+  white-space:nowrap
 }
 
 .cta:hover{
   transform:translateY(-2px);
-
-  box-shadow:
-    0 15px 45px rgba(37,244,238,.3);
+  box-shadow:0 15px 45px rgba(37,244,238,.3)
 }
 
 .cta:active{
-  transform:scale(.98);
+  transform:scale(.98)
 }
 
 .compare-cta{
   width:100%;
   margin-top:12px;
-
   padding:16px 0;
-
-  border-radius:17px;
+  border-radius:17px
 }
 
 .hint{
   text-align:center;
-
   color:#656574;
-
   font-size:11px;
-
-  margin-top:12px;
+  margin-top:12px
 }
 
 .error{
   display:none;
-
   margin:15px auto 0;
-
   width:min(760px,100%);
-
   padding:11px 14px;
-
   border-radius:14px;
-
   border:1px solid rgba(255,45,112,.2);
-
   background:rgba(255,45,112,.07);
-
   color:#ff9ab7;
-
   text-align:center;
-
-  font-size:12px;
+  font-size:12px
 }
 
 .error.show{
+  display:block
+}
+
+/* PROFILE RESULTS */
+
+.profile-results{
+  display:none;
+  margin-top:15px;
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:rgba(10,10,16,.9);
+}
+
+.profile-results.show{
   display:block;
 }
 
-/* =========================================================
-   DASHBOARD
-========================================================= */
+.profile-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.profile-name{
+  font-family:"Space Grotesk";
+  font-size:16px;
+  font-weight:700;
+}
+
+.profile-sub{
+  color:var(--muted);
+  font-size:11px;
+}
+
+.video-result{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px;
+  border:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.025);
+  border-radius:15px;
+  margin-top:8px;
+  transition:.2s;
+}
+
+.video-result:hover{
+  background:rgba(255,255,255,.055);
+  transform:translateY(-1px);
+}
+
+.video-thumb{
+  width:70px;
+  height:48px;
+  border-radius:9px;
+  background:#171721;
+  object-fit:cover;
+  flex-shrink:0;
+}
+
+.video-result-info{
+  min-width:0;
+  flex:1;
+}
+
+.video-result-title{
+  color:#eee;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.video-result-meta{
+  color:#777787;
+  font-size:10px;
+  margin-top:5px;
+}
+
+.select-video{
+  border:1px solid rgba(37,244,238,.2);
+  background:rgba(37,244,238,.08);
+  color:var(--cyan);
+  padding:8px 10px;
+  border-radius:10px;
+  font-size:10px;
+  font-weight:800;
+}
+
+/* DASHBOARD */
 
 .dashboard{
   display:grid;
   grid-template-columns:1.55fr .9fr;
-  gap:16px;
+  gap:16px
 }
 
 .compare-grid{
   display:grid;
-
   grid-template-columns:1fr 1fr;
-
-  gap:16px;
+  gap:16px
 }
 
 .card{
   position:relative;
   overflow:hidden;
-
   border:1px solid var(--line);
   border-radius:28px;
-
   background:var(--panel);
-
   box-shadow:var(--shadow);
-
-  backdrop-filter:blur(24px);
+  backdrop-filter:blur(24px)
 }
 
 .card:before{
   content:"";
-
   position:absolute;
   inset:0;
-
   pointer-events:none;
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,.06),
-      transparent 32%
-    );
+  background:linear-gradient(135deg,rgba(255,255,255,.06),transparent 32%)
 }
-
-/* =========================================================
-   PLATFORM COLORS
-========================================================= */
 
 .card.platform-youtube .live-badge{
   background:rgba(255,0,51,.1);
-
   border-color:rgba(255,0,51,.2);
-
-  color:#ff7085;
+  color:#ff7085
 }
 
 .card.platform-youtube .live-badge i{
   background:var(--youtube);
-
-  box-shadow:
-    0 0 10px var(--youtube);
+  box-shadow:0 0 10px var(--youtube)
 }
 
 .card.platform-youtube .views-circle{
-  box-shadow:
-    0 0 40px rgba(255,0,51,.16);
+  box-shadow:0 0 40px rgba(255,0,51,.16)
 }
-
-/* =========================================================
-   VIDEO CARD
-========================================================= */
 
 .main-card{
   padding:34px;
-  min-height:460px;
+  min-height:460px
 }
 
 .card-label{
   color:#777787;
-
   font-size:11px;
-
   text-transform:uppercase;
   letter-spacing:.14em;
-
-  font-weight:700;
+  font-weight:700
 }
 
 .video-title{
   margin-top:12px;
-
   font-family:"Space Grotesk";
-
   font-size:clamp(16px,2.2vw,23px);
-
   font-weight:600;
-
   line-height:1.25;
-
   display:-webkit-box;
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
-
-  overflow:hidden;
+  overflow:hidden
 }
 
 .live-badge{
   position:absolute;
-
   right:24px;
   top:24px;
-
   display:flex;
   align-items:center;
   gap:7px;
-
   padding:7px 10px;
-
   border-radius:999px;
-
   background:rgba(255,45,112,.1);
-
   border:1px solid rgba(255,45,112,.2);
-
   color:#ff7ea5;
-
   font-size:10px;
-
   font-weight:800;
-
-  letter-spacing:.1em;
+  letter-spacing:.1em
 }
 
 .live-badge i{
   width:6px;
   height:6px;
-
   border-radius:50%;
-
   background:var(--pink);
-
-  box-shadow:
-    0 0 10px var(--pink);
-
-  animation:pulse 1.2s infinite;
+  box-shadow:0 0 10px var(--pink);
+  animation:pulse 1.2s infinite
 }
-
-/* =========================================================
-   VIEWS / COUNTDOWN
-========================================================= */
 
 .views-wrap{
   text-align:center;
-
   padding:44px 0 34px;
-
   display:flex;
-
   flex-direction:column;
-
-  align-items:center;
+  align-items:center
 }
 
 .views-circle{
   width:min(260px,70vw);
   height:min(260px,70vw);
-
   border-radius:50%;
-
   display:grid;
   place-items:center;
-
-  background:
-    conic-gradient(
-      var(--pink) 0deg,
-      #292934 0deg
-    );
-
+  background:conic-gradient(var(--pink) 0deg,#292934 0deg);
   transition:background .3s linear;
-
   position:relative;
-
-  box-shadow:
-    0 0 40px rgba(255,45,112,.18);
+  box-shadow:0 0 40px rgba(255,45,112,.18)
 }
 
 .card.platform-youtube .views-circle{
-  background:
-    conic-gradient(
-      var(--youtube) 0deg,
-      #292934 0deg
-    );
+  background:conic-gradient(var(--youtube) 0deg,#292934 0deg)
 }
 
 .views-circle:after{
   content:"";
-
   position:absolute;
-
   inset:10px;
-
   border-radius:50%;
-
   background:#0b0b11;
-
-  box-shadow:
-    inset 0 0 30px rgba(0,0,0,.4);
+  box-shadow:inset 0 0 30px rgba(0,0,0,.4)
 }
-
-/* =========================================================
-   ODOMETER
-========================================================= */
 
 .views{
   position:relative;
   z-index:1;
-
   font-family:"Space Grotesk";
-
   font-weight:700;
-
   line-height:1;
-
   letter-spacing:-.02em;
-
   display:flex;
-
   justify-content:center;
-
   align-items:flex-start;
-
   max-width:80%;
-
-  text-shadow:
-    0 0 45px rgba(37,244,238,.11);
-
-  font-size:clamp(26px,7vw,60px);
+  text-shadow:0 0 45px rgba(37,244,238,.11);
+  font-size:clamp(26px,7vw,60px)
 }
 
 .odo-digit{
   position:relative;
-
   height:1.15em;
-
   overflow:hidden;
-
   width:.62em;
-
-  text-align:center;
+  text-align:center
 }
 
 .odo-strip{
   position:absolute;
-
   left:0;
   right:0;
   top:0;
-
   display:flex;
-
   flex-direction:column;
-
-  will-change:transform;
+  will-change:transform
 }
 
 .odo-strip span{
   display:block;
-
   height:1.15em;
-
-  line-height:1.15em;
+  line-height:1.15em
 }
 
 .views-label{
   margin-top:16px;
-
   color:#777787;
-
   font-size:11px;
-
   letter-spacing:.3em;
-
-  font-weight:700;
+  font-weight:700
 }
 
 .delta{
   margin:14px auto 0;
-
   width:max-content;
   max-width:100%;
-
   padding:7px 10px;
-
   border-radius:999px;
-
   background:rgba(87,242,135,.08);
-
   color:var(--green);
-
   font-size:11px;
-
-  font-weight:700;
+  font-weight:700
 }
-
-/* =========================================================
-   STATS
-========================================================= */
 
 .stats-grid{
   display:grid;
-
   grid-template-columns:1fr 1fr;
-
-  gap:12px;
+  gap:12px
 }
 
 .stat{
   padding:18px;
-
   border-radius:20px;
-
   border:1px solid var(--line);
-
-  background:rgba(255,255,255,.035);
+  background:rgba(255,255,255,.035)
 }
 
 .stat-top{
   display:flex;
-
   justify-content:space-between;
-
   align-items:center;
-
   color:#777787;
-
-  font-size:11px;
+  font-size:11px
 }
 
 .stat-icon{
-  font-size:16px;
+  font-size:16px
 }
 
 .stat-value{
   margin-top:9px;
-
   font-family:"Space Grotesk";
-
   font-size:24px;
-
-  font-weight:700;
+  font-weight:700
 }
 
 .likes .stat-value{
-  color:#ff76a2;
+  color:#ff76a2
 }
 
 .shares .stat-value{
-  color:var(--cyan);
+  color:var(--cyan)
 }
 
-/* =========================================================
-   SIDE CARD
-========================================================= */
-
 .side-card{
-  padding:25px;
+  padding:25px
 }
 
 .side-title{
   font-family:"Space Grotesk";
-
   font-size:17px;
-
   font-weight:600;
-
-  margin:8px 0 20px;
+  margin:8px 0 20px
 }
 
 .metric-row{
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   padding:12px 0;
-
   border-bottom:1px solid var(--line);
-
-  font-size:13px;
+  font-size:13px
 }
 
 .metric-row:last-child{
-  border-bottom:0;
+  border-bottom:0
 }
 
 .metric-row span:first-child{
-  color:#777787;
+  color:#777787
 }
 
 .metric-row strong{
-  font-weight:700;
+  font-weight:700
 }
 
-/* =========================================================
-   COMPARISON
-========================================================= */
+/* VERDICT */
 
-.compare-video-card{
-  min-width:0;
-}
-
-.compare-platform{
-  display:flex;
-
-  align-items:center;
-
-  gap:7px;
-
-  margin-bottom:8px;
-}
-
-.compare-platform-dot{
-  width:7px;
-  height:7px;
-
-  border-radius:50%;
-
-  background:var(--cyan);
-
-  box-shadow:0 0 12px var(--cyan);
-}
-
-.platform-youtube .compare-platform-dot{
-  background:var(--youtube);
-
-  box-shadow:0 0 12px var(--youtube);
-}
-
-.compare-side-label{
-  font-size:10px;
-
-  text-transform:uppercase;
-
-  letter-spacing:.14em;
-
-  font-weight:800;
-
-  color:#777787;
-}
-
-.compare-difference{
+.verdict{
   margin-top:16px;
-
-  padding:22px;
-
-  border-radius:22px;
-
+  padding:20px;
+  border-radius:20px;
   border:1px solid var(--line);
-
   background:rgba(255,255,255,.035);
-
-  text-align:center;
+  text-align:center
 }
 
-.compare-difference-label{
+.verdict-label{
   color:#777787;
-
-  font-size:10px;
-
+  font-size:11px;
   text-transform:uppercase;
-
-  letter-spacing:.16em;
-
-  font-weight:800;
+  letter-spacing:.14em;
+  font-weight:700
 }
 
-.compare-difference-value{
+.verdict-value{
   margin-top:8px;
-
   font-family:"Space Grotesk";
-
-  font-size:22px;
-
-  font-weight:700;
+  font-size:20px;
+  font-weight:700
 }
 
-.compare-difference-sub{
-  margin-top:5px;
-
-  color:#777787;
-
-  font-size:12px;
+.verdict-bar{
+  margin-top:14px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+  display:flex
 }
 
-/* =========================================================
-   SHIMMER / ANIMATIONS
-========================================================= */
+.verdict-bar-a{
+  background:linear-gradient(90deg,var(--cyan),#8ffefa);
+  height:100%;
+  transition:width .6s ease
+}
+
+.verdict-bar-b{
+  background:linear-gradient(90deg,#ff5c78,var(--youtube));
+  height:100%;
+  transition:width .6s ease
+}
+
+/* MOTION */
 
 .shimmer{
   position:absolute;
-
   inset:-100%;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255,255,255,.04),
-      transparent
-    );
-
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
   transform:translateX(-100%);
-
   animation:shimmer 4s infinite;
-
-  pointer-events:none;
+  pointer-events:none
 }
 
 .flash{
-  animation:flash .5s ease;
+  animation:flash .5s ease
 }
 
 @keyframes flash{
   50%{
     color:var(--green);
-    transform:scale(1.03);
+    transform:scale(1.03)
   }
 }
 
 @keyframes shimmer{
-  50%,
-  100%{
-    transform:translateX(100%);
+  50%,100%{
+    transform:translateX(100%)
   }
 }
 
 @keyframes pulse{
   50%{
     opacity:.35;
-    transform:scale(.72);
+    transform:scale(.72)
   }
 }
 
-/* =========================================================
-   FOOTER
-========================================================= */
+/* FOOTER */
 
 footer{
   text-align:center;
-
   color:#50505c;
-
   font-size:11px;
-
-  margin-top:32px;
+  margin-top:32px
 }
 
 footer b{
-  color:#777787;
+  color:#777787
 }
 
 .hidden{
-  display:none !important;
+  display:none !important
 }
 
-/* =========================================================
-   MOBILE
-========================================================= */
+/* MOBILE */
 
 @media(max-width:800px){
 
   .shell{
-    padding-top:22px;
+    padding-top:22px
   }
 
   .nav{
-    margin-bottom:44px;
+    margin-bottom:44px
   }
 
   .dashboard{
-    grid-template-columns:1fr;
+    grid-template-columns:1fr
   }
 
   .compare-grid{
-    grid-template-columns:1fr;
+    grid-template-columns:1fr
   }
 
   .main-card{
-    min-height:0;
+    min-height:0
   }
 }
 
 @media(max-width:560px){
 
   .shell{
-    width:94%;
+    width:94%
   }
 
   .brand span{
-    display:none;
+    display:none
   }
 
   .hero h1{
-    font-size:46px;
+    font-size:46px
   }
 
   .hero p{
-    font-size:14px;
+    font-size:14px
   }
 
   .search-inner{
-    flex-direction:column;
+    flex-direction:column
   }
 
-  .platform-selector{
-    width:100%;
+  .search-inner input{
+    width:100%
   }
 
-  .platform-choice{
-    flex:1;
+  .platform-switch{
+    width:100%
+  }
 
-    padding:11px 8px;
+  .platform-btn{
+    flex:1
   }
 
   .cta{
-    height:54px;
+    width:100%;
+    height:54px
   }
 
   .main-card{
-    padding:22px;
+    padding:22px
   }
 
   .live-badge{
     top:18px;
-    right:18px;
+    right:18px
   }
 
   .views-wrap{
-    padding:34px 0 26px;
+    padding:34px 0 26px
   }
 
   .views-circle{
     width:min(220px,68vw);
-    height:min(220px,68vw);
+    height:min(220px,68vw)
   }
 
   .views{
-    font-size:clamp(22px,7vw,46px);
+    font-size:clamp(22px,7vw,46px)
   }
 
   .stats-grid{
-    gap:8px;
+    gap:8px
   }
 
   .stat{
-    padding:14px;
+    padding:14px
   }
 
   .stat-value{
-    font-size:21px;
+    font-size:21px
+  }
+
+  .video-result{
+    align-items:flex-start
+  }
+
+  .video-thumb{
+    width:58px;
+    height:42px
   }
 }
 </style>
@@ -1166,496 +911,450 @@ footer b{
 
 <div class="shell">
 
-  <!-- =====================================================
-       NAV
-  ====================================================== -->
+<nav class="nav">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <span>TikTok Pulse</span>
+  </div>
 
-  <nav class="nav">
+  <div class="status">
+    <i></i> SYSTÈME EN DIRECT
+  </div>
+</nav>
 
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <span>TikTok Pulse</span>
-    </div>
+<header class="hero">
 
-    <div class="status">
-      <i></i>
-      SYSTÈME EN DIRECT
-    </div>
+  <div class="eyebrow">
+    ✦ Real-time social analytics
+  </div>
 
-  </nav>
+  <h1>
+    Regarde une vidéo<br>
+    <span class="gradient">prendre vie.</span>
+  </h1>
 
+  <p>
+    Colle un lien ou un pseudo TikTok / YouTube et transforme
+    ses statistiques en une expérience live, fluide et spectaculaire.
+  </p>
 
-  <!-- =====================================================
-       HERO
-  ====================================================== -->
-
-  <header class="hero">
-
-    <div class="eyebrow">
-      ✦ Real-time social analytics
-    </div>
-
-    <h1>
-      Regarde une vidéo
-      <br>
-      <span class="gradient">prendre vie.</span>
-    </h1>
-
-    <p>
-      Suis une vidéo TikTok ou YouTube et transforme
-      ses statistiques en une expérience live, fluide et spectaculaire.
-    </p>
-
-    <!-- ON GARDE LES DEUX ONGLETS -->
-    <div class="mode-switch">
-
-      <button
-        class="mode-btn active"
-        id="modeSimpleBtn"
-        onclick="setMode('simple')"
-      >
-        Suivi simple
-      </button>
-
-      <button
-        class="mode-btn"
-        id="modeCompareBtn"
-        onclick="setMode('compare')"
-      >
-        Suivi comparaison
-      </button>
-
-    </div>
-
-  </header>
-
-
-  <!-- =====================================================
-       MODE SIMPLE
-  ====================================================== -->
-
-  <section
-    class="search-zone"
-    id="simpleSearch"
-  >
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <!-- PLATEFORME SIMPLE -->
-        <div class="platform-selector">
-
-          <button
-            class="platform-choice active tiktok"
-            data-simple-platform="tiktok"
-            onclick="selectSimplePlatform('tiktok')"
-          >
-            TikTok
-          </button>
-
-          <button
-            class="platform-choice youtube"
-            data-simple-platform="youtube"
-            onclick="selectSimplePlatform('youtube')"
-          >
-            YouTube
-          </button>
-
-        </div>
-
-        <input
-          id="url-solo"
-          type="text"
-          autocomplete="off"
-          placeholder="Lien ou @pseudo…"
-        >
-
-        <button
-          class="cta"
-          onclick="startSolo()"
-        >
-          Lancer le suivi ↗
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="hint">
-      Actualisation automatique toutes les 20 secondes · aucune page à recharger
-    </div>
-
-  </section>
-
-
-  <!-- =====================================================
-       MODE COMPARAISON
-  ====================================================== -->
-
-  <section
-    class="search-zone compare-zone hidden"
-    id="compareSearch"
-  >
-
-    <!-- VIDEO A -->
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <div class="platform-selector">
-
-          <button
-            class="platform-choice active tiktok"
-            data-platform="tiktok"
-            data-target="a"
-            onclick="selectComparePlatform('a','tiktok')"
-          >
-            TikTok
-          </button>
-
-          <button
-            class="platform-choice youtube"
-            data-platform="youtube"
-            data-target="a"
-            onclick="selectComparePlatform('a','youtube')"
-          >
-            YouTube
-          </button>
-
-        </div>
-
-        <input
-          id="url-a"
-          type="text"
-          autocomplete="off"
-          placeholder="Vidéo A — lien ou @pseudo…"
-        >
-
-      </div>
-
-    </div>
-
-
-    <!-- VIDEO B -->
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <div class="platform-selector">
-
-          <button
-            class="platform-choice active youtube"
-            data-platform="tiktok"
-            data-target="b"
-            onclick="selectComparePlatform('b','tiktok')"
-          >
-            TikTok
-          </button>
-
-          <button
-            class="platform-choice youtube"
-            data-platform="youtube"
-            data-target="b"
-            onclick="selectComparePlatform('b','youtube')"
-          >
-            YouTube
-          </button>
-
-        </div>
-
-        <input
-          id="url-b"
-          type="text"
-          autocomplete="off"
-          placeholder="Vidéo B — lien ou @pseudo…"
-        >
-
-      </div>
-
-    </div>
-
+  <div class="mode-switch">
 
     <button
-      class="cta compare-cta"
-      onclick="startCompare()"
-    >
-      Comparer les deux vidéos ↗
+      class="mode-btn active"
+      id="modeSimpleBtn"
+      onclick="setMode('simple')">
+      Suivi simple
     </button>
 
-    <div class="hint">
-      A et B peuvent être TikTok ou YouTube indépendamment.
+    <button
+      class="mode-btn"
+      id="modeCompareBtn"
+      onclick="setMode('compare')">
+      Comparaison
+    </button>
+
+  </div>
+
+</header>
+
+
+<!-- =========================
+     MODE SIMPLE
+========================= -->
+
+<section class="search-zone" id="simpleSearch">
+
+  <div class="search-card">
+
+    <div class="platform-switch">
+
+      <button
+        class="platform-btn active tiktok"
+        data-simple-platform="tiktok"
+        onclick="setSimplePlatform('tiktok')">
+        TikTok
+      </button>
+
+      <button
+        class="platform-btn youtube"
+        data-simple-platform="youtube"
+        onclick="setSimplePlatform('youtube')">
+        YouTube
+      </button>
+
     </div>
 
-  </section>
+    <div class="search-inner">
+
+      <input
+        id="url-solo"
+        type="text"
+        autocomplete="off"
+        placeholder="@pseudo, pseudo ou lien TikTok…">
+
+      <button
+        class="cta"
+        onclick="startSolo()">
+        Rechercher ↗
+      </button>
+
+    </div>
+
+    <div
+      class="profile-results"
+      id="simpleResults">
+    </div>
+
+  </div>
+
+  <div class="hint">
+    Lien vidéo ou pseudo · actualisation automatique toutes les 20 secondes
+  </div>
+
+</section>
 
 
-  <!-- =====================================================
-       ERROR
-  ====================================================== -->
+<!-- =========================
+     MODE COMPARAISON
+========================= -->
+
+<section
+  class="search-zone compare-zone hidden"
+  id="compareSearch">
+
+  <!-- VIDEO A -->
+
+  <div class="search-card">
+
+    <div class="card-label" style="margin:2px 0 10px 3px">
+      VIDÉO A
+    </div>
+
+    <div class="platform-switch">
+
+      <button
+        class="platform-btn active tiktok"
+        data-platform-a="tiktok"
+        onclick="setComparePlatform('a','tiktok')">
+        TikTok
+      </button>
+
+      <button
+        class="platform-btn youtube"
+        data-platform-a="youtube"
+        onclick="setComparePlatform('a','youtube')">
+        YouTube
+      </button>
+
+    </div>
+
+    <div class="search-inner">
+
+      <input
+        id="url-a"
+        type="text"
+        autocomplete="off"
+        placeholder="@pseudo, pseudo ou lien TikTok…">
+
+    </div>
+
+    <div
+      class="profile-results"
+      id="results-a">
+    </div>
+
+  </div>
+
+
+  <!-- VIDEO B -->
+
+  <div class="search-card">
+
+    <div class="card-label" style="margin:2px 0 10px 3px">
+      VIDÉO B
+    </div>
+
+    <div class="platform-switch">
+
+      <button
+        class="platform-btn active tiktok"
+        data-platform-b="tiktok"
+        onclick="setComparePlatform('b','tiktok')">
+        TikTok
+      </button>
+
+      <button
+        class="platform-btn youtube"
+        data-platform-b="youtube"
+        onclick="setComparePlatform('b','youtube')">
+        YouTube
+      </button>
+
+    </div>
+
+    <div class="search-inner">
+
+      <input
+        id="url-b"
+        type="text"
+        autocomplete="off"
+        placeholder="@pseudo, pseudo ou lien TikTok…">
+
+    </div>
+
+    <div
+      class="profile-results"
+      id="results-b">
+    </div>
+
+  </div>
+
+
+  <button
+    class="cta compare-cta"
+    onclick="startCompare()">
+    Comparer les deux vidéos ↗
+  </button>
+
+  <div class="hint">
+    Chaque vidéo peut être TikTok ou YouTube indépendamment
+  </div>
+
+</section>
+
+
+<div class="error" id="errorBox"></div>
+
+
+<!-- =========================
+     DASHBOARD SIMPLE
+========================= -->
+
+<section
+  class="dashboard hidden"
+  id="dashboardSimple">
+</section>
+
+
+<!-- =========================
+     DASHBOARD COMPARAISON
+========================= -->
+
+<section
+  class="hidden"
+  id="dashboardCompare">
 
   <div
-    class="error"
-    id="errorBox"
-  ></div>
+    class="compare-grid"
+    id="compareGrid">
+  </div>
 
+  <div
+    class="verdict"
+    id="verdict">
 
-  <!-- =====================================================
-       DASHBOARD SIMPLE
-  ====================================================== -->
-
-  <section
-    class="dashboard hidden"
-    id="dashboardSimple"
-  ></section>
-
-
-  <!-- =====================================================
-       DASHBOARD COMPARAISON
-  ====================================================== -->
-
-  <section
-    class="hidden"
-    id="dashboardCompare"
-  >
+    <div class="verdict-label">
+      Différence de vues
+    </div>
 
     <div
-      class="compare-grid"
-      id="compareGrid"
-    ></div>
+      class="verdict-value"
+      id="verdictValue">
+      En attente des données…
+    </div>
 
-    <!-- DIFFERENCE EN BAS -->
-    <div
-      class="compare-difference"
-      id="comparisonDifference"
-    >
+    <div class="verdict-bar">
 
-      <div class="compare-difference-label">
-        Différence
+      <div
+        class="verdict-bar-a"
+        id="verdictBarA"
+        style="width:50%">
       </div>
 
       <div
-        class="compare-difference-value"
-        id="differenceValue"
-      >
-        En attente des données…
-      </div>
-
-      <div
-        class="compare-difference-sub"
-        id="differenceSub"
-      >
-        Les deux vidéos doivent être synchronisées.
+        class="verdict-bar-b"
+        id="verdictBarB"
+        style="width:50%">
       </div>
 
     </div>
 
-  </section>
+  </div>
+
+</section>
 
 
-  <footer>
-    Propulsé par <b>TikTok Pulse</b>
-    · données fournies par votre endpoint de statistiques
-  </footer>
+<footer>
+  Propulsé par <b>TikTok Pulse</b>
+  · données fournies par votre endpoint de statistiques
+</footer>
 
 </div>
 
 
-<!-- =======================================================
+<!-- =========================
      VIDEO CARD TEMPLATE
-======================================================== -->
+========================= -->
 
 <template id="cardTemplate">
 
-  <article class="card main-card">
+<article class="card main-card">
 
-    <div class="shimmer"></div>
+  <div class="shimmer"></div>
 
-    <div class="live-badge">
-      <i></i>
-      LIVE TRACKING
+  <div class="live-badge">
+    <i></i> LIVE TRACKING
+  </div>
+
+  <div
+    class="card-label"
+    data-role="platform-label">
+    Vidéo suivie
+  </div>
+
+  <div
+    class="video-title"
+    data-role="title">
+    Colle un lien pour commencer
+  </div>
+
+  <div class="views-wrap">
+
+    <div
+      class="views-circle"
+      data-role="timerCircle">
+
+      <div
+        class="views"
+        data-role="counter">
+      </div>
+
+    </div>
+
+    <div class="views-label">
+      VUES EN DIRECT
     </div>
 
     <div
-      class="compare-platform"
-      data-role="comparePlatform"
-    >
-
-      <div
-        class="compare-platform-dot"
-        data-role="platformDot"
-      ></div>
-
-      <div
-        class="compare-side-label"
-        data-role="platformName"
-      >
-        TikTok
-      </div>
-
+      class="delta"
+      data-role="delta">
+      ● En attente des premières données
     </div>
 
-    <div
-      class="card-label"
-      data-role="platform-label"
-    >
-      Vidéo suivie
-    </div>
+  </div>
 
-    <div
-      class="video-title"
-      data-role="title"
-    >
-      Colle un lien pour commencer
-    </div>
+  <div class="stats-grid">
 
-    <div class="views-wrap">
+    <div class="stat likes">
 
-      <div
-        class="views-circle"
-        data-role="timerCircle"
-      >
+      <div class="stat-top">
+        <span data-role="stat2-label">
+          ENGAGEMENT
+        </span>
 
-        <div
-          class="views"
-          data-role="counter"
-        ></div>
-
-      </div>
-
-      <div class="views-label">
-        VUES EN DIRECT
+        <span class="stat-icon">
+          ♥
+        </span>
       </div>
 
       <div
-        class="delta"
-        data-role="delta"
-      >
-        ● En attente des premières données
+        class="stat-value"
+        data-role="likes">
+        0
+      </div>
+
+      <div
+        class="card-label"
+        style="margin-top:4px"
+        data-role="stat2-name">
+        Likes
       </div>
 
     </div>
 
 
-    <div class="stats-grid">
+    <div class="stat shares">
 
-      <div class="stat likes">
+      <div class="stat-top">
 
-        <div class="stat-top">
+        <span data-role="stat3-label">
+          VIRALITÉ
+        </span>
 
-          <span data-role="stat2-label">
-            ENGAGEMENT
-          </span>
-
-          <span class="stat-icon">
-            ♥
-          </span>
-
-        </div>
-
-        <div
-          class="stat-value"
-          data-role="likes"
-        >
-          0
-        </div>
-
-        <div
-          class="card-label"
-          style="margin-top:4px"
-          data-role="stat2-name"
-        >
-          Likes
-        </div>
+        <span class="stat-icon">
+          ↗
+        </span>
 
       </div>
 
+      <div
+        class="stat-value"
+        data-role="shares">
+        0
+      </div>
 
-      <div class="stat shares">
-
-        <div class="stat-top">
-
-          <span data-role="stat3-label">
-            VIRALITÉ
-          </span>
-
-          <span class="stat-icon">
-            ↗
-          </span>
-
-        </div>
-
-        <div
-          class="stat-value"
-          data-role="shares"
-        >
-          0
-        </div>
-
-        <div
-          class="card-label"
-          style="margin-top:4px"
-          data-role="stat3-name"
-        >
-          Partages
-        </div>
-
+      <div
+        class="card-label"
+        style="margin-top:4px"
+        data-role="stat3-name">
+        Partages
       </div>
 
     </div>
 
-  </article>
+  </div>
+
+</article>
 
 </template>
 
 
-<!-- =======================================================
+<!-- =========================
      SIDE TEMPLATE
-======================================================== -->
+========================= -->
 
 <template id="sideTemplate">
 
-  <aside class="card side-card">
+<aside class="card side-card">
 
-    <div class="card-label">
-      Instantané
-    </div>
+  <div class="card-label">
+    Instantané
+  </div>
 
-    <div class="side-title">
-      Performance
-    </div>
+  <div class="side-title">
+    Performance
+  </div>
 
-    <div class="metric-row">
-      <span>Statut</span>
-      <strong data-role="trackingStatus">
-        En attente
-      </strong>
-    </div>
+  <div class="metric-row">
+    <span>Statut</span>
+    <strong data-role="trackingStatus">
+      En attente
+    </strong>
+  </div>
 
-    <div class="metric-row">
-      <span>Dernière mise à jour</span>
-      <strong data-role="lastUpdate">
-        —
-      </strong>
-    </div>
+  <div class="metric-row">
+    <span>Dernière mise à jour</span>
+    <strong data-role="lastUpdate">
+      —
+    </strong>
+  </div>
 
-    <div class="metric-row">
-      <span>Publié le</span>
-      <strong data-role="publishDate">
-        —
-      </strong>
-    </div>
+  <div class="metric-row">
+    <span>Publié le</span>
+    <strong data-role="publishDate">
+      —
+    </strong>
+  </div>
 
-    <div class="metric-row">
-      <span>Évolution</span>
-      <strong data-role="growth">
-        —
-      </strong>
-    </div>
+  <div class="metric-row">
+    <span>Évolution</span>
+    <strong data-role="growth">
+      —
+    </strong>
+  </div>
 
-  </aside>
+</aside>
 
 </template>
 
@@ -1672,6 +1371,58 @@ function formatNumber(value){
   return Number(value || 0).toLocaleString("fr-FR");
 }
 
+function detectPlatform(url){
+
+  if(!url) return null;
+
+  if(
+    /tiktok\.com/i.test(url) ||
+    /^@?[a-zA-Z0-9._-]+$/.test(url.trim())
+  ){
+    return "tiktok";
+  }
+
+  if(
+    /youtube\.com/i.test(url) ||
+    /youtu\.be/i.test(url)
+  ){
+    return "youtube";
+  }
+
+  return null;
+}
+
+function isVideoUrl(url){
+
+  return (
+    /tiktok\.com\/.*\/video\//i.test(url) ||
+    /youtube\.com\/watch/i.test(url) ||
+    /youtu\.be\//i.test(url)
+  );
+
+}
+
+function cleanUsername(value){
+
+  return value
+    .trim()
+    .replace(/^@/,"")
+    .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i,"")
+    .split(/[/?#]/)[0]
+    .trim();
+
+}
+
+function setError(message=""){
+
+  $("errorBox").textContent = message;
+
+  $("errorBox")
+    .classList
+    .toggle("show",!!message);
+
+}
+
 
 /* =========================================================
    PLATEFORMES
@@ -1681,147 +1432,21 @@ let simplePlatform = "tiktok";
 
 let comparePlatforms = {
   a:"tiktok",
-  b:"youtube"
+  b:"tiktok"
 };
 
 
-function normalizeInput(value){
-
-  return String(value || "")
-    .trim()
-    .replace(/^@/,"");
-
-}
-
-
-function detectPlatform(value){
-
-  const url = String(value || "").trim().toLowerCase();
-
-  if(
-    url.includes("tiktok.com") ||
-    url.startsWith("tiktok:")
-  ){
-    return "tiktok";
-  }
-
-  if(
-    url.includes("youtube.com") ||
-    url.includes("youtu.be") ||
-    url.startsWith("youtube:")
-  ){
-    return "youtube";
-  }
-
-  return null;
-}
-
-
-/*
-  Pour les pseudos, on utilise la plateforme sélectionnée.
-  Pour les URLs, la plateforme détectée prend priorité.
-*/
-
-function resolvePlatform(value, selectedPlatform){
-
-  const detected = detectPlatform(value);
-
-  if(detected){
-    return detected;
-  }
-
-  return selectedPlatform;
-}
-
-
-/* =========================================================
-   TITRE DE L'ONGLET
-========================================================= */
-
-function updateBrowserTitle(){
-
-  const simpleVisible =
-    !$("dashboardSimple").classList.contains("hidden");
-
-  const compareVisible =
-    !$("dashboardCompare").classList.contains("hidden");
-
-  if(simpleVisible && soloTracker && soloTracker.oldViews !== null){
-
-    document.title =
-      `👁️ ${formatNumber(soloTracker.oldViews)} — TikTok Pulse`;
-
-    return;
-  }
-
-  if(compareVisible){
-
-    if(
-      lastA !== null &&
-      lastB !== null
-    ){
-
-      document.title =
-        `👁️ ${formatNumber(lastA)} vs 👁️ ${formatNumber(lastB)} — TikTok Pulse`;
-
-      return;
-    }
-  }
-
-  document.title = "👁️ TikTok Pulse — Live Tracker";
-}
-
-
-/* =========================================================
-   NAVIGATION / RETOUR
-========================================================= */
-
-let currentMode = "simple";
-
-
-function updateHistory(mode){
-
-  const url = new URL(window.location.href);
-
-  url.searchParams.set("mode",mode);
-
-  history.pushState(
-    {
-      mode:mode
-    },
-    "",
-    url
-  );
-}
-
-
-window.addEventListener("popstate",event => {
-
-  const mode =
-    event.state?.mode ||
-    new URLSearchParams(window.location.search).get("mode") ||
-    "simple";
-
-  setMode(mode,false);
-
-});
-
-
-/* =========================================================
-   SELECTEUR SIMPLE
-========================================================= */
-
-function selectSimplePlatform(platform){
+function setSimplePlatform(platform){
 
   simplePlatform = platform;
 
   document
     .querySelectorAll("[data-simple-platform]")
-    .forEach(button => {
+    .forEach(btn => {
 
-      button.classList.toggle(
+      btn.classList.toggle(
         "active",
-        button.dataset.simplePlatform === platform
+        btn.dataset.simplePlatform === platform
       );
 
     });
@@ -1830,58 +1455,48 @@ function selectSimplePlatform(platform){
 
   input.placeholder =
     platform === "tiktok"
-      ? "Lien TikTok ou @pseudo…"
-      : "Lien YouTube ou @chaîne…";
+      ? "@pseudo, pseudo ou lien TikTok…"
+      : "Lien YouTube ou identifiant de chaîne…";
+
+  $("simpleResults").classList.remove("show");
 
 }
 
 
-/* =========================================================
-   SELECTEUR COMPARAISON
-========================================================= */
-
-function selectComparePlatform(side,platform){
+function setComparePlatform(side,platform){
 
   comparePlatforms[side] = platform;
 
   document
-    .querySelectorAll(
-      `.platform-choice[data-target="${side}"]`
-    )
-    .forEach(button => {
+    .querySelectorAll(`[data-platform-${side}]`)
+    .forEach(btn => {
 
-      const isActive =
-        button.dataset.platform === platform;
-
-      button.classList.toggle(
+      btn.classList.toggle(
         "active",
-        isActive
+        btn.dataset[`platform${side.toUpperCase()}`] === platform
       );
 
     });
 
-
-  const input =
-    side === "a"
-      ? $("url-a")
-      : $("url-b");
-
+  const input = $(`url-${side}`);
 
   input.placeholder =
     platform === "tiktok"
-      ? `Vidéo ${side.toUpperCase()} — lien TikTok ou @pseudo…`
-      : `Vidéo ${side.toUpperCase()} — lien YouTube ou @chaîne…`;
+      ? "@pseudo, pseudo ou lien TikTok…"
+      : "Lien YouTube ou identifiant de chaîne…";
+
+  $(`results-${side}`).classList.remove("show");
+
 }
 
 
 /* =========================================================
-   ODOMETER
+   ODOMÈTRE
 ========================================================= */
 
 const ROLL_DURATION = 900;
 const ROLL_STAGGER = 90;
 const ROLL_EASING = "cubic-bezier(.32,.94,.24,1)";
-
 
 class Odometer{
 
@@ -1892,29 +1507,22 @@ class Odometer{
 
   }
 
-
   adjustFontSize(digitCount){
 
     let size;
 
     if(digitCount <= 4)
       size = "clamp(26px, 7vw, 60px)";
-
     else if(digitCount === 5)
       size = "clamp(24px, 6.4vw, 52px)";
-
     else if(digitCount === 6)
       size = "clamp(21px, 5.6vw, 44px)";
-
     else if(digitCount === 7)
       size = "clamp(18px, 4.8vw, 36px)";
-
     else if(digitCount === 8)
       size = "clamp(16px, 4.2vw, 30px)";
-
     else if(digitCount === 9)
       size = "clamp(14px, 3.7vw, 26px)";
-
     else
       size = "clamp(12px, 3.2vw, 22px)";
 
@@ -1922,32 +1530,24 @@ class Odometer{
 
   }
 
-
   build(digitCount,initialDigits){
 
     this.box.innerHTML = "";
-
     this.digits = [];
-
 
     for(let i=0;i<digitCount;i++){
 
       const digitEl =
         document.createElement("div");
 
-      digitEl.className =
-        "odo-digit";
-
+      digitEl.className = "odo-digit";
 
       const strip =
         document.createElement("div");
 
-      strip.className =
-        "odo-strip";
+      strip.className = "odo-strip";
 
-      strip.style.transition =
-        "none";
-
+      strip.style.transition = "none";
 
       for(let cycle=0;cycle<2;cycle++){
 
@@ -1964,16 +1564,13 @@ class Odometer{
 
       }
 
-
       const startIndex =
         initialDigits
           ? Number(initialDigits[i])
           : 0;
 
-
       strip.style.transform =
         `translateY(-${startIndex * 5}%)`;
-
 
       digitEl.appendChild(strip);
 
@@ -1988,7 +1585,6 @@ class Odometer{
 
   }
 
-
   set(value){
 
     const text =
@@ -1999,15 +1595,9 @@ class Odometer{
         )
       );
 
+    const digits = [...text];
 
-    const digits =
-      [...text];
-
-
-    this.adjustFontSize(
-      digits.length
-    );
-
+    this.adjustFontSize(digits.length);
 
     this.build(
       digits.length,
@@ -2015,7 +1605,6 @@ class Odometer{
     );
 
   }
-
 
   rollTo(target){
 
@@ -2027,19 +1616,14 @@ class Odometer{
         )
       );
 
-
-    const digits =
-      [...text];
-
+    const digits = [...text];
 
     if(
       digits.length !==
       this.digits.length
     ){
 
-      this.adjustFontSize(
-        digits.length
-      );
+      this.adjustFontSize(digits.length);
 
       this.build(
         digits.length,
@@ -2050,41 +1634,30 @@ class Odometer{
 
     }
 
-
     digits.forEach((d,i)=>{
 
-      const targetDigit =
-        Number(d);
+      const targetDigit = Number(d);
 
-      const state =
-        this.digits[i];
+      const state = this.digits[i];
 
       const current =
         state.index % 10;
 
-
       let delta =
         targetDigit - current;
 
-
-      if(delta < 0){
+      if(delta < 0)
         delta += 10;
-      }
 
-
-      if(delta === 0){
+      if(delta === 0)
         return;
-      }
-
 
       const newIndex =
         state.index + delta;
 
-
       const delay =
-        (digits.length - 1 - i) *
-        ROLL_STAGGER;
-
+        (digits.length - 1 - i)
+        * ROLL_STAGGER;
 
       setTimeout(()=>{
 
@@ -2096,10 +1669,7 @@ class Odometer{
 
       },delay);
 
-
-      state.index =
-        newIndex;
-
+      state.index = newIndex;
 
       setTimeout(()=>{
 
@@ -2132,7 +1702,6 @@ class Odometer{
 
 const TIMER_DURATION = 20;
 
-
 class VideoTracker{
 
   constructor({
@@ -2141,15 +1710,11 @@ class VideoTracker{
     onUpdate
   }){
 
-    this.main =
-      mainCardEl;
-
-    this.side =
-      sideCardEl;
+    this.main = mainCardEl;
+    this.side = sideCardEl;
 
     this.onUpdate =
       onUpdate || (()=>{});
-
 
     this.role =
       tag =>
@@ -2157,21 +1722,16 @@ class VideoTracker{
           `[data-role="${tag}"]`
         );
 
-
     this.sideRole =
       tag =>
-        this.side
-          ? this.side.querySelector(
-              `[data-role="${tag}"]`
-            )
-          : null;
-
+        this.side.querySelector(
+          `[data-role="${tag}"]`
+        );
 
     this.odometer =
       new Odometer(
         this.role("counter")
       );
-
 
     this.url = "";
     this.platform = null;
@@ -2187,22 +1747,7 @@ class VideoTracker{
 
     this.isTracking = false;
 
-
-    document.addEventListener(
-      "visibilitychange",
-      ()=>{
-        if(
-          !document.hidden &&
-          this.isTracking &&
-          this.nextTickAt !== null
-        ){
-          this.tick();
-        }
-      }
-    );
-
   }
-
 
   applyPlatformStyle(){
 
@@ -2210,19 +1755,6 @@ class VideoTracker{
       "platform-youtube",
       this.platform === "youtube"
     );
-
-
-    this.role("platformName").textContent =
-      this.platform === "youtube"
-        ? "YouTube"
-        : "TikTok";
-
-
-    this.role("platform-label").textContent =
-      this.platform === "youtube"
-        ? "Vidéo YouTube"
-        : "Vidéo TikTok";
-
 
     if(this.platform === "youtube"){
 
@@ -2264,34 +1796,23 @@ class VideoTracker{
 
   }
 
-
-  start(url,forcedPlatform=null){
+  start(url){
 
     const platform =
-      resolvePlatform(
-        url,
-        forcedPlatform
-      );
-
+      detectPlatform(url);
 
     if(!platform){
 
       throw new Error(
-        "Impossible de déterminer la plateforme."
+        "Lien ou pseudo non reconnu."
       );
 
     }
 
-
-    this.url =
-      normalizeInput(url);
-
-    this.platform =
-      platform;
-
+    this.url = url;
+    this.platform = platform;
 
     this.applyPlatformStyle();
-
 
     this.oldViews = null;
 
@@ -2307,34 +1828,25 @@ class VideoTracker{
       .textContent =
       "Chargement des données…";
 
-    if(this.side){
+    this.sideRole("lastUpdate")
+      .textContent =
+      "Synchronisation…";
 
-      this.sideRole("lastUpdate")
-        .textContent =
-        "Synchronisation…";
+    this.sideRole("publishDate")
+      .textContent = "—";
 
-      this.sideRole("publishDate")
-        .textContent =
-        "—";
-
-      this.sideRole("growth")
-        .textContent =
-        "—";
-
-    }
-
+    this.sideRole("growth")
+      .textContent = "—";
 
     this.role("delta")
       .textContent =
       "● Connexion aux statistiques…";
-
 
     this.update();
 
     this.startTimer();
 
   }
-
 
   updateTimerRing(){
 
@@ -2344,12 +1856,10 @@ class VideoTracker{
         / TIMER_DURATION
       ) * 360;
 
-
     const color =
       this.platform === "youtube"
         ? "var(--youtube)"
         : "var(--pink)";
-
 
     this.role("timerCircle")
       .style.background =
@@ -2360,29 +1870,17 @@ class VideoTracker{
 
   }
 
-
   setTrackingState(active){
 
-    this.isTracking =
-      active;
-
-
-    if(!this.side){
-      return;
-    }
-
+    this.isTracking = active;
 
     const el =
-      this.sideRole(
-        "trackingStatus"
-      );
-
+      this.sideRole("trackingStatus");
 
     el.textContent =
       active
         ? "Actif"
         : "En attente";
-
 
     el.style.color =
       active
@@ -2391,24 +1889,12 @@ class VideoTracker{
 
   }
 
+  updateMeta(views,createTime){
 
-  updateMeta(
-    views,
-    createTime
-  ){
+    const now = new Date();
 
-    if(!this.side){
-      return;
-    }
-
-
-    const now =
-      new Date();
-
-
-    this.sideRole(
-      "lastUpdate"
-    ).textContent =
+    this.sideRole("lastUpdate")
+      .textContent =
       now.toLocaleTimeString(
         "fr-FR",
         {
@@ -2418,12 +1904,10 @@ class VideoTracker{
         }
       );
 
-
     if(createTime){
 
-      this.sideRole(
-        "publishDate"
-      ).textContent =
+      this.sideRole("publishDate")
+        .textContent =
         new Date(
           createTime * 1000
         ).toLocaleDateString(
@@ -2435,15 +1919,7 @@ class VideoTracker{
           }
         );
 
-    }else{
-
-      this.sideRole(
-        "publishDate"
-      ).textContent =
-        "—";
-
     }
-
 
     const growthEl =
       this.sideRole("growth");
@@ -2451,12 +1927,10 @@ class VideoTracker{
     const deltaEl =
       this.role("delta");
 
-
     if(this.oldViews !== null){
 
       const diff =
         views - this.oldViews;
-
 
       if(diff > 0){
 
@@ -2466,9 +1940,10 @@ class VideoTracker{
         growthEl.style.color =
           "var(--green)";
 
-
         deltaEl.textContent =
-          `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`;
+          `▲ +${formatNumber(diff)} vue${
+            diff > 1 ? "s" : ""
+          } depuis la dernière synchro`;
 
         deltaEl.style.color =
           "var(--green)";
@@ -2478,14 +1953,12 @@ class VideoTracker{
         growthEl.textContent =
           "Stable";
 
-        growthEl.style.color =
-          "";
+        growthEl.style.color = "";
 
         deltaEl.textContent =
           "● +0 vues depuis la dernière synchro";
 
-        deltaEl.style.color =
-          "";
+        deltaEl.style.color = "";
 
       }
 
@@ -2493,13 +1966,10 @@ class VideoTracker{
 
   }
 
-
   async update(){
 
-    if(!this.url){
+    if(!this.url)
       return null;
-    }
-
 
     try{
 
@@ -2512,25 +1982,18 @@ class VideoTracker{
               "Accept":
                 "application/json"
             },
-
             cache:"no-store"
           }
         );
 
-
-      if(!res.ok){
-
+      if(!res.ok)
         throw new Error(
           "Le serveur a répondu avec le statut " +
           res.status
         );
 
-      }
-
-
       const data =
         await res.json();
-
 
       const views =
         Number(data.views) || 0;
@@ -2541,7 +2004,6 @@ class VideoTracker{
       const shares =
         Number(data.shares) || 0;
 
-
       if(
         this.oldViews === null ||
         views !== this.oldViews
@@ -2550,36 +2012,25 @@ class VideoTracker{
         const counter =
           this.role("counter");
 
-
-        counter.classList.remove(
-          "flash"
-        );
+        counter.classList.remove("flash");
 
         void counter.offsetWidth;
 
-        counter.classList.add(
-          "flash"
-        );
+        counter.classList.add("flash");
 
-
-        this.odometer.rollTo(
-          views
-        );
+        this.odometer.rollTo(views);
 
       }
-
 
       this.role("likes")
         .textContent =
         formatNumber(likes);
-
 
       this.role("shares")
         .textContent =
         this.platform === "youtube"
           ? "—"
           : formatNumber(shares);
-
 
       this.role("title")
         .textContent =
@@ -2590,21 +2041,14 @@ class VideoTracker{
             : "Vidéo TikTok"
         );
 
-
       this.updateMeta(
         views,
         data.createTime
       );
 
+      this.oldViews = views;
 
-      this.oldViews =
-        views;
-
-
-      this.setTrackingState(
-        true
-      );
-
+      this.setTrackingState(true);
 
       this.onUpdate({
         views,
@@ -2613,10 +2057,6 @@ class VideoTracker{
         title:data.title,
         platform:this.platform
       });
-
-
-      updateBrowserTitle();
-
 
       return data;
 
@@ -2627,16 +2067,7 @@ class VideoTracker{
         error
       );
 
-
-      this.setTrackingState(
-        false
-      );
-
-
-      this.role("delta")
-        .textContent =
-        "● Impossible de récupérer les statistiques";
-
+      this.setTrackingState(false);
 
       throw error;
 
@@ -2644,25 +2075,20 @@ class VideoTracker{
 
   }
 
-
   startTimer(){
 
     clearInterval(
       this.timerInterval
     );
 
-
     this.nextTickAt =
       Date.now() +
       TIMER_DURATION * 1000;
 
-
     this.countdown =
       TIMER_DURATION;
 
-
     this.updateTimerRing();
-
 
     this.timerInterval =
       setInterval(
@@ -2672,18 +2098,11 @@ class VideoTracker{
 
   }
 
-
   async tick(){
-
-    if(!this.nextTickAt){
-      return;
-    }
-
 
     const remainingMs =
       this.nextTickAt -
       Date.now();
-
 
     this.countdown =
       Math.max(
@@ -2693,9 +2112,7 @@ class VideoTracker{
         )
       );
 
-
     this.updateTimerRing();
-
 
     if(remainingMs <= 0){
 
@@ -2703,15 +2120,11 @@ class VideoTracker{
         this.timerInterval
       );
 
-
       try{
 
         await this.update();
 
-      }catch(e){
-        /* déjà loggé */
-      }
-
+      }catch(e){}
 
       this.startTimer();
 
@@ -2723,7 +2136,7 @@ class VideoTracker{
 
 
 /* =========================================================
-   CONSTRUCTION
+   CARTES
 ========================================================= */
 
 function buildCard(){
@@ -2734,13 +2147,11 @@ function buildCard(){
       true
     ).firstElementChild;
 
-
   const sideCard =
     document.importNode(
       $("sideTemplate").content,
       true
     ).firstElementChild;
-
 
   return {
     mainCard,
@@ -2750,53 +2161,26 @@ function buildCard(){
 }
 
 
-function setError(message=""){
-
-  $("errorBox")
-    .textContent =
-    message;
-
-
-  $("errorBox")
-    .classList.toggle(
-      "show",
-      !!message
-    );
-
-}
-
-
 /* =========================================================
-   MODE SIMPLE
+   DASHBOARD SIMPLE
 ========================================================= */
 
 let soloTracker = null;
-
 
 function initSoloDashboard(){
 
   const dash =
     $("dashboardSimple");
 
-
   dash.innerHTML = "";
-
 
   const {
     mainCard,
     sideCard
   } = buildCard();
 
-
-  dash.appendChild(
-    mainCard
-  );
-
-
-  dash.appendChild(
-    sideCard
-  );
-
+  dash.appendChild(mainCard);
+  dash.appendChild(sideCard);
 
   soloTracker =
     new VideoTracker({
@@ -2807,65 +2191,376 @@ function initSoloDashboard(){
 }
 
 
-function startSolo(){
+/* =========================================================
+   RECHERCHE PROFIL
+========================================================= */
 
-  const value =
-    $("url-solo").value.trim();
+async function searchProfile(
+  platform,
+  value,
+  resultsEl,
+  onSelect
+){
 
+  const input =
+    value.trim();
 
-  if(!value){
+  if(!input)
+    return;
 
-    setError(
-      "Ajoute un lien ou un identifiant pour lancer le suivi."
-    );
+  if(
+    isVideoUrl(input)
+  ){
 
-    $("url-solo").focus();
+    onSelect(input);
 
     return;
+
+  }
+
+  if(platform === "tiktok"){
+
+    const username =
+      cleanUsername(input);
+
+    resultsEl.innerHTML =
+      `<div class="profile-header">
+        <div>
+          <div class="profile-name">
+            @${username}
+          </div>
+          <div class="profile-sub">
+            Recherche des dernières vidéos…
+          </div>
+        </div>
+      </div>`;
+
+    resultsEl.classList.add("show");
+
+    try{
+
+      const res =
+        await fetch(
+          "/profile?platform=tiktok&username=" +
+          encodeURIComponent(username),
+          {
+            headers:{
+              "Accept":
+                "application/json"
+            },
+            cache:"no-store"
+          }
+        );
+
+      if(!res.ok)
+        throw new Error(
+          "Impossible de récupérer le profil."
+        );
+
+      const data =
+        await res.json();
+
+      const videos =
+        Array.isArray(data.videos)
+          ? data.videos
+          : [];
+
+      if(!videos.length){
+
+        resultsEl.innerHTML =
+          `<div class="profile-header">
+            <div>
+              <div class="profile-name">
+                @${username}
+              </div>
+              <div class="profile-sub">
+                Aucune vidéo publique trouvée.
+              </div>
+            </div>
+          </div>`;
+
+        return;
+
+      }
+
+      renderVideoResults(
+        data,
+        videos,
+        resultsEl,
+        onSelect
+      );
+
+    }catch(error){
+
+      console.error(
+        "Recherche profil:",
+        error
+      );
+
+      resultsEl.innerHTML =
+        `<div class="profile-sub">
+          Impossible de récupérer les vidéos
+          publiques de ce profil.
+        </div>`;
+
+    }
+
+    return;
+
   }
 
 
-  setError("");
+  /* YOUTUBE */
 
+  resultsEl.innerHTML =
+    `<div class="profile-header">
+      <div>
+        <div class="profile-name">
+          Recherche YouTube
+        </div>
+        <div class="profile-sub">
+          Recherche de la chaîne / vidéo…
+        </div>
+      </div>
+    </div>`;
 
-  $("dashboardSimple")
-    .classList.remove(
-      "hidden"
-    );
-
+  resultsEl.classList.add("show");
 
   try{
 
-    soloTracker.start(
-      value,
-      simplePlatform
+    const res =
+      await fetch(
+        "/profile?platform=youtube&username=" +
+        encodeURIComponent(input),
+        {
+          headers:{
+            "Accept":
+              "application/json"
+          },
+          cache:"no-store"
+        }
+      );
+
+    if(!res.ok)
+      throw new Error(
+        "Recherche YouTube impossible."
+      );
+
+    const data =
+      await res.json();
+
+    const videos =
+      Array.isArray(data.videos)
+        ? data.videos
+        : [];
+
+    if(!videos.length){
+
+      resultsEl.innerHTML =
+        `<div class="profile-sub">
+          Aucune vidéo trouvée.
+        </div>`;
+
+      return;
+
+    }
+
+    renderVideoResults(
+      data,
+      videos,
+      resultsEl,
+      onSelect
     );
 
+  }catch(error){
 
-    updateHistory(
-      "simple"
+    console.error(
+      "Recherche YouTube:",
+      error
     );
 
-  }catch(e){
-
-    setError(
-      e.message
-    );
+    resultsEl.innerHTML =
+      `<div class="profile-sub">
+        Impossible d'effectuer la recherche.
+      </div>`;
 
   }
 
 }
 
 
-$("url-solo")
-  .addEventListener(
-    "keydown",
-    e=>{
-      if(e.key === "Enter"){
-        startSolo();
+function renderVideoResults(
+  data,
+  videos,
+  resultsEl,
+  onSelect
+){
+
+  resultsEl.innerHTML = "";
+
+  const header =
+    document.createElement("div");
+
+  header.className =
+    "profile-header";
+
+  header.innerHTML =
+    `<div>
+      <div class="profile-name">
+        ${escapeHtml(
+          data.username ||
+          data.channel ||
+          "Résultats"
+        )}
+      </div>
+      <div class="profile-sub">
+        Sélectionne une vidéo à suivre
+      </div>
+    </div>`;
+
+  resultsEl.appendChild(header);
+
+  videos.slice(0,8).forEach(video=>{
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "video-result";
+
+    row.innerHTML =
+      `
+      ${
+        video.thumbnail
+          ? `<img
+              class="video-thumb"
+              src="${escapeAttribute(video.thumbnail)}"
+              alt=""
+              loading="lazy">`
+          : `<div class="video-thumb"></div>`
       }
-    }
+
+      <div class="video-result-info">
+
+        <div class="video-result-title">
+          ${escapeHtml(
+            video.title ||
+            "Vidéo sans titre"
+          )}
+        </div>
+
+        <div class="video-result-meta">
+          ${formatNumber(video.views || 0)} vues
+        </div>
+
+      </div>
+
+      <button
+        class="select-video">
+        Suivre
+      </button>
+      `;
+
+    row
+      .querySelector(".select-video")
+      .addEventListener(
+        "click",
+        ()=>{
+          onSelect(video.url);
+        }
+      );
+
+    resultsEl.appendChild(row);
+
+  });
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+function escapeAttribute(value){
+
+  return escapeHtml(value);
+
+}
+
+
+/* =========================================================
+   SUIVI SIMPLE
+========================================================= */
+
+function startSolo(){
+
+  const value =
+    $("url-solo")
+      .value
+      .trim();
+
+  if(!value){
+
+    setError(
+      simplePlatform === "tiktok"
+        ? "Ajoute un pseudo ou un lien TikTok."
+        : "Ajoute un lien ou un identifiant YouTube."
+    );
+
+    return;
+
+  }
+
+  setError("");
+
+  if(isVideoUrl(value)){
+
+    launchSolo(value);
+
+    return;
+
+  }
+
+  searchProfile(
+    simplePlatform,
+    value,
+    $("simpleResults"),
+    launchSolo
   );
+
+}
+
+
+function launchSolo(url){
+
+  setError("");
+
+  $("simpleResults")
+    .classList
+    .remove("show");
+
+  $("dashboardSimple")
+    .classList
+    .remove("hidden");
+
+  try{
+
+    soloTracker.start(url);
+
+  }catch(e){
+
+    setError(e.message);
+
+  }
+
+}
 
 
 /* =========================================================
@@ -2874,6 +2569,9 @@ $("url-solo")
 
 let trackerA = null;
 let trackerB = null;
+
+let selectedA = null;
+let selectedB = null;
 
 let lastA = null;
 let lastB = null;
@@ -2884,52 +2582,137 @@ function initCompareDashboard(){
   const grid =
     $("compareGrid");
 
-
   grid.innerHTML = "";
-
 
   const cardA =
     buildCard();
 
-
   const cardB =
     buildCard();
-
 
   grid.appendChild(
     cardA.mainCard
   );
 
-
   grid.appendChild(
     cardB.mainCard
   );
 
-
   trackerA =
     new VideoTracker({
-      mainCardEl:
-        cardA.mainCard,
-
-      sideCardEl:
-        null,
-
-      onUpdate:
-        updateVerdict
+      mainCardEl:cardA.mainCard,
+      sideCardEl:cardA.sideCard,
+      onUpdate:updateVerdict
     });
-
 
   trackerB =
     new VideoTracker({
-      mainCardEl:
-        cardB.mainCard,
-
-      sideCardEl:
-        null,
-
-      onUpdate:
-        updateVerdict
+      mainCardEl:cardB.mainCard,
+      sideCardEl:cardB.sideCard,
+      onUpdate:updateVerdict
     });
+
+}
+
+
+function startCompare(){
+
+  const valueA =
+    $("url-a")
+      .value
+      .trim();
+
+  const valueB =
+    $("url-b")
+      .value
+      .trim();
+
+  if(!valueA || !valueB){
+
+    setError(
+      "Ajoute une source pour A et une source pour B."
+    );
+
+    return;
+
+  }
+
+  setError("");
+
+  selectedA = null;
+  selectedB = null;
+
+  if(isVideoUrl(valueA)){
+
+    selectedA = valueA;
+
+  }
+
+  if(isVideoUrl(valueB)){
+
+    selectedB = valueB;
+
+  }
+
+  if(selectedA && selectedB){
+
+    launchComparison();
+
+    return;
+
+  }
+
+  if(!selectedA){
+
+    searchProfile(
+      comparePlatforms.a,
+      valueA,
+      $("results-a"),
+      url=>{
+        selectedA = url;
+
+        if(selectedB)
+          launchComparison();
+      }
+    );
+
+  }
+
+  if(!selectedB){
+
+    searchProfile(
+      comparePlatforms.b,
+      valueB,
+      $("results-b"),
+      url=>{
+        selectedB = url;
+
+        if(selectedA)
+          launchComparison();
+      }
+    );
+
+  }
+
+}
+
+
+function launchComparison(){
+
+  if(!selectedA || !selectedB)
+    return;
+
+  setError("");
+
+  lastA = null;
+  lastB = null;
+
+  $("dashboardCompare")
+    .classList
+    .remove("hidden");
+
+  trackerA.start(selectedA);
+  trackerB.start(selectedB);
 
 }
 
@@ -2939,107 +2722,92 @@ function updateVerdict({
   platform
 }){
 
-  if(platform === "tiktok"){
-
-    /*
-      On identifie A/B via la référence des trackers
-      plutôt que de supposer A = TikTok.
-    */
-
-    if(
-      trackerA &&
-      trackerA.platform === "tiktok"
-    ){
-      lastA = views;
-    }
-
-    if(
-      trackerB &&
-      trackerB.platform === "tiktok"
-    ){
-      lastB = views;
-    }
-
-  }
-
-
   /*
-    Comme A et B peuvent maintenant être
-    n'importe quelle plateforme, on met à jour
-    directement en fonction du tracker qui appelle.
+   Les deux trackers peuvent maintenant être
+   TikTok ou YouTube.
+
+   On utilise directement la carte A/B plutôt
+   que la plateforme pour déterminer le côté.
   */
 
   if(
     trackerA &&
-    trackerA.oldViews === views
+    platform === trackerA.platform
   ){
-    /*
-      Le callback arrive après oldViews,
-      donc cette condition peut être vraie pour
-      le tracker qui vient de s'actualiser.
-    */
+
+    if(
+      trackerA.oldViews === views
+    ){
+
+      lastA = views;
+
+    }
+
   }
 
+  if(
+    trackerB &&
+    platform === trackerB.platform
+  ){
+
+    if(
+      trackerB.oldViews === views
+    ){
+
+      lastB = views;
+
+    }
+
+  }
 
   /*
-    Méthode fiable : lire les deux trackers.
+   Sécurité : si A et B ont la même plateforme,
+   on identifie les valeurs avec leurs trackers.
   */
 
-  lastA =
-    trackerA
-      ? trackerA.oldViews
-      : null;
+  if(trackerA?.oldViews !== null)
+    lastA = trackerA.oldViews;
 
-  lastB =
-    trackerB
-      ? trackerB.oldViews
-      : null;
-
-
-  updateComparisonUI();
-
-}
-
-
-function updateComparisonUI(){
-
-  const value =
-    $("differenceValue");
-
-  const sub =
-    $("differenceSub");
-
+  if(trackerB?.oldViews !== null)
+    lastB = trackerB.oldViews;
 
   if(
     lastA === null ||
     lastB === null
   ){
 
-    value.textContent =
+    $("verdictValue")
+      .textContent =
       "En attente des données…";
 
-    sub.textContent =
-      "Les deux vidéos doivent être synchronisées.";
-
-    updateBrowserTitle();
-
     return;
+
   }
 
+  const total =
+    lastA + lastB;
 
-  const diff =
-    Math.abs(
-      lastA - lastB
-    );
+  const pctA =
+    total > 0
+      ? (lastA / total) * 100
+      : 50;
 
+  const pctB =
+    100 - pctA;
 
-  if(diff === 0){
+  $("verdictBarA")
+    .style.width =
+    pctA + "%";
 
-    value.textContent =
+  $("verdictBarB")
+    .style.width =
+    pctB + "%";
+
+  if(lastA === lastB){
+
+    $("verdictValue")
+      .textContent =
       "Égalité parfaite";
-
-    sub.textContent =
-      `${formatNumber(lastA)} vues chacune`;
 
   }else{
 
@@ -3048,122 +2816,16 @@ function updateComparisonUI(){
         ? "Vidéo A"
         : "Vidéo B";
 
+    const diff =
+      Math.abs(lastA - lastB);
 
-    value.textContent =
-      `${formatNumber(diff)} vues d'avance`;
-
-
-    sub.textContent =
-      `${winner} mène la comparaison`;
+    $("verdictValue")
+      .textContent =
+      `${winner} mène avec ${
+        formatNumber(diff)
+      } vues d'avance`;
 
   }
-
-
-  updateBrowserTitle();
-
-}
-
-
-/* =========================================================
-   LANCEMENT COMPARAISON
-========================================================= */
-
-function startCompare(){
-
-  const valueA =
-    $("url-a").value.trim();
-
-
-  const valueB =
-    $("url-b").value.trim();
-
-
-  if(!valueA || !valueB){
-
-    setError(
-      "Ajoute une vidéo A et une vidéo B."
-    );
-
-    return;
-  }
-
-
-  /*
-    Si l'utilisateur colle une URL,
-    on vérifie qu'elle correspond bien
-    au bouton choisi.
-  */
-
-  const detectedA =
-    detectPlatform(valueA);
-
-
-  const detectedB =
-    detectPlatform(valueB);
-
-
-  if(
-    detectedA &&
-    detectedA !== comparePlatforms.a
-  ){
-
-    setError(
-      `La vidéo A semble être ${detectedA === "tiktok" ? "TikTok" : "YouTube"} alors que tu as sélectionné ${comparePlatforms.a === "tiktok" ? "TikTok" : "YouTube"}.`
-    );
-
-    return;
-  }
-
-
-  if(
-    detectedB &&
-    detectedB !== comparePlatforms.b
-  ){
-
-    setError(
-      `La vidéo B semble être ${detectedB === "tiktok" ? "TikTok" : "YouTube"} alors que tu as sélectionné ${comparePlatforms.b === "tiktok" ? "TikTok" : "YouTube"}.`
-    );
-
-    return;
-  }
-
-
-  setError("");
-
-
-  lastA = null;
-  lastB = null;
-
-
-  $("dashboardCompare")
-    .classList.remove(
-      "hidden"
-    );
-
-
-  /*
-    On remet les compteurs à zéro
-    avant une nouvelle comparaison.
-  */
-
-  trackerA.start(
-    valueA,
-    comparePlatforms.a
-  );
-
-
-  trackerB.start(
-    valueB,
-    comparePlatforms.b
-  );
-
-
-  updateHistory(
-    "compare"
-  );
-
-
-  updateBrowserTitle();
 
 }
 
@@ -3172,165 +2834,154 @@ function startCompare(){
    MODE
 ========================================================= */
 
-function setMode(
-  mode,
-  pushHistory=true
-){
+function setMode(mode){
 
   const isSimple =
     mode === "simple";
 
-
-  currentMode =
-    mode;
-
-
   $("modeSimpleBtn")
-    .classList.toggle(
+    .classList
+    .toggle(
       "active",
       isSimple
     );
-
 
   $("modeCompareBtn")
-    .classList.toggle(
+    .classList
+    .toggle(
       "active",
       !isSimple
     );
 
-
   $("simpleSearch")
-    .classList.toggle(
+    .classList
+    .toggle(
       "hidden",
       !isSimple
     );
 
-
   $("compareSearch")
-    .classList.toggle(
+    .classList
+    .toggle(
       "hidden",
       isSimple
     );
 
+  $("dashboardSimple")
+    .classList
+    .add("hidden");
 
-  /*
-    Important :
-    on ne détruit PAS les dashboards.
-    On les masque simplement.
-  */
-
-  if(isSimple){
-
-    $("dashboardCompare")
-      .classList.add(
-        "hidden"
-      );
-
-  }else{
-
-    $("dashboardSimple")
-      .classList.add(
-        "hidden"
-      );
-
-  }
-
+  $("dashboardCompare")
+    .classList
+    .add("hidden");
 
   setError("");
-
-
-  if(pushHistory){
-
-    updateHistory(
-      mode
-    );
-
-  }
-
-
-  updateBrowserTitle();
 
 }
 
 
 /* =========================================================
-   INITIALISATION
+   ENTER
 ========================================================= */
 
-initSoloDashboard();
-initCompareDashboard();
-
-
-/*
-  Sélections initiales
-*/
-
-selectSimplePlatform(
-  "tiktok"
-);
-
-selectComparePlatform(
-  "a",
-  "tiktok"
-);
-
-selectComparePlatform(
-  "b",
-  "youtube"
-);
-
-
-/*
-  Restaurer le mode présent dans l'URL
-*/
-
-const initialMode =
-  new URLSearchParams(
-    window.location.search
-  ).get("mode");
-
-
-if(initialMode === "compare"){
-
-  setMode(
-    "compare",
-    false
+$("url-solo")
+  .addEventListener(
+    "keydown",
+    e=>{
+      if(e.key === "Enter")
+        startSolo();
+    }
   );
-
-}else{
-
-  setMode(
-    "simple",
-    false
-  );
-
-}
-
-
-/*
-  Entrée clavier comparaison
-*/
 
 $("url-a")
   .addEventListener(
     "keydown",
     e=>{
-      if(e.key === "Enter"){
+      if(e.key === "Enter")
         startCompare();
-      }
     }
   );
-
 
 $("url-b")
   .addEventListener(
     "keydown",
     e=>{
-      if(e.key === "Enter"){
+      if(e.key === "Enter")
         startCompare();
-      }
     }
   );
+
+
+/* =========================================================
+   TITRE DE L'ONGLET
+========================================================= */
+
+function updateBrowserTitle(){
+
+  if(
+    soloTracker &&
+    !isNaN(soloTracker.oldViews)
+  ){
+
+    document.title =
+      `👁️ ${formatNumber(
+        soloTracker.oldViews
+      )} — TikTok Pulse`;
+
+    return;
+
+  }
+
+  if(
+    trackerA &&
+    trackerB &&
+    trackerA.oldViews !== null &&
+    trackerB.oldViews !== null
+  ){
+
+    document.title =
+      `👁️ ${formatNumber(
+        trackerA.oldViews
+      )} vs 👁️ ${formatNumber(
+        trackerB.oldViews
+      )} — TikTok Pulse`;
+
+    return;
+
+  }
+
+  document.title =
+    "TikTok Pulse — Live Tracker";
+
+}
+
+
+/* Mise à jour périodique du titre */
+
+setInterval(
+  updateBrowserTitle,
+  500
+);
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+initSoloDashboard();
+initCompareDashboard();
+
+setSimplePlatform("tiktok");
+
+setComparePlatform(
+  "a",
+  "tiktok"
+);
+
+setComparePlatform(
+  "b",
+  "tiktok"
+);
 
 </script>
 
