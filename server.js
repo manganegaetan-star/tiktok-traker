@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 const app = express();
 
@@ -9,9 +8,9 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 /*
-===========================================================
-CONFIGURATION
-===========================================================
+|--------------------------------------------------------------------------
+| CONFIGURATION
+|--------------------------------------------------------------------------
 */
 
 const YOUTUBE_API_KEY =
@@ -20,77 +19,64 @@ const YOUTUBE_API_KEY =
 
 const PORT = process.env.PORT || 3000;
 
+const CACHE_TTL = 15000;
+
 const cache = new Map();
 
-const CACHE_TIME = 20 * 1000;
-
 /*
-===========================================================
-UTILITAIRES
-===========================================================
+|--------------------------------------------------------------------------
+| OUTILS
+|--------------------------------------------------------------------------
 */
 
-function setCache(key, data, ttl = CACHE_TIME) {
+function setCache(key, data) {
   cache.set(key, {
     data,
-    time: Date.now(),
-    ttl
+    time: Date.now()
   });
 }
 
 function getCache(key) {
-  const entry = cache.get(key);
+  const item = cache.get(key);
 
-  if (!entry) return null;
+  if (!item) return null;
 
-  if (Date.now() - entry.time > entry.ttl) {
+  if (Date.now() - item.time > CACHE_TTL) {
     cache.delete(key);
     return null;
   }
 
-  return entry.data;
+  return item.data;
 }
 
 function cleanText(value) {
   if (!value) return "";
 
   return String(value)
-    .replace(/\\u002F/g, "/")
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u003C/g, "<")
+    .replace(/\\u003E/g, ">")
     .replace(/\\"/g, '"')
-    .replace(/\\n/g, " ")
-    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\")
     .trim();
-}
-
-function normalizeUsername(value) {
-  return String(value || "")
-    .trim()
-    .replace(/^@/, "")
-    .replace(/^https?:\/\/(www\.)?tiktok\.com\/@/i, "")
-    .replace(/\/.*$/, "")
-    .trim();
-}
-
-function formatTikTokUrl(username) {
-  return `https://www.tiktok.com/@${normalizeUsername(username)}`;
 }
 
 /*
-===========================================================
-DETECTION PLATEFORME
-===========================================================
+|--------------------------------------------------------------------------
+| PLATEFORME
+|--------------------------------------------------------------------------
 */
 
-function detectPlatform(value) {
-  if (!value) return null;
+function detectPlatform(input) {
+  if (!input) return null;
 
-  const text = String(value).trim();
+  const value = String(input).trim();
 
-  if (/tiktok\.com/i.test(text)) {
+  if (/tiktok\.com/i.test(value)) {
     return "tiktok";
   }
 
-  if (/youtube\.com|youtu\.be/i.test(text)) {
+  if (/youtube\.com|youtu\.be/i.test(value)) {
     return "youtube";
   }
 
@@ -98,21 +84,26 @@ function detectPlatform(value) {
 }
 
 /*
-===========================================================
-YOUTUBE
-===========================================================
+|--------------------------------------------------------------------------
+| YOUTUBE
+|--------------------------------------------------------------------------
 */
 
-function extractYouTubeId(url) {
-  if (!url) return null;
+function extractYouTubeId(input) {
+  if (!input) return null;
+
+  const value = input.trim();
 
   const patterns = [
-    /(?:v=|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
   ];
 
   for (const pattern of patterns) {
-    const match = String(url).match(pattern);
+    const match = value.match(pattern);
 
     if (match) {
       return match[1];
@@ -122,64 +113,33 @@ function extractYouTubeId(url) {
   return null;
 }
 
-function extractYouTubeChannelId(url) {
-  if (!url) return null;
+function cleanYouTubeUsername(value) {
+  if (!value) return "";
 
-  const match = String(url).match(
-    /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/
-  );
+  let username = value.trim();
 
-  return match ? match[1] : null;
+  username = username
+    .replace(/^https?:\/\/(www\.)?youtube\.com\//i, "")
+    .replace(/^@/, "");
+
+  username = username
+    .replace(/^channel\//i, "")
+    .replace(/^c\//i, "")
+    .replace(/^user\//i, "");
+
+  username = username.split(/[/?#]/)[0];
+
+  return username.trim();
 }
 
-function extractYouTubeHandle(url) {
-  if (!url) return null;
-
-  const match = String(url).match(
-    /youtube\.com\/@([^/?#]+)/
-  );
-
-  return match ? match[1] : null;
-}
-
-async function youtubeRequest(endpoint, params) {
-  const query = new URLSearchParams({
-    ...params,
-    key: YOUTUBE_API_KEY
-  });
-
-  const response = await fetch(
-    `https://www.googleapis.com/youtube/v3/${endpoint}?${query}`
-  );
-
-  const json = await response.json();
-
-  if (!response.ok || json.error) {
-    throw new Error(
-      json?.error?.message ||
-      `YouTube API HTTP ${response.status}`
-    );
-  }
-
-  return json;
-}
-
-/*
------------------------------------------------------------
-YouTube : vidéo
------------------------------------------------------------
-*/
-
-async function getYouTubeStats(url) {
-  const cacheKey = `youtube-video:${url}`;
+async function getYouTubeStats(input) {
+  const cacheKey = `youtube:stats:${input}`;
 
   const cached = getCache(cacheKey);
 
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
 
-  const videoId = extractYouTubeId(url);
+  const videoId = extractYouTubeId(input);
 
   if (!videoId) {
     return {
@@ -188,24 +148,41 @@ async function getYouTubeStats(url) {
       likes: 0,
       shares: 0,
       title: "Lien YouTube invalide",
-      error: "ID vidéo introuvable dans l'URL"
+      error: "ID vidéo YouTube introuvable."
     };
   }
 
   try {
-    const json = await youtubeRequest("videos", {
-      part: "snippet,statistics",
-      id: videoId
-    });
+    const apiUrl =
+      "https://www.googleapis.com/youtube/v3/videos" +
+      `?part=snippet,statistics&id=${encodeURIComponent(videoId)}` +
+      `&key=${encodeURIComponent(YOUTUBE_API_KEY)}`;
 
-    if (!json.items || json.items.length === 0) {
+    const response = await fetch(apiUrl);
+
+    const json = await response.json();
+
+    if (!response.ok || json.error) {
+      return {
+        platform: "youtube",
+        views: 0,
+        likes: 0,
+        shares: 0,
+        title: "Erreur YouTube",
+        error:
+          json?.error?.message ||
+          `YouTube API HTTP ${response.status}`
+      };
+    }
+
+    if (!json.items || !json.items.length) {
       return {
         platform: "youtube",
         views: 0,
         likes: 0,
         shares: 0,
         title: "Vidéo YouTube introuvable",
-        error: "Aucun résultat"
+        error: "Cette vidéo n'existe pas ou n'est pas accessible."
       };
     }
 
@@ -216,45 +193,20 @@ async function getYouTubeStats(url) {
 
     const data = {
       platform: "youtube",
-
-      id: videoId,
-
       views: Number(stats.viewCount) || 0,
       likes: Number(stats.likeCount) || 0,
-
-      // L'API YouTube ne donne pas publiquement le nombre
-      // de partages d'une vidéo.
       shares: 0,
-
       title: snippet.title || "Vidéo YouTube",
-
       createTime: snippet.publishedAt
-        ? Math.floor(
-            new Date(snippet.publishedAt).getTime() / 1000
-          )
+        ? Math.floor(new Date(snippet.publishedAt).getTime() / 1000)
         : null,
-
-      channelTitle: snippet.channelTitle || "",
-
-      thumbnail:
-        snippet.thumbnails?.medium?.url ||
-        snippet.thumbnails?.default?.url ||
-        "",
-
       url: `https://www.youtube.com/watch?v=${videoId}`
     };
 
     setCache(cacheKey, data);
 
-    console.log("YouTube vidéo:", data);
-
     return data;
   } catch (error) {
-    console.error(
-      "Erreur YouTube vidéo:",
-      error.message
-    );
-
     return {
       platform: "youtube",
       views: 0,
@@ -267,249 +219,122 @@ async function getYouTubeStats(url) {
 }
 
 /*
------------------------------------------------------------
-YouTube : résolution d'une chaîne
------------------------------------------------------------
+|--------------------------------------------------------------------------
+| YOUTUBE : RECHERCHE PAR PSEUDO
+|--------------------------------------------------------------------------
+|
+| YouTube permet de résoudre un handle @pseudo via l'API.
+|
 */
 
-async function resolveYouTubeChannel(input) {
-  const value = String(input || "").trim();
+async function resolveYouTubeChannel(username) {
+  const clean = cleanYouTubeUsername(username);
 
-  const directChannelId = extractYouTubeChannelId(value);
-
-  if (directChannelId) {
-    return directChannelId;
-  }
-
-  const handle = extractYouTubeHandle(value);
-
-  try {
-    if (handle) {
-      const json = await youtubeRequest("channels", {
-        part: "snippet,contentDetails",
-        forHandle: handle
-      });
-
-      if (json.items?.length) {
-        return json.items[0].id;
-      }
-    }
-  } catch (error) {
-    console.log(
-      "Résolution handle YouTube:",
-      error.message
-    );
-  }
-
-  /*
-   * Si l'utilisateur met simplement :
-   *
-   * MrBeast
-   *
-   * ou :
-   *
-   * @MrBeast
-   *
-   * on utilise la recherche YouTube.
-   */
-
-  const query = value
-    .replace(/^@/, "")
-    .trim();
-
-  const search = await youtubeRequest("search", {
-    part: "snippet",
-    q: query,
-    type: "channel",
-    maxResults: 5
-  });
-
-  if (!search.items?.length) {
+  if (!clean) {
     return null;
   }
 
-  /*
-   * On essaie d'abord de trouver le nom le plus proche.
-   */
-
-  const lower = query.toLowerCase();
-
-  const exact = search.items.find(item => {
-    const title =
-      item.snippet?.channelTitle?.toLowerCase() || "";
-
-    return title === lower;
-  });
-
-  return (
-    exact?.snippet?.channelId ||
-    search.items[0]?.snippet?.channelId ||
-    search.items[0]?.id?.channelId ||
-    null
-  );
-}
-
-/*
------------------------------------------------------------
-YouTube : vidéos d'une chaîne
------------------------------------------------------------
-*/
-
-async function getYouTubeProfileVideos(input) {
-  const cacheKey = `youtube-profile:${input}`;
+  const cacheKey = `youtube:channel:${clean.toLowerCase()}`;
 
   const cached = getCache(cacheKey);
 
-  if (cached) {
-    return cached;
+  if (cached) return cached;
+
+  try {
+    const handle = clean.startsWith("@")
+      ? clean
+      : `@${clean}`;
+
+    const apiUrl =
+      "https://www.googleapis.com/youtube/v3/channels" +
+      `?part=id,snippet&forHandle=${encodeURIComponent(handle)}` +
+      `&key=${encodeURIComponent(YOUTUBE_API_KEY)}`;
+
+    const response = await fetch(apiUrl);
+
+    const json = await response.json();
+
+    if (!response.ok || !json.items?.length) {
+      return null;
+    }
+
+    const channel = json.items[0];
+
+    const result = {
+      id: channel.id,
+      title: channel.snippet?.title || clean,
+      handle
+    };
+
+    setCache(cacheKey, result);
+
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+async function searchYouTubeVideosByUsername(username) {
+  const channel = await resolveYouTubeChannel(username);
+
+  if (!channel) {
+    return {
+      platform: "youtube",
+      username,
+      videos: [],
+      error:
+        "Chaîne YouTube introuvable. Utilise un @handle YouTube valide."
+    };
   }
 
   try {
-    const channelId =
-      await resolveYouTubeChannel(input);
+    const apiUrl =
+      "https://www.googleapis.com/youtube/v3/search" +
+      `?part=snippet&channelId=${encodeURIComponent(channel.id)}` +
+      "&type=video" +
+      "&order=date" +
+      "&maxResults=20" +
+      `&key=${encodeURIComponent(YOUTUBE_API_KEY)}`;
 
-    if (!channelId) {
+    const response = await fetch(apiUrl);
+
+    const json = await response.json();
+
+    if (!response.ok || json.error) {
       return {
         platform: "youtube",
-        profile: null,
+        username,
         videos: [],
-        error: "Chaîne YouTube introuvable"
+        error:
+          json?.error?.message ||
+          `YouTube API HTTP ${response.status}`
       };
     }
 
-    const channelJson =
-      await youtubeRequest("channels", {
-        part: "snippet,contentDetails",
-        id: channelId
-      });
-
-    if (!channelJson.items?.length) {
-      return {
+    const videos = (json.items || [])
+      .filter(item => item.id?.videoId)
+      .map(item => ({
         platform: "youtube",
-        profile: null,
-        videos: [],
-        error: "Chaîne YouTube introuvable"
-      };
-    }
-
-    const channel = channelJson.items[0];
-
-    const uploadsPlaylist =
-      channel.contentDetails?.relatedPlaylists?.uploads;
-
-    if (!uploadsPlaylist) {
-      return {
-        platform: "youtube",
-        profile: {
-          id: channelId,
-          title: channel.snippet?.title || "",
-          description:
-            channel.snippet?.description || "",
-          thumbnail:
-            channel.snippet?.thumbnails?.medium?.url ||
-            ""
-        },
-        videos: [],
-        error: "Playlist des vidéos introuvable"
-      };
-    }
-
-    const playlistJson =
-      await youtubeRequest("playlistItems", {
-        part: "snippet,contentDetails",
-        playlistId: uploadsPlaylist,
-        maxResults: 20
-      });
-
-    const ids = (playlistJson.items || [])
-      .map(item => item.contentDetails?.videoId)
-      .filter(Boolean);
-
-    let statistics = [];
-
-    if (ids.length) {
-      const statsJson =
-        await youtubeRequest("videos", {
-          part: "snippet,statistics",
-          id: ids.join(",")
-        });
-
-      statistics = statsJson.items || [];
-    }
-
-    const videos = statistics.map(item => {
-      const stats = item.statistics || {};
-      const snippet = item.snippet || {};
-
-      return {
-        platform: "youtube",
-
-        id: item.id,
-
-        title:
-          snippet.title ||
-          "Vidéo YouTube",
-
-        views:
-          Number(stats.viewCount) || 0,
-
-        likes:
-          Number(stats.likeCount) || 0,
-
-        shares: 0,
-
-        createTime:
-          snippet.publishedAt
-            ? Math.floor(
-                new Date(
-                  snippet.publishedAt
-                ).getTime() / 1000
-              )
-            : null,
-
+        id: item.id.videoId,
+        title: item.snippet?.title || "Vidéo YouTube",
         thumbnail:
-          snippet.thumbnails?.medium?.url ||
-          snippet.thumbnails?.high?.url ||
-          snippet.thumbnails?.default?.url ||
+          item.snippet?.thumbnails?.medium?.url ||
+          item.snippet?.thumbnails?.default?.url ||
           "",
-
-        url:
-          `https://www.youtube.com/watch?v=${item.id}`
-      };
-    });
-
-    const data = {
-      platform: "youtube",
-
-      profile: {
-        id: channelId,
-
-        title:
-          channel.snippet?.title || "",
-
-        description:
-          channel.snippet?.description || "",
-
-        thumbnail:
-          channel.snippet?.thumbnails?.medium?.url ||
-          ""
-      },
-
-      videos
-    };
-
-    setCache(cacheKey, data, 60 * 1000);
-
-    return data;
-  } catch (error) {
-    console.error(
-      "Erreur recherche YouTube:",
-      error.message
-    );
+        publishedAt: item.snippet?.publishedAt || null,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+      }));
 
     return {
       platform: "youtube",
-      profile: null,
+      username: channel.title,
+      channelId: channel.id,
+      videos
+    };
+  } catch (error) {
+    return {
+      platform: "youtube",
+      username,
       videos: [],
       error: error.message
     };
@@ -517,1211 +342,588 @@ async function getYouTubeProfileVideos(input) {
 }
 
 /*
-===========================================================
-TIKTOK
-===========================================================
+|--------------------------------------------------------------------------
+| TIKTOK
+|--------------------------------------------------------------------------
 */
 
 /*
- * TikTok change régulièrement la structure de ses pages.
+ * IMPORTANT :
  *
- * On cherche donc plusieurs sources :
+ * TikTok n'offre pas une API publique simple permettant de récupérer
+ * toutes les vidéos publiques d'un profil sans authentification /
+ * accès spécifique.
  *
- * 1. SIGI_STATE
- * 2. __UNIVERSAL_DATA_FOR_REHYDRATION__
- * 3. autres scripts JSON
- * 4. recherche récursive de structures ItemModule / itemList
+ * On tente donc de récupérer les données JSON présentes dans la page
+ * publique du profil.
  */
 
-function extractScriptJson(html, scriptId) {
-  const regex = new RegExp(
-    `<script[^>]+id=["']${scriptId}["'][^>]*>([\\s\\S]*?)<\\/script>`,
-    "i"
-  );
-
-  const match = html.match(regex);
-
-  if (!match) return null;
-
-  try {
-    return JSON.parse(match[1]);
-  } catch {
-    return null;
-  }
-}
-
-function extractAllJsonScripts(html) {
+function extractJsonObjects(html) {
   const results = [];
 
-  const regex =
-    /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  const patterns = [
+    /<script[^>]+id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/i,
+    /<script[^>]+id="SIGI_STATE"[^>]*>([\s\S]*?)<\/script>/i
+  ];
 
-  let match;
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
 
-  while ((match = regex.exec(html)) !== null) {
+    if (!match) continue;
+
     try {
-      results.push(
-        JSON.parse(match[1])
-      );
+      results.push(JSON.parse(match[1]));
     } catch {
-      // JSON invalide : on continue
+      // TikTok peut échapper le JSON différemment.
     }
   }
 
   return results;
 }
 
-function walkObject(obj, callback, depth = 0) {
-  if (!obj || depth > 25) return;
-
-  if (Array.isArray(obj)) {
-    for (const item of obj) {
-      walkObject(item, callback, depth + 1);
-    }
-
-    return;
+function recursiveFindVideoObjects(object, output = []) {
+  if (!object || typeof object !== "object") {
+    return output;
   }
 
-  if (typeof obj !== "object") return;
+  if (Array.isArray(object)) {
+    for (const item of object) {
+      recursiveFindVideoObjects(item, output);
+    }
 
-  callback(obj);
+    return output;
+  }
 
-  for (const value of Object.values(obj)) {
-    if (
-      value &&
-      typeof value === "object"
-    ) {
-      walkObject(
-        value,
-        callback,
-        depth + 1
-      );
+  const hasVideoId =
+    object.id ||
+    object.aweme_id ||
+    object.awemeId ||
+    object.videoId;
+
+  const hasVideoData =
+    object.video ||
+    object.stats ||
+    object.statistics ||
+    object.desc ||
+    object.description;
+
+  if (hasVideoId && hasVideoData) {
+    output.push(object);
+  }
+
+  for (const key of Object.keys(object)) {
+    const value = object[key];
+
+    if (value && typeof value === "object") {
+      recursiveFindVideoObjects(value, output);
     }
   }
+
+  return output;
 }
 
-function normalizeTikTokItem(item) {
-  if (!item || typeof item !== "object") {
-    return null;
-  }
-
-  /*
-   * Formats possibles :
-   *
-   * item.id
-   * item.aweme_id
-   * item.itemId
-   */
+function normalizeTikTokVideo(video) {
+  if (!video) return null;
 
   const id =
-    item.id ||
-    item.aweme_id ||
-    item.awemeId ||
-    item.itemId;
+    video.id ||
+    video.aweme_id ||
+    video.awemeId ||
+    video.videoId;
 
   if (!id) return null;
 
-  /*
-   * Plusieurs structures utilisent :
-   *
-   * stats.playCount
-   * statistics.playCount
-   * playCount
-   */
-
   const stats =
-    item.stats ||
-    item.statistics ||
+    video.stats ||
+    video.statistics ||
     {};
 
-  const views =
-    Number(
-      stats.playCount ??
-      stats.play_count ??
-      item.playCount ??
-      item.play_count ??
-      0
-    ) || 0;
+  const videoObject =
+    video.video ||
+    {};
 
-  const likes =
-    Number(
-      stats.diggCount ??
-      stats.digg_count ??
-      item.diggCount ??
-      item.digg_count ??
-      0
-    ) || 0;
-
-  const comments =
-    Number(
-      stats.commentCount ??
-      stats.comment_count ??
-      item.commentCount ??
-      0
-    ) || 0;
-
-  const shares =
-    Number(
-      stats.shareCount ??
-      stats.share_count ??
-      item.shareCount ??
-      item.share_count ??
-      0
-    ) || 0;
-
-  const desc =
-    item.desc ||
-    item.description ||
-    item.title ||
+  const title =
+    video.desc ||
+    video.description ||
+    video.title ||
     "";
 
+  const views =
+    stats.playCount ??
+    stats.play_count ??
+    stats.viewCount ??
+    video.playCount ??
+    video.play_count ??
+    0;
+
+  const likes =
+    stats.diggCount ??
+    stats.digg_count ??
+    stats.likeCount ??
+    video.diggCount ??
+    video.likeCount ??
+    0;
+
+  const shares =
+    stats.shareCount ??
+    stats.share_count ??
+    video.shareCount ??
+    video.share_count ??
+    0;
+
   const createTime =
-    Number(
-      item.createTime ??
-      item.create_time ??
-      0
-    ) || null;
+    video.createTime ??
+    video.create_time ??
+    null;
 
-  let cover = "";
+  let thumbnail = "";
 
-  if (typeof item.video === "object") {
-    cover =
-      item.video.cover ||
-      item.video.coverUrl ||
-      item.video.originCover ||
-      item.video.dynamicCover ||
+  if (videoObject.cover) {
+    thumbnail =
+      videoObject.cover.urlList?.[0] ||
+      videoObject.cover.url_list?.[0] ||
       "";
   }
 
-  cover =
-    cover ||
-    item.cover ||
-    item.coverUrl ||
-    "";
-
-  let username = "";
-
-  if (item.author) {
-    if (typeof item.author === "object") {
-      username =
-        item.author.uniqueId ||
-        item.author.unique_id ||
-        item.author.nickname ||
-        "";
-    } else {
-      username = String(item.author);
-    }
+  if (!thumbnail) {
+    thumbnail =
+      video.coverUrl ||
+      video.cover_url ||
+      "";
   }
 
   return {
     platform: "tiktok",
-
     id: String(id),
-
-    title:
-      cleanText(desc) ||
-      "Vidéo TikTok",
-
-    views,
-
-    likes,
-
-    shares,
-
-    comments,
-
-    createTime,
-
-    thumbnail: cover,
-
-    username,
-
-    url:
-      `https://www.tiktok.com/@${username || "user"}/video/${id}`
+    title: cleanText(title) || "Vidéo TikTok",
+    views: Number(views) || 0,
+    likes: Number(likes) || 0,
+    shares: Number(shares) || 0,
+    createTime: createTime ? Number(createTime) : null,
+    thumbnail,
+    url: `https://www.tiktok.com/@unknown/video/${id}`
   };
 }
 
-function collectTikTokVideosFromObject(root) {
-  const found = new Map();
-
-  if (!root) {
-    return [];
-  }
-
-  /*
-   * Recherche des structures connues.
-   */
-
-  walkObject(root, obj => {
-    /*
-     * ItemModule :
-     *
-     * {
-     *   ItemModule: {
-     *      "123": {...}
-     *   }
-     * }
-     */
-
-    if (
-      obj.ItemModule &&
-      typeof obj.ItemModule === "object"
-    ) {
-      for (const item of Object.values(
-        obj.ItemModule
-      )) {
-        const normalized =
-          normalizeTikTokItem(item);
-
-        if (normalized) {
-          found.set(
-            normalized.id,
-            normalized
-          );
-        }
-      }
-    }
-
-    /*
-     * itemList
-     */
-
-    if (Array.isArray(obj.itemList)) {
-      for (const item of obj.itemList) {
-        const normalized =
-          normalizeTikTokItem(item);
-
-        if (normalized) {
-          found.set(
-            normalized.id,
-            normalized
-          );
-        }
-      }
-    }
-
-    /*
-     * item_list
-     */
-
-    if (Array.isArray(obj.item_list)) {
-      for (const item of obj.item_list) {
-        const normalized =
-          normalizeTikTokItem(item);
-
-        if (normalized) {
-          found.set(
-            normalized.id,
-            normalized
-          );
-        }
-      }
-    }
-
-    /*
-     * posts / videos / items
-     */
-
-    for (
-      const key of [
-        "posts",
-        "videos",
-        "items"
-      ]
-    ) {
-      if (Array.isArray(obj[key])) {
-        for (const item of obj[key]) {
-          const normalized =
-            normalizeTikTokItem(item);
-
-          if (normalized) {
-            found.set(
-              normalized.id,
-              normalized
-            );
-          }
-        }
-      }
-    }
-  });
-
-  return Array.from(found.values());
-}
-
-function extractTikTokVideosFromHtml(html) {
-  const sources = [];
-
-  const universal =
-    extractScriptJson(
-      html,
-      "__UNIVERSAL_DATA_FOR_REHYDRATION__"
-    );
-
-  if (universal) {
-    sources.push(universal);
-  }
-
-  const sigi =
-    extractScriptJson(
-      html,
-      "SIGI_STATE"
-    );
-
-  if (sigi) {
-    sources.push(sigi);
-  }
-
-  sources.push(
-    ...extractAllJsonScripts(html)
-  );
-
-  const all = new Map();
-
-  for (const source of sources) {
-    const videos =
-      collectTikTokVideosFromObject(
-        source
-      );
-
-    for (const video of videos) {
-      all.set(video.id, video);
-    }
-  }
-
-  /*
-   * Fallback regex pour certaines anciennes
-   * pages TikTok.
-   */
-
-  const regex =
-    /"(?:(?:aweme_id)|(?:id))":"?(\d{10,25})"?[\s\S]{0,2500}?"(?:playCount|play_count)":(\d+)/g;
-
-  let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    const id = match[1];
-    const views = Number(match[2]) || 0;
-
-    if (!all.has(id)) {
-      all.set(id, {
-        platform: "tiktok",
-        id,
-
-        title: "Vidéo TikTok",
-
-        views,
-
-        likes: 0,
-        shares: 0,
-        comments: 0,
-
-        createTime: null,
-
-        thumbnail: "",
-
-        username: "",
-
-        url:
-          `https://www.tiktok.com/video/${id}`
-      });
-    }
-  }
-
-  return Array.from(all.values());
-}
-
-/*
------------------------------------------------------------
-TikTok : fetch page
------------------------------------------------------------
-*/
-
-async function fetchTikTokPage(url) {
-  const response = await fetch(url, {
-    redirect: "follow",
-
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-
-      "Accept":
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-
-      "Accept-Language":
-        "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-
-      "Cache-Control":
-        "no-cache",
-
-      "Pragma":
-        "no-cache"
-    }
-  });
-
-  const html =
-    await response.text();
-
-  return {
-    response,
-    html
-  };
-}
-
-/*
------------------------------------------------------------
-TikTok : vidéo
------------------------------------------------------------
-*/
-
-async function getTikTokStats(url) {
-  const cacheKey =
-    `tiktok-video:${url}`;
-
-  const cached =
-    getCache(cacheKey);
-
-  if (cached) {
-    return cached;
-  }
-
-  try {
-    const { response, html } =
-      await fetchTikTokPage(url);
-
-    if (!response.ok) {
-      throw new Error(
-        `TikTok HTTP ${response.status}`
-      );
-    }
-
-    const videos =
-      extractTikTokVideosFromHtml(html);
-
-    const videoId =
-      extractTikTokVideoId(url);
-
-    let data = null;
-
-    if (videoId) {
-      data =
-        videos.find(
-          video =>
-            String(video.id) ===
-            String(videoId)
-        ) || null;
-    }
-
-    /*
-     * Si l'ID n'a pas été trouvé, on prend
-     * la première vidéo si la page est bien
-     * une page vidéo.
-     */
-
-    if (!data && videos.length === 1) {
-      data = videos[0];
-    }
-
-    if (!data) {
-      /*
-       * Fallback direct avec les anciennes
-       * expressions utilisées par TikTok.
-       */
-
-      const play =
-        html.match(
-          /"playCount":(\d+)/
-        );
-
-      const digg =
-        html.match(
-          /"diggCount":(\d+)/
-        );
-
-      const share =
-        html.match(
-          /"shareCount":(\d+)/
-        );
-
-      const desc =
-        html.match(
-          /"desc":"([\s\S]*?)"/
-        );
-
-      if (play) {
-        data = {
-          platform: "tiktok",
-
-          id:
-            videoId || "",
-
-          views:
-            Number(play[1]) || 0,
-
-          likes:
-            digg
-              ? Number(digg[1])
-              : 0,
-
-          shares:
-            share
-              ? Number(share[1])
-              : 0,
-
-          title:
-            desc
-              ? cleanText(desc[1])
-              : "Vidéo TikTok",
-
-          comments: 0,
-
-          createTime: null,
-
-          thumbnail: "",
-
-          username: "",
-
-          url
-        };
-      }
-    }
-
-    if (!data) {
-      return {
-        platform: "tiktok",
-
-        views: 0,
-        likes: 0,
-        shares: 0,
-
-        title:
-          "Données TikTok introuvables",
-
-        error:
-          "TikTok n'a pas fourni les statistiques publiques dans cette réponse."
-      };
-    }
-
-    data.url = url;
-
-    setCache(
-      cacheKey,
-      data
-    );
-
-    console.log(
-      "TikTok vidéo:",
-      data
-    );
-
-    return data;
-  } catch (error) {
-    console.error(
-      "Erreur TikTok vidéo:",
-      error.message
-    );
-
+async function fetchTikTokProfile(username) {
+  const cleanUsername = username
+    .replace(/^@/, "")
+    .replace(/^https?:\/\/(www\.)?tiktok\.com\/@/i, "")
+    .split(/[/?#]/)[0]
+    .trim();
+
+  if (!cleanUsername) {
     return {
-      platform: "tiktok",
-
-      views: 0,
-      likes: 0,
-      shares: 0,
-
-      title:
-        "Erreur TikTok",
-
-      error:
-        error.message
-    };
-  }
-}
-
-/*
------------------------------------------------------------
-TikTok : ID vidéo
------------------------------------------------------------
-*/
-
-function extractTikTokVideoId(url) {
-  if (!url) return null;
-
-  const match =
-    String(url).match(
-      /\/video\/(\d+)/
-    );
-
-  return match
-    ? match[1]
-    : null;
-}
-
-/*
------------------------------------------------------------
-TikTok : profil
------------------------------------------------------------
-*/
-
-async function getTikTokProfileVideos(input) {
-  const username =
-    normalizeUsername(input);
-
-  if (!username) {
-    return {
-      platform: "tiktok",
-      profile: null,
+      username,
       videos: [],
-      error: "Pseudo TikTok invalide"
+      error: "Pseudo TikTok invalide."
     };
-  }
-
-  const cacheKey =
-    `tiktok-profile:${username.toLowerCase()}`;
-
-  const cached =
-    getCache(cacheKey);
-
-  if (cached) {
-    return cached;
   }
 
   const profileUrl =
-    formatTikTokUrl(username);
+    `https://www.tiktok.com/@${encodeURIComponent(cleanUsername)}`;
 
   try {
-    const { response, html } =
-      await fetchTikTokPage(
-        profileUrl
-      );
+    const response = await fetch(profileUrl, {
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+          "AppleWebKit/537.36 (KHTML, like Gecko) " +
+          "Chrome/131.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language":
+          "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+        Referer: "https://www.tiktok.com/"
+      }
+    });
 
     if (!response.ok) {
-      throw new Error(
-        `TikTok HTTP ${response.status}`
+      return {
+        username: cleanUsername,
+        videos: [],
+        error:
+          `TikTok a répondu avec HTTP ${response.status}.`
+      };
+    }
+
+    const html = await response.text();
+
+    const jsonObjects = extractJsonObjects(html);
+
+    let rawVideos = [];
+
+    for (const json of jsonObjects) {
+      rawVideos.push(
+        ...recursiveFindVideoObjects(json)
       );
     }
 
     /*
-     * Extraire les vidéos.
+     * Fallback : recherche directe de données de vidéos dans le HTML.
      */
 
-    const videos =
-      extractTikTokVideosFromHtml(html);
+    if (!rawVideos.length) {
+      const idMatches = [
+        ...html.matchAll(
+          /"id":"(\d{15,25})"/g
+        )
+      ];
 
-    /*
-     * Essayer de récupérer les infos
-     * utilisateur.
-     */
+      const uniqueIds = [
+        ...new Set(
+          idMatches.map(match => match[1])
+        )
+      ];
 
-    let nickname = username;
-    let avatar = "";
+      rawVideos = uniqueIds.map(id => ({
+        id
+      }));
+    }
 
-    const universal =
-      extractScriptJson(
-        html,
-        "__UNIVERSAL_DATA_FOR_REHYDRATION__"
-      );
+    const videos = [];
 
-    const sigi =
-      extractScriptJson(
-        html,
-        "SIGI_STATE"
-      );
+    const seen = new Set();
 
-    const profileSources =
-      [universal, sigi]
-        .filter(Boolean);
+    for (const raw of rawVideos) {
+      const video = normalizeTikTokVideo(raw);
 
-    for (
-      const source of profileSources
-    ) {
-      walkObject(source, obj => {
-        if (
-          obj.userInfo?.user
-        ) {
-          const user =
-            obj.userInfo.user;
+      if (!video) continue;
 
-          nickname =
-            user.nickname ||
-            user.uniqueId ||
-            nickname;
+      if (seen.has(video.id)) continue;
 
-          avatar =
-            user.avatarLarger ||
-            user.avatarMedium ||
-            user.avatarThumb ||
-            avatar;
-        }
+      seen.add(video.id);
 
-        if (
-          obj.UserModule?.users
-        ) {
-          const users =
-            obj.UserModule.users;
-
-          const first =
-            Object.values(users)[0];
-
-          if (first) {
-            nickname =
-              first.nickname ||
-              first.uniqueId ||
-              nickname;
-
-            avatar =
-              first.avatarLarger ||
-              first.avatarMedium ||
-              first.avatarThumb ||
-              avatar;
-          }
-        }
-
-        if (
-          obj.author
-        ) {
-          if (
-            typeof obj.author ===
-            "object"
-          ) {
-            nickname =
-              obj.author.nickname ||
-              obj.author.uniqueId ||
-              nickname;
-
-            avatar =
-              obj.author.avatarLarger ||
-              obj.author.avatarMedium ||
-              obj.author.avatarThumb ||
-              avatar;
-          }
-        }
-      });
+      videos.push(video);
     }
 
     /*
-     * Nettoyage et dédoublonnage.
+     * On garde les 20 premières vidéos détectées.
      */
 
-    const uniqueVideos =
-      Array.from(
-        new Map(
-          videos.map(video => [
-            video.id,
-            {
-              ...video,
+    return {
+      username: cleanUsername,
+      videos: videos.slice(0, 20)
+    };
+  } catch (error) {
+    return {
+      username: cleanUsername,
+      videos: [],
+      error: error.message
+    };
+  }
+}
 
-              username:
-                video.username ||
-                username,
+async function getTikTokStats(url) {
+  const cacheKey = `tiktok:stats:${url}`;
 
-              url:
-                video.url &&
-                !video.url.includes(
-                  "/@user/"
-                )
-                  ? video.url
-                  : `https://www.tiktok.com/@${username}/video/${video.id}`
-            }
-          ])
-        ).values()
+  const cached = getCache(cacheKey);
+
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+          "AppleWebKit/537.36 (KHTML, like Gecko) " +
+          "Chrome/131.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language":
+          "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        platform: "tiktok",
+        views: 0,
+        likes: 0,
+        shares: 0,
+        title: "Erreur TikTok",
+        error: `TikTok HTTP ${response.status}`
+      };
+    }
+
+    const html = await response.text();
+
+    const jsonObjects = extractJsonObjects(html);
+
+    let videos = [];
+
+    for (const json of jsonObjects) {
+      videos.push(
+        ...recursiveFindVideoObjects(json)
       );
+    }
 
     /*
-     * Trier par date quand elle existe.
+     * Fallback regex.
      */
 
-    uniqueVideos.sort(
-      (a, b) =>
-        Number(b.createTime || 0) -
-        Number(a.createTime || 0)
+    const playMatch = html.match(
+      /"playCount"\s*:\s*(\d+)/i
     );
+
+    const likeMatch = html.match(
+      /"diggCount"\s*:\s*(\d+)/i
+    );
+
+    const shareMatch = html.match(
+      /"shareCount"\s*:\s*(\d+)/i
+    );
+
+    const titleMatch = html.match(
+      /"desc"\s*:\s*"([^"]*)"/i
+    );
+
+    if (videos.length) {
+      const normalized = normalizeTikTokVideo(videos[0]);
+
+      if (normalized) {
+        setCache(cacheKey, normalized);
+        return normalized;
+      }
+    }
 
     const data = {
       platform: "tiktok",
-
-      profile: {
-        username,
-
-        title:
-          nickname ||
-          `@${username}`,
-
-        thumbnail:
-          avatar,
-
-        url: profileUrl
-      },
-
-      videos:
-        uniqueVideos.slice(0, 30)
+      views: playMatch
+        ? Number(playMatch[1])
+        : 0,
+      likes: likeMatch
+        ? Number(likeMatch[1])
+        : 0,
+      shares: shareMatch
+        ? Number(shareMatch[1])
+        : 0,
+      title: titleMatch
+        ? cleanText(titleMatch[1])
+        : "Vidéo TikTok",
+      createTime: null
     };
 
-    if (!data.videos.length) {
+    if (
+      data.views === 0 &&
+      data.likes === 0 &&
+      data.shares === 0
+    ) {
       data.error =
-        "Aucune vidéo publique trouvée. TikTok peut avoir bloqué la requête ou modifié la structure de son profil.";
+        "TikTok ne fournit pas les statistiques publiques de cette vidéo dans la page récupérée.";
     }
 
-    setCache(
-      cacheKey,
-      data,
-      45 * 1000
-    );
-
-    console.log(
-      `TikTok profil @${username}: ${data.videos.length} vidéos`
-    );
+    setCache(cacheKey, data);
 
     return data;
   } catch (error) {
-    console.error(
-      `Erreur profil TikTok @${username}:`,
-      error.message
-    );
-
     return {
       platform: "tiktok",
-
-      profile: {
-        username,
-        title: `@${username}`,
-
-        thumbnail: "",
-
-        url: profileUrl
-      },
-
-      videos: [],
-
-      error:
-        `Impossible de récupérer le profil TikTok : ${error.message}`
+      views: 0,
+      likes: 0,
+      shares: 0,
+      title: "Erreur TikTok",
+      error: error.message
     };
   }
 }
 
 /*
-===========================================================
-RECHERCHE UNIFIÉE
-===========================================================
+|--------------------------------------------------------------------------
+| EXTRACTION D'UN PSEUDO
+|--------------------------------------------------------------------------
 */
 
-function looksLikeUrl(value) {
-  return /^https?:\/\//i.test(
-    String(value || "").trim()
-  );
-}
+function extractUsername(input, platform) {
+  if (!input) return "";
 
-function looksLikeTikTokProfile(value) {
-  return (
-    /tiktok\.com\/@/i.test(value) ||
-    /^@?[a-zA-Z0-9._-]{2,32}$/.test(
-      String(value || "").trim()
-    )
-  );
-}
-
-function looksLikeYouTubeChannel(value) {
-  return (
-    /youtube\.com\/(@|channel\/|c\/|user\/)/i.test(
-      value
-    ) ||
-    /^@?[a-zA-Z0-9._-]{2,100}$/.test(
-      String(value || "").trim()
-    )
-  );
-}
-
-async function unifiedSearch(input, forcedPlatform = null) {
-  const value =
-    String(input || "").trim();
-
-  if (!value) {
-    return {
-      error: "Recherche vide"
-    };
-  }
-
-  const platform =
-    forcedPlatform ||
-    detectPlatform(value);
-
-  /*
-   * URL vidéo
-   */
-
-  if (platform === "tiktok") {
-    if (
-      /\/video\/\d+/i.test(value)
-    ) {
-      return {
-        type: "video",
-        platform: "tiktok",
-        videos: [
-          await getTikTokStats(value)
-        ]
-      };
-    }
-
-    return getTikTokProfileVideos(
-      value
-    );
-  }
+  let value = input.trim();
 
   if (platform === "youtube") {
-    if (extractYouTubeId(value)) {
-      return {
-        type: "video",
-        platform: "youtube",
-        videos: [
-          await getYouTubeStats(value)
-        ]
-      };
-    }
-
-    return getYouTubeProfileVideos(
-      value
-    );
+    return cleanYouTubeUsername(value);
   }
 
-  /*
-   * Pas de plateforme détectée.
-   *
-   * Pour un pseudo pur, on cherche sur les
-   * deux plateformes en parallèle.
-   */
+  if (platform === "tiktok") {
+    value = value
+      .replace(/^https?:\/\/(www\.)?tiktok\.com\/@/i, "")
+      .replace(/^@/, "");
 
-  if (
-    !looksLikeUrl(value)
-  ) {
-    const [tiktok, youtube] =
-      await Promise.all([
-        getTikTokProfileVideos(value),
-        getYouTubeProfileVideos(value)
-      ]);
+    return value.split(/[/?#]/)[0].trim();
+  }
 
-    return {
-      type: "profile-search",
-      query: value,
+  return value.replace(/^@/, "");
+}
 
-      results: {
-        tiktok,
-        youtube
-      }
-    };
+/*
+|--------------------------------------------------------------------------
+| RECHERCHE PAR PSEUDO
+|--------------------------------------------------------------------------
+*/
+
+async function searchByUsername(platform, username) {
+  if (platform === "youtube") {
+    return searchYouTubeVideosByUsername(username);
+  }
+
+  if (platform === "tiktok") {
+    return fetchTikTokProfile(username);
   }
 
   return {
-    error:
-      "Plateforme non reconnue. Utilise un lien TikTok/YouTube ou un pseudo."
+    platform: null,
+    username,
+    videos: [],
+    error: "Plateforme inconnue."
   };
 }
 
 /*
-===========================================================
-ROUTES
-===========================================================
+|--------------------------------------------------------------------------
+| ROUTE /STATS
+|--------------------------------------------------------------------------
 */
 
-/*
- * Route stats rétrocompatible.
- */
+app.get("/stats", async (req, res) => {
+  const url = req.query.url;
 
-app.get(
-  "/stats",
-  async (req, res) => {
-    const url =
-      req.query.url;
-
-    if (!url) {
-      return res.json({
-        error: "Lien manquant"
-      });
-    }
-
-    const platform =
-      detectPlatform(url);
-
-    let result;
-
-    if (platform === "youtube") {
-      result =
-        await getYouTubeStats(url);
-    } else if (platform === "tiktok") {
-      result =
-        await getTikTokStats(url);
-    } else {
-      return res.json({
-        error:
-          "Plateforme non reconnue"
-      });
-    }
-
-    res.json(result);
+  if (!url) {
+    return res.status(400).json({
+      error: "Lien manquant."
+    });
   }
-);
 
-/*
- * Nouvelle recherche.
- *
- * /search?q=@MrBeast
- * /search?q=https://...
- */
+  const platform = detectPlatform(url);
 
-app.get(
-  "/search",
-  async (req, res) => {
-    const q =
-      req.query.q;
-
-    const platform =
-      req.query.platform || null;
-
-    if (!q) {
-      return res.json({
-        error:
-          "Paramètre q manquant"
-      });
-    }
-
-    try {
-      const result =
-        await unifiedSearch(
-          q,
-          platform
-        );
-
-      res.json(result);
-    } catch (error) {
-      console.error(
-        "Erreur /search:",
-        error
-      );
-
-      res.status(500).json({
-        error:
-          error.message
-      });
-    }
+  if (platform === "youtube") {
+    return res.json(
+      await getYouTubeStats(url)
+    );
   }
-);
 
-/*
- * Comparaison rétrocompatible.
- *
- * A et B peuvent maintenant être
- * TikTok OU YouTube.
- */
-
-app.get(
-  "/compare",
-  async (req, res) => {
-    const urlA =
-      req.query.urlA;
-
-    const urlB =
-      req.query.urlB;
-
-    if (!urlA || !urlB) {
-      return res.json({
-        error:
-          "Les deux liens urlA et urlB sont requis"
-      });
-    }
-
-    try {
-      const fetchOne =
-        async url => {
-          const platform =
-            detectPlatform(url);
-
-          if (
-            platform === "youtube"
-          ) {
-            return getYouTubeStats(
-              url
-            );
-          }
-
-          if (
-            platform === "tiktok"
-          ) {
-            return getTikTokStats(
-              url
-            );
-          }
-
-          return {
-            platform: null,
-
-            views: 0,
-            likes: 0,
-            shares: 0,
-
-            title:
-              "Plateforme non reconnue",
-
-            error:
-              "URL invalide"
-          };
-        };
-
-      const [a, b] =
-        await Promise.all([
-          fetchOne(urlA),
-          fetchOne(urlB)
-        ]);
-
-      res.json({
-        a,
-        b
-      });
-    } catch (error) {
-      res.status(500).json({
-        error:
-          error.message
-      });
-    }
+  if (platform === "tiktok") {
+    return res.json(
+      await getTikTokStats(url)
+    );
   }
-);
+
+  return res.status(400).json({
+    error:
+      "Plateforme non reconnue. Utilise TikTok ou YouTube."
+  });
+});
 
 /*
-===========================================================
-NETTOYAGE CACHE
-===========================================================
+|--------------------------------------------------------------------------
+| ROUTE /SEARCH
+|--------------------------------------------------------------------------
+*/
+
+app.get("/search", async (req, res) => {
+  const platform = String(
+    req.query.platform || ""
+  ).toLowerCase();
+
+  const username = String(
+    req.query.username || ""
+  ).trim();
+
+  if (!username) {
+    return res.status(400).json({
+      error: "Pseudo manquant."
+    });
+  }
+
+  if (!["tiktok", "youtube"].includes(platform)) {
+    return res.status(400).json({
+      error: "Plateforme invalide."
+    });
+  }
+
+  const result = await searchByUsername(
+    platform,
+    username
+  );
+
+  return res.json(result);
+});
+
+/*
+|--------------------------------------------------------------------------
+| ROUTE /COMPARE
+|--------------------------------------------------------------------------
+*/
+
+app.get("/compare", async (req, res) => {
+  const urlA = req.query.urlA;
+  const urlB = req.query.urlB;
+
+  if (!urlA || !urlB) {
+    return res.status(400).json({
+      error:
+        "Les deux liens urlA et urlB sont requis."
+    });
+  }
+
+  const [a, b] = await Promise.all([
+    detectPlatform(urlA) === "youtube"
+      ? getYouTubeStats(urlA)
+      : detectPlatform(urlA) === "tiktok"
+      ? getTikTokStats(urlA)
+      : {
+          platform: null,
+          views: 0,
+          likes: 0,
+          shares: 0,
+          title: "URL A invalide",
+          error: "Plateforme non reconnue."
+        },
+
+    detectPlatform(urlB) === "youtube"
+      ? getYouTubeStats(urlB)
+      : detectPlatform(urlB) === "tiktok"
+      ? getTikTokStats(urlB)
+      : {
+          platform: null,
+          views: 0,
+          likes: 0,
+          shares: 0,
+          title: "URL B invalide",
+          error: "Plateforme non reconnue."
+        }
+  ]);
+
+  return res.json({
+    a,
+    b
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| NETTOYAGE CACHE
+|--------------------------------------------------------------------------
 */
 
 setInterval(() => {
-  const now =
-    Date.now();
+  const now = Date.now();
 
-  for (
-    const [
-      key,
-      entry
-    ] of cache.entries()
-  ) {
-    if (
-      now - entry.time >
-      entry.ttl
-    ) {
+  for (const [key, item] of cache.entries()) {
+    if (now - item.time > 60000) {
       cache.delete(key);
     }
   }
-}, 60 * 1000);
+}, 60000);
 
 /*
-===========================================================
-SERVEUR
-===========================================================
+|--------------------------------------------------------------------------
+| SERVEUR
+|--------------------------------------------------------------------------
 */
 
-app.listen(
-  PORT,
-  () => {
-    console.log(
-      `Serveur lancé sur le port ${PORT}`
-    );
-
-    console.log(
-      "TikTok + YouTube activés."
-    );
-  }
-);
+app.listen(PORT, () => {
+  console.log(
+    `🚀 TikTok Pulse lancé sur http://localhost:${PORT}`
+  );
+});
