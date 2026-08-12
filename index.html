@@ -1474,10 +1474,10 @@ class VideoTracker{
     this.nextTickAt = null;
 
     /*
-      NOUVEAU :
-      On utilise requestAnimationFrame
-      au lieu d'un setInterval de 250ms.
+      requestAnimationFrame permet d'avoir
+      une animation très fluide du cercle.
     */
+
     this.timerAnimation = null;
 
     this.isTracking = false;
@@ -1556,9 +1556,12 @@ class VideoTracker{
       On annule proprement
       l'ancienne animation.
     */
+
     cancelAnimationFrame(
       this.timerAnimation
     );
+
+    this.timerAnimation = null;
 
     this.url = url;
     this.platform = platform;
@@ -1622,11 +1625,6 @@ class VideoTracker{
         ? "var(--youtube)"
         : "var(--pink)";
 
-    /*
-      Le cercle est maintenant calculé
-      à chaque frame.
-      Il n'y a plus de saut de 250ms.
-    */
     this.role("timerCircle").style.background =
       `conic-gradient(
         ${color} ${deg}deg,
@@ -1868,27 +1866,27 @@ class VideoTracker{
 
   /*
     ---------------------------------------------------------
-    NOUVEAU TIMER ULTRA FLUIDE
+    TIMER ULTRA FLUIDE + ATTENTE DE LA RÉPONSE
     ---------------------------------------------------------
 
-    Avant :
-      setInterval(..., 250)
+    Fonctionnement :
 
-    Donc seulement environ 4 mises à jour
-    visuelles par seconde.
-
-    Maintenant :
-      requestAnimationFrame()
-
-    Le cercle peut se mettre à jour environ
-    60 fois par seconde.
+    1. Le cercle tourne pendant 20 secondes.
+    2. À 0 seconde, la requête est envoyée.
+    3. Le cercle RESTE ARRÊTÉ pendant la requête.
+    4. On attend complètement la réponse.
+    5. Une fois la réponse reçue, un nouveau cycle
+       de 20 secondes commence.
   */
+
 
   startTimer(){
 
     cancelAnimationFrame(
       this.timerAnimation
     );
+
+    this.timerAnimation = null;
 
     this.nextTickAt =
       Date.now() +
@@ -1902,7 +1900,7 @@ class VideoTracker{
   }
 
 
-  animateTimer(){
+  async animateTimer(){
 
     if(
       !this.isTracking &&
@@ -1920,11 +1918,6 @@ class VideoTracker{
         this.nextTickAt - now
       );
 
-    /*
-      Progression réelle du cercle :
-      0 = début
-      1 = fin
-    */
 
     const elapsed =
       TIMER_DURATION * 1000 -
@@ -1941,10 +1934,6 @@ class VideoTracker{
       progress * 360;
 
 
-    /*
-      Couleur selon la plateforme.
-    */
-
     const color =
       this.platform === "youtube"
         ? "var(--youtube)"
@@ -1952,8 +1941,7 @@ class VideoTracker{
 
 
     /*
-      Remplissage continu.
-      Aucun saut toutes les 250ms.
+      Animation fluide du cercle.
     */
 
     this.role("timerCircle").style.background =
@@ -1964,8 +1952,7 @@ class VideoTracker{
 
 
     /*
-      Le nombre de secondes restant
-      reste synchronisé avec Date.now().
+      Nombre de secondes restantes.
     */
 
     this.countdown =
@@ -1978,29 +1965,100 @@ class VideoTracker{
 
 
     /*
-      Quand les 20 secondes sont terminées :
-      on recharge les statistiques puis
-      on repart immédiatement pour 20 secondes.
+      Les 20 secondes sont terminées.
     */
 
     if(remainingMs <= 0){
 
-      this.update()
-        .catch(()=>{
-          /* erreur déjà loggée */
-        });
+      /*
+        On arrête complètement
+        requestAnimationFrame.
+
+        Le cercle reste donc à 100%
+        pendant toute la durée de la requête.
+      */
+
+      cancelAnimationFrame(
+        this.timerAnimation
+      );
+
+      this.timerAnimation = null;
+
+
+      try{
+
+        /*
+          IMPORTANT :
+
+          On attend réellement que /stats
+          ait terminé avant de continuer.
+        */
+
+        await this.update();
+
+      }
+      catch(error){
+
+        /*
+          L'erreur est déjà affichée
+          dans la console par update().
+        */
+
+      }
+
+
+      /*
+        Si le tracker a été arrêté
+        pendant la requête, on ne relance pas.
+      */
+
+      if(!this.isTracking){
+        return;
+      }
+
+
+      /*
+        La réponse est maintenant reçue.
+
+        Le nouveau compte à rebours
+        commence seulement maintenant.
+      */
 
       this.nextTickAt =
         Date.now() +
         TIMER_DURATION * 1000;
 
+      this.countdown =
+        TIMER_DURATION;
+
+
+      /*
+        On remet le cercle à zéro
+        avant de recommencer.
+      */
+
+      this.role("timerCircle").style.background =
+        `conic-gradient(
+          ${color} 0deg,
+          #292934 0deg
+        )`;
+
+
+      /*
+        Nouveau cycle.
+      */
+
+      this.animateTimer();
+
+      return;
+
     }
 
 
     /*
-      Prochaine frame.
-      C'est ce qui donne le mouvement
-      parfaitement fluide.
+      Tant que les 20 secondes ne sont pas
+      terminées, on continue l'animation
+      image par image.
     */
 
     this.timerAnimation =
