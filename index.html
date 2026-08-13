@@ -1196,7 +1196,7 @@ footer b{
 
 <script>
 
-const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);S
 
 
 function formatNumber(value){
@@ -1591,7 +1591,7 @@ class VideoTracker{
 
     this.setTrackingState(true);
 
-    this.update();
+    await this.update();
 
     this.startTimer();
 
