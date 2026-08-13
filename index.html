@@ -1195,52 +1195,37 @@ footer b{
 
 
 <script>
-
-const $ = id => document.getElementById(id);S
-
+const $ = id => document.getElementById(id);
 
 function formatNumber(value){
   return Number(value || 0).toLocaleString("fr-FR");
 }
 
-
 function detectPlatform(url){
-
   if(/tiktok\.com/i.test(url)){
     return "tiktok";
   }
-
   if(/youtube\.com|youtu\.be/i.test(url)){
     return "youtube";
   }
-
   return null;
 }
-
 
 /* ---------------------------------------------------------
    VRAI ODOMÈTRE
 --------------------------------------------------------- */
-
 const ROLL_DURATION = 900;
 const ROLL_STAGGER = 90;
 const ROLL_EASING = "cubic-bezier(.32,.94,.24,1)";
 
-
 class Odometer{
-
   constructor(containerEl){
-
     this.box = containerEl;
     this.digits = [];
-
   }
 
-
   adjustFontSize(digitCount){
-
     let size;
-
     if(digitCount <= 4){
       size = "clamp(26px, 7vw, 60px)";
     }
@@ -1262,1179 +1247,489 @@ class Odometer{
     else{
       size = "clamp(12px, 3.2vw, 22px)";
     }
-
     this.box.style.fontSize = size;
   }
 
-
   build(digitCount, initialDigits){
-
     this.box.innerHTML = "";
     this.digits = [];
-
     for(let i = 0; i < digitCount; i++){
-
       const digitEl = document.createElement("div");
       digitEl.className = "odo-digit";
-
       const strip = document.createElement("div");
       strip.className = "odo-strip";
       strip.style.transition = "none";
-
       for(let cycle = 0; cycle < 2; cycle++){
-
         for(let n = 0; n <= 9; n++){
-
           const span = document.createElement("span");
-
           span.textContent = n;
-
           strip.appendChild(span);
-
         }
-
       }
-
-      const startIndex =
-        initialDigits
-          ? Number(initialDigits[i])
-          : 0;
-
-      strip.style.transform =
-        `translateY(-${startIndex * 5}%)`;
-
+      const startIndex = initialDigits ? Number(initialDigits[i]) : 0;
+      strip.style.transform = `translateY(-${startIndex * 5}%)`;
       digitEl.appendChild(strip);
       this.box.appendChild(digitEl);
-
       this.digits.push({
         strip,
-        index:startIndex
+        index: startIndex
       });
-
     }
-
   }
-
 
   set(value){
-
-    const text =
-      String(
-        Math.max(
-          0,
-          Math.floor(Number(value) || 0)
-        )
-      );
-
+    const text = String(Math.max(0, Math.floor(Number(value) || 0)));
     const digits = [...text];
-
     this.adjustFontSize(digits.length);
-
-    this.build(
-      digits.length,
-      digits
-    );
-
+    this.build(digits.length, digits);
   }
 
-
   rollTo(target){
-
-    const text =
-      String(
-        Math.max(
-          0,
-          Math.floor(Number(target) || 0)
-        )
-      );
-
+    const text = String(Math.max(0, Math.floor(Number(target) || 0)));
     const digits = [...text];
-
     if(digits.length !== this.digits.length){
-
       this.adjustFontSize(digits.length);
-
-      this.build(
-        digits.length,
-        digits
-      );
-
+      this.build(digits.length, digits);
       return;
     }
-
-    digits.forEach((d,i)=>{
-
+    digits.forEach((d, i)=>{
       const targetDigit = Number(d);
-
       const state = this.digits[i];
-
-      const current =
-        state.index % 10;
-
-      let delta =
-        targetDigit - current;
-
+      const current = state.index % 10;
+      let delta = targetDigit - current;
       if(delta < 0){
         delta += 10;
       }
-
       if(delta === 0){
         return;
       }
-
-      const newIndex =
-        state.index + delta;
-
-      const delay =
-        (digits.length - 1 - i) *
-        ROLL_STAGGER;
-
+      const newIndex = state.index + delta;
+      const delay = (digits.length - 1 - i) * ROLL_STAGGER;
       setTimeout(()=>{
-
-        state.strip.style.transition =
-          `transform ${ROLL_DURATION}ms ${ROLL_EASING}`;
-
-        state.strip.style.transform =
-          `translateY(-${newIndex * 5}%)`;
-
-      },delay);
-
+        state.strip.style.transition = `transform ${ROLL_DURATION}ms ${ROLL_EASING}`;
+        state.strip.style.transform = `translateY(-${newIndex * 5}%)`;
+      }, delay);
       state.index = newIndex;
-
       setTimeout(()=>{
-
         if(state.index >= 10){
-
           state.index -= 10;
-
-          state.strip.style.transition =
-            "none";
-
-          state.strip.style.transform =
-            `translateY(-${state.index * 5}%)`;
-
+          state.strip.style.transition = "none";
+          state.strip.style.transform = `translateY(-${state.index * 5}%)`;
           void state.strip.offsetHeight;
-
         }
-
-      },delay + ROLL_DURATION + 30);
-
+      }, delay + ROLL_DURATION + 30);
     });
-
   }
-
 }
-
 
 /* ---------------------------------------------------------
    TRACKER
 --------------------------------------------------------- */
-
 const TIMER_DURATION = 20;
 
-
 class VideoTracker{
-
-  constructor({
-    mainCardEl,
-    sideCardEl,
-    onUpdate
-  }){
-
+  constructor({ mainCardEl, sideCardEl, onUpdate }){
     this.main = mainCardEl;
     this.side = sideCardEl;
-
-    this.onUpdate =
-      onUpdate || (()=>{});
-
-    this.role =
-      tag =>
-        this.main.querySelector(
-          `[data-role="${tag}"]`
-        );
-
-    this.sideRole =
-      tag =>
-        this.side.querySelector(
-          `[data-role="${tag}"]`
-        );
-
-    this.odometer =
-      new Odometer(
-        this.role("counter")
-      );
-
+    this.onUpdate = onUpdate || (()=>{});
+    this.role = tag => this.main.querySelector(`[data-role="${tag}"]`);
+    this.sideRole = tag => this.side.querySelector(`[data-role="${tag}"]`);
+    this.odometer = new Odometer(this.role("counter"));
     this.url = "";
     this.platform = null;
     this.oldViews = null;
-
-    this.countdown =
-      TIMER_DURATION;
-
+    this.countdown = TIMER_DURATION;
     this.nextTickAt = null;
-
-    /*
-      requestAnimationFrame permet d'avoir
-      une animation très fluide du cercle.
-    */
-
     this.timerAnimation = null;
-
     this.isTracking = false;
+    this.isUpdating = false; // ← verrou pour éviter les requêtes en parallèle
 
-    document.addEventListener(
-      "visibilitychange",
-      ()=>{
-        if(
-          !document.hidden &&
-          this.isTracking &&
-          this.nextTickAt !== null
-        ){
-          this.animateTimer();
-        }
+    document.addEventListener("visibilitychange", ()=>{
+      if(!document.hidden && this.isTracking && this.nextTickAt !== null){
+        this.animateTimer();
       }
-    );
-
+    });
   }
-
 
   applyPlatformStyle(){
-
-    this.main.classList.toggle(
-      "platform-youtube",
-      this.platform === "youtube"
-    );
-
+    this.main.classList.toggle("platform-youtube", this.platform === "youtube");
     if(this.platform === "youtube"){
-
-      this.role("stat2-label").textContent =
-        "ENGAGEMENT";
-
-      this.role("stat2-name").textContent =
-        "Likes";
-
-      this.role("stat3-label").textContent =
-        "—";
-
-      this.role("stat3-name").textContent =
-        "Partages (n/a)";
-
+      this.role("stat2-label").textContent = "ENGAGEMENT";
+      this.role("stat2-name").textContent = "Likes";
+      this.role("stat3-label").textContent = "—";
+      this.role("stat3-name").textContent = "Partages (n/a)";
     }
     else{
-
-      this.role("stat2-label").textContent =
-        "ENGAGEMENT";
-
-      this.role("stat2-name").textContent =
-        "Likes";
-
-      this.role("stat3-label").textContent =
-        "VIRALITÉ";
-
-      this.role("stat3-name").textContent =
-        "Partages";
-
+      this.role("stat2-label").textContent = "ENGAGEMENT";
+      this.role("stat2-name").textContent = "Likes";
+      this.role("stat3-label").textContent = "VIRALITÉ";
+      this.role("stat3-name").textContent = "Partages";
     }
-
   }
 
-
   start(url){
-
-    const platform =
-      detectPlatform(url);
-
+    const platform = detectPlatform(url);
     if(!platform){
-
-      throw new Error(
-        "Lien non reconnu (TikTok ou YouTube uniquement)."
-      );
-
+      throw new Error("Lien non reconnu (TikTok ou YouTube uniquement).");
     }
 
-    /*
-      On annule proprement
-      l'ancienne animation.
-    */
-
-    cancelAnimationFrame(
-      this.timerAnimation
-    );
-
+    cancelAnimationFrame(this.timerAnimation);
     this.timerAnimation = null;
 
     this.url = url;
     this.platform = platform;
     this.applyPlatformStyle();
-
     this.oldViews = null;
+    this.isUpdating = false;
 
     this.odometer.set(0);
-
     this.role("likes").textContent = "0";
     this.role("shares").textContent = "0";
-
-    this.role("title").textContent =
-      "Chargement des données…";
-
-    this.sideRole("lastUpdate").textContent =
-      "Synchronisation…";
-
-    this.sideRole("publishDate").textContent =
-      "—";
-
-    this.sideRole("growth").textContent =
-      "—";
-
-    this.role("delta").textContent =
-      "● Connexion aux statistiques…";
+    this.role("title").textContent = "Chargement des données…";
+    this.sideRole("lastUpdate").textContent = "Synchronisation…";
+    this.sideRole("publishDate").textContent = "—";
+    this.sideRole("growth").textContent = "—";
+    this.role("delta").textContent = "● Connexion aux statistiques…";
 
     this.setTrackingState(true);
-
-    await this.update();
-
-    this.startTimer();
-
+    this.startTimer();   // démarre le timer
+    this.update();       // lance la première requête (le timer l’attendra si besoin)
   }
-
-
-  updateTimerRing(){
-
-    const remainingMs =
-      Math.max(
-        0,
-        this.nextTickAt - Date.now()
-      );
-
-    const elapsed =
-      TIMER_DURATION * 1000 -
-      remainingMs;
-
-    const progress =
-      Math.min(
-        1,
-        elapsed /
-        (TIMER_DURATION * 1000)
-      );
-
-    const deg =
-      progress * 360;
-
-    const color =
-      this.platform === "youtube"
-        ? "var(--youtube)"
-        : "var(--pink)";
-
-    this.role("timerCircle").style.background =
-      `conic-gradient(
-        ${color} ${deg}deg,
-        #292934 ${deg}deg
-      )`;
-
-  }
-
 
   setTrackingState(active){
-
     this.isTracking = active;
-
-    const el =
-      this.sideRole("trackingStatus");
-
-    el.textContent =
-      active
-        ? "Actif"
-        : "En attente";
-
-    el.style.color =
-      active
-        ? "var(--green)"
-        : "";
-
+    const el = this.sideRole("trackingStatus");
+    el.textContent = active ? "Actif" : "En attente";
+    el.style.color = active ? "var(--green)" : "";
   }
 
-
-  updateMeta(views,createTime){
-
+  updateMeta(views, createTime){
     const now = new Date();
-
-    this.sideRole("lastUpdate").textContent =
-      now.toLocaleTimeString(
-        "fr-FR",
-        {
-          hour:"2-digit",
-          minute:"2-digit",
-          second:"2-digit"
-        }
-      );
+    this.sideRole("lastUpdate").textContent = now.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
 
     if(createTime){
-
-      this.sideRole("publishDate").textContent =
-        new Date(
-          createTime * 1000
-        ).toLocaleDateString(
-          "fr-FR",
-          {
-            day:"2-digit",
-            month:"short",
-            year:"numeric"
-          }
-        );
-
+      this.sideRole("publishDate").textContent = new Date(createTime * 1000).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
     }
     else{
-
-      this.sideRole("publishDate").textContent =
-        "—";
-
+      this.sideRole("publishDate").textContent = "—";
     }
 
-    const growthEl =
-      this.sideRole("growth");
-
-    const deltaEl =
-      this.role("delta");
+    const growthEl = this.sideRole("growth");
+    const deltaEl = this.role("delta");
 
     if(this.oldViews !== null){
-
-      const diff =
-        views - this.oldViews;
-
+      const diff = views - this.oldViews;
       if(diff > 0){
-
-        growthEl.textContent =
-          `+${formatNumber(diff)}`;
-
-        growthEl.style.color =
-          "var(--green)";
-
-        deltaEl.textContent =
-          `▲ +${formatNumber(diff)} vue${
-            diff > 1 ? "s" : ""
-          } depuis la dernière synchro`;
-
-        deltaEl.style.color =
-          "var(--green)";
-
+        growthEl.textContent = `+${formatNumber(diff)}`;
+        growthEl.style.color = "var(--green)";
+        deltaEl.textContent = `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`;
+        deltaEl.style.color = "var(--green)";
       }
       else{
-
-        growthEl.textContent =
-          "Stable";
-
-        growthEl.style.color =
-          "";
-
-        deltaEl.textContent =
-          "● +0 vues depuis la dernière synchro";
-
-        deltaEl.style.color =
-          "";
-
+        growthEl.textContent = "Stable";
+        growthEl.style.color = "";
+        deltaEl.textContent = "● +0 vues depuis la dernière synchro";
+        deltaEl.style.color = "";
       }
-
     }
-
   }
 
-
   async update(){
-
-    if(!this.url){
+    if(!this.url || this.isUpdating){
       return null;
     }
 
-    try{
+    this.isUpdating = true;
 
-      const res =
-        await fetch(
-          "/stats?url=" +
-          encodeURIComponent(this.url),
-          {
-            headers:{
-              "Accept":
-                "application/json"
-            },
-            cache:"no-store"
-          }
-        );
+    try{
+      const res = await fetch("/stats?url=" + encodeURIComponent(this.url), {
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
 
       if(!res.ok){
-
-        throw new Error(
-          "Le serveur a répondu avec le statut " +
-          res.status
-        );
-
+        throw new Error("Le serveur a répondu avec le statut " + res.status);
       }
 
-      const data =
-        await res.json();
+      const data = await res.json();
+      const views = Number(data.views) || 0;
+      const likes = Number(data.likes) || 0;
+      const shares = Number(data.shares) || 0;
 
-      const views =
-        Number(data.views) || 0;
-
-      const likes =
-        Number(data.likes) || 0;
-
-      const shares =
-        Number(data.shares) || 0;
-
-
-      if(
-        this.oldViews === null ||
-        views !== this.oldViews
-      ){
-
-        const counter =
-          this.role("counter");
-
-        counter.classList.remove(
-          "flash"
-        );
-
+      if(this.oldViews === null || views !== this.oldViews){
+        const counter = this.role("counter");
+        counter.classList.remove("flash");
         void counter.offsetWidth;
-
-        counter.classList.add(
-          "flash"
-        );
-
-        this.odometer.rollTo(
-          views
-        );
-
+        counter.classList.add("flash");
+        this.odometer.rollTo(views);
       }
 
+      this.role("likes").textContent = formatNumber(likes);
+      this.role("shares").textContent = this.platform === "youtube" ? "—" : formatNumber(shares);
+      this.role("title").textContent = data.title || (this.platform === "youtube" ? "Vidéo YouTube" : "Vidéo TikTok");
 
-      this.role("likes").textContent =
-        formatNumber(likes);
-
-      this.role("shares").textContent =
-        this.platform === "youtube"
-          ? "—"
-          : formatNumber(shares);
-
-      this.role("title").textContent =
-        data.title ||
-        (
-          this.platform === "youtube"
-            ? "Vidéo YouTube"
-            : "Vidéo TikTok"
-        );
-
-      this.updateMeta(
-        views,
-        data.createTime
-      );
-
-      this.oldViews =
-        views;
-
-      this.setTrackingState(
-        true
-      );
+      this.updateMeta(views, data.createTime);
+      this.oldViews = views;
+      this.setTrackingState(true);
 
       this.onUpdate({
         views,
         likes,
         shares,
-        title:data.title,
-        platform:this.platform
+        title: data.title,
+        platform: this.platform
       });
 
       return data;
-
     }
     catch(error){
-
-      console.error(
-        "Erreur stats:",
-        error
-      );
-
-      this.setTrackingState(
-        false
-      );
-
+      console.error("Erreur stats:", error);
+      this.setTrackingState(false);
       throw error;
-
     }
-
+    finally{
+      this.isUpdating = false;
+    }
   }
-
 
   /*
     ---------------------------------------------------------
-    TIMER ULTRA FLUIDE + ATTENTE DE LA RÉPONSE
+    TIMER ULTRA FLUIDE + ATTENTE RÉELLE DE LA RÉPONSE
     ---------------------------------------------------------
-
-    Fonctionnement :
-
-    1. Le cercle tourne pendant 20 secondes.
-    2. À 0 seconde, la requête est envoyée.
-    3. Le cercle RESTE ARRÊTÉ pendant la requête.
-    4. On attend complètement la réponse.
-    5. Une fois la réponse reçue, un nouveau cycle
-       de 20 secondes commence.
+    1. Le cercle tourne pendant 20 secondes
+    2. À 0 seconde → on envoie la requête
+    3. Le cercle RESTE BLOQUÉ à 100 % pendant toute la durée de la requête
+    4. On attend vraiment la fin de /stats
+    5. Seulement après → on relance un nouveau cycle de 20 s
   */
-
-
   startTimer(){
-
-    cancelAnimationFrame(
-      this.timerAnimation
-    );
-
+    cancelAnimationFrame(this.timerAnimation);
     this.timerAnimation = null;
-
-    this.nextTickAt =
-      Date.now() +
-      TIMER_DURATION * 1000;
-
-    this.countdown =
-      TIMER_DURATION;
-
+    this.nextTickAt = Date.now() + TIMER_DURATION * 1000;
+    this.countdown = TIMER_DURATION;
     this.animateTimer();
-
   }
 
-
   async animateTimer(){
-
-    if(
-      !this.isTracking &&
-      !this.url
-    ){
+    if(!this.isTracking && !this.url){
       return;
     }
 
-    const now =
-      Date.now();
+    const now = Date.now();
+    const remainingMs = Math.max(0, this.nextTickAt - now);
+    const elapsed = TIMER_DURATION * 1000 - remainingMs;
+    const progress = Math.min(1, elapsed / (TIMER_DURATION * 1000));
+    const deg = progress * 360;
+    const color = this.platform === "youtube" ? "var(--youtube)" : "var(--pink)";
 
-    const remainingMs =
-      Math.max(
-        0,
-        this.nextTickAt - now
-      );
-
-
-    const elapsed =
-      TIMER_DURATION * 1000 -
-      remainingMs;
-
-    const progress =
-      Math.min(
-        1,
-        elapsed /
-        (TIMER_DURATION * 1000)
-      );
-
-    const deg =
-      progress * 360;
-
-
-    const color =
-      this.platform === "youtube"
-        ? "var(--youtube)"
-        : "var(--pink)";
-
-
-    /*
-      Animation fluide du cercle.
-    */
-
+    // Animation fluide du cercle
     this.role("timerCircle").style.background =
-      `conic-gradient(
-        ${color} ${deg}deg,
-        #292934 ${deg}deg
-      )`;
+      `conic-gradient(${color} ${deg}deg, #292934 ${deg}deg)`;
 
+    this.countdown = Math.max(0, Math.ceil(remainingMs / 1000));
 
-    /*
-      Nombre de secondes restantes.
-    */
-
-    this.countdown =
-      Math.max(
-        0,
-        Math.ceil(
-          remainingMs / 1000
-        )
-      );
-
-
-    /*
-      Les 20 secondes sont terminées.
-    */
-
+    // Les 20 secondes sont terminées
     if(remainingMs <= 0){
-
-      /*
-        On arrête complètement
-        requestAnimationFrame.
-
-        Le cercle reste donc à 100%
-        pendant toute la durée de la requête.
-      */
-
-      cancelAnimationFrame(
-        this.timerAnimation
-      );
-
+      // On stoppe complètement l’animation → le ring reste à 100 %
+      cancelAnimationFrame(this.timerAnimation);
       this.timerAnimation = null;
 
-
       try{
-
-        /*
-          IMPORTANT :
-
-          On attend réellement que /stats
-          ait terminé avant de continuer.
-        */
-
+        // On attend RÉELLEMENT la fin de la requête
         await this.update();
-
       }
       catch(error){
-
-        /*
-          L'erreur est déjà affichée
-          dans la console par update().
-        */
-
+        // déjà loggé dans update()
       }
 
-
-      /*
-        Si le tracker a été arrêté
-        pendant la requête, on ne relance pas.
-      */
-
+      // Si le tracker a été arrêté pendant la requête, on ne relance pas
       if(!this.isTracking){
         return;
       }
 
+      // La réponse est reçue → on démarre un nouveau cycle de 20 s
+      this.nextTickAt = Date.now() + TIMER_DURATION * 1000;
+      this.countdown = TIMER_DURATION;
 
-      /*
-        La réponse est maintenant reçue.
-
-        Le nouveau compte à rebours
-        commence seulement maintenant.
-      */
-
-      this.nextTickAt =
-        Date.now() +
-        TIMER_DURATION * 1000;
-
-      this.countdown =
-        TIMER_DURATION;
-
-
-      /*
-        On remet le cercle à zéro
-        avant de recommencer.
-      */
-
+      // On remet le cercle à zéro
       this.role("timerCircle").style.background =
-        `conic-gradient(
-          ${color} 0deg,
-          #292934 0deg
-        )`;
+        `conic-gradient(${color} 0deg, #292934 0deg)`;
 
-
-      /*
-        Nouveau cycle.
-      */
-
+      // Nouveau cycle
       this.animateTimer();
-
       return;
-
     }
 
-
-    /*
-      Tant que les 20 secondes ne sont pas
-      terminées, on continue l'animation
-      image par image.
-    */
-
-    this.timerAnimation =
-      requestAnimationFrame(
-        ()=>this.animateTimer()
-      );
-
+    // Tant que les 20 s ne sont pas finies → on continue image par image
+    this.timerAnimation = requestAnimationFrame(() => this.animateTimer());
   }
-
 }
-
 
 /* ---------------------------------------------------------
    CONSTRUCTION DES CARTES
 --------------------------------------------------------- */
-
 function buildCard(){
-
-  const mainCard =
-    document.importNode(
-      $("cardTemplate").content,
-      true
-    ).firstElementChild;
-
-  const sideCard =
-    document.importNode(
-      $("sideTemplate").content,
-      true
-    ).firstElementChild;
-
-  return {
-    mainCard,
-    sideCard
-  };
-
+  const mainCard = document.importNode($("cardTemplate").content, true).firstElementChild;
+  const sideCard = document.importNode($("sideTemplate").content, true).firstElementChild;
+  return { mainCard, sideCard };
 }
 
-
-function setError(message=""){
-
-  $("errorBox").textContent =
-    message;
-
-  $("errorBox").classList.toggle(
-    "show",
-    !!message
-  );
-
+function setError(message = ""){
+  $("errorBox").textContent = message;
+  $("errorBox").classList.toggle("show", !!message);
 }
-
 
 /* ---------------------------------------------------------
    MODE SIMPLE
 --------------------------------------------------------- */
-
 let soloTracker = null;
 
-
 function initSoloDashboard(){
-
-  const dash =
-    $("dashboardSimple");
-
+  const dash = $("dashboardSimple");
   dash.innerHTML = "";
-
-  const {
-    mainCard,
-    sideCard
-  } = buildCard();
-
-  dash.appendChild(
-    mainCard
-  );
-
-  dash.appendChild(
-    sideCard
-  );
-
-  soloTracker =
-    new VideoTracker({
-      mainCardEl:mainCard,
-      sideCardEl:sideCard
-    });
-
+  const { mainCard, sideCard } = buildCard();
+  dash.appendChild(mainCard);
+  dash.appendChild(sideCard);
+  soloTracker = new VideoTracker({
+    mainCardEl: mainCard,
+    sideCardEl: sideCard
+  });
 }
-
 
 function startSolo(){
-
-  const value =
-    $("url-solo").value.trim();
-
+  const value = $("url-solo").value.trim();
   if(!value){
-
-    setError(
-      "Ajoute un lien TikTok ou YouTube pour lancer le suivi."
-    );
-
+    setError("Ajoute un lien TikTok ou YouTube pour lancer le suivi.");
     $("url-solo").focus();
-
     return;
   }
-
   setError("");
-
-  $("dashboardSimple")
-    .classList
-    .remove("hidden");
-
+  $("dashboardSimple").classList.remove("hidden");
   try{
-
-    soloTracker.start(
-      value
-    );
-
+    soloTracker.start(value);
   }
   catch(e){
-
-    setError(
-      e.message
-    );
-
+    setError(e.message);
   }
-
 }
 
-
-$("url-solo")
-  .addEventListener(
-    "keydown",
-    e=>{
-      if(e.key === "Enter"){
-        startSolo();
-      }
-    }
-  );
-
+$("url-solo").addEventListener("keydown", e=>{
+  if(e.key === "Enter"){
+    startSolo();
+  }
+});
 
 /* ---------------------------------------------------------
    MODE COMPARAISON
 --------------------------------------------------------- */
-
 let trackerA = null;
 let trackerB = null;
 
-
 function initCompareDashboard(){
-
-  const grid =
-    $("compareGrid");
-
+  const grid = $("compareGrid");
   grid.innerHTML = "";
+  const cardA = buildCard();
+  const cardB = buildCard();
+  grid.appendChild(cardA.mainCard);
+  grid.appendChild(cardB.mainCard);
 
-  const cardA =
-    buildCard();
-
-  const cardB =
-    buildCard();
-
-  grid.appendChild(
-    cardA.mainCard
-  );
-
-  grid.appendChild(
-    cardB.mainCard
-  );
-
-  trackerA =
-    new VideoTracker({
-      mainCardEl:cardA.mainCard,
-      sideCardEl:cardA.sideCard,
-      onUpdate:updateVerdict
-    });
-
-  trackerB =
-    new VideoTracker({
-      mainCardEl:cardB.mainCard,
-      sideCardEl:cardB.sideCard,
-      onUpdate:updateVerdict
-    });
-
+  trackerA = new VideoTracker({
+    mainCardEl: cardA.mainCard,
+    sideCardEl: cardA.sideCard,
+    onUpdate: updateVerdict
+  });
+  trackerB = new VideoTracker({
+    mainCardEl: cardB.mainCard,
+    sideCardEl: cardB.sideCard,
+    onUpdate: updateVerdict
+  });
 }
-
 
 let lastA = null;
 let lastB = null;
 
-
-function updateVerdict({
-  views,
-  platform
-}){
-
+function updateVerdict({ views, platform }){
   if(platform === "tiktok"){
     lastA = views;
   }
-
   if(platform === "youtube"){
     lastB = views;
   }
 
-  if(
-    lastA === null ||
-    lastB === null
-  ){
-
-    $("verdictValue").textContent =
-      "En attente des données…";
-
+  if(lastA === null || lastB === null){
+    $("verdictValue").textContent = "En attente des données…";
     return;
   }
 
-  const total =
-    lastA + lastB;
+  const total = lastA + lastB;
+  const pctA = total > 0 ? (lastA / total) * 100 : 50;
+  const pctB = 100 - pctA;
 
-  const pctA =
-    total > 0
-      ? (lastA / total) * 100
-      : 50;
-
-  const pctB =
-    100 - pctA;
-
-  $("verdictBarA").style.width =
-    pctA + "%";
-
-  $("verdictBarB").style.width =
-    pctB + "%";
-
+  $("verdictBarA").style.width = pctA + "%";
+  $("verdictBarB").style.width = pctB + "%";
 
   if(lastA === lastB){
-
-    $("verdictValue").textContent =
-      "Égalité parfaite";
-
+    $("verdictValue").textContent = "Égalité parfaite";
   }
   else{
-
-    const winner =
-      lastA > lastB
-        ? "TikTok"
-        : "YouTube";
-
-    const diff =
-      Math.abs(
-        lastA - lastB
-      );
-
-    $("verdictValue").textContent =
-      `${winner} mène avec ${formatNumber(diff)} vues d'avance`;
-
+    const winner = lastA > lastB ? "TikTok" : "YouTube";
+    const diff = Math.abs(lastA - lastB);
+    $("verdictValue").textContent = `${winner} mène avec ${formatNumber(diff)} vues d'avance`;
   }
-
 }
 
-
 function startCompare(){
-
-  const valueA =
-    $("url-a").value.trim();
-
-  const valueB =
-    $("url-b").value.trim();
+  const valueA = $("url-a").value.trim();
+  const valueB = $("url-b").value.trim();
 
   if(!valueA || !valueB){
-
-    setError(
-      "Ajoute un lien TikTok et un lien YouTube pour lancer la comparaison."
-    );
-
+    setError("Ajoute un lien TikTok et un lien YouTube pour lancer la comparaison.");
     return;
   }
-
-  if(
-    detectPlatform(valueA) !==
-    "tiktok"
-  ){
-
-    setError(
-      "Le premier lien doit être un lien TikTok."
-    );
-
+  if(detectPlatform(valueA) !== "tiktok"){
+    setError("Le premier lien doit être un lien TikTok.");
     return;
   }
-
-  if(
-    detectPlatform(valueB) !==
-    "youtube"
-  ){
-
-    setError(
-      "Le second lien doit être un lien YouTube."
-    );
-
+  if(detectPlatform(valueB) !== "youtube"){
+    setError("Le second lien doit être un lien YouTube.");
     return;
   }
 
   setError("");
-
   lastA = null;
   lastB = null;
-
-  $("dashboardCompare")
-    .classList
-    .remove("hidden");
-
-  trackerA.start(
-    valueA
-  );
-
-  trackerB.start(
-    valueB
-  );
-
+  $("dashboardCompare").classList.remove("hidden");
+  trackerA.start(valueA);
+  trackerB.start(valueB);
 }
-
 
 /* ---------------------------------------------------------
    BASCULE MODE
 --------------------------------------------------------- */
-
 function setMode(mode){
-
-  const isSimple =
-    mode === "simple";
-
-  $("modeSimpleBtn")
-    .classList
-    .toggle(
-      "active",
-      isSimple
-    );
-
-  $("modeCompareBtn")
-    .classList
-    .toggle(
-      "active",
-      !isSimple
-    );
-
-  $("simpleSearch")
-    .classList
-    .toggle(
-      "hidden",
-      !isSimple
-    );
-
-  $("compareSearch")
-    .classList
-    .toggle(
-      "hidden",
-      isSimple
-    );
-
-  $("dashboardSimple")
-    .classList
-    .add("hidden");
-
-  $("dashboardCompare")
-    .classList
-    .add("hidden");
-
+  const isSimple = mode === "simple";
+  $("modeSimpleBtn").classList.toggle("active", isSimple);
+  $("modeCompareBtn").classList.toggle("active", !isSimple);
+  $("simpleSearch").classList.toggle("hidden", !isSimple);
+  $("compareSearch").classList.toggle("hidden", isSimple);
+  $("dashboardSimple").classList.add("hidden");
+  $("dashboardCompare").classList.add("hidden");
   setError("");
-
 }
-
 
 /* ---------------------------------------------------------
    INIT
 --------------------------------------------------------- */
-
 initSoloDashboard();
-
 initCompareDashboard();
-
 </script>
-
 </body>
 </html>
