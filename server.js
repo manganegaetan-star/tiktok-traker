@@ -12,74 +12,79 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyDQNrpnW3W6Ezu34Ngc
 let cache = {};
 
 // ---------- TikTok (scraping HTML, inchangé) ----------
-async function getTikTokStats(url){
-    if(
-        cache[url] &&
-        Date.now() - cache[url].time < 3000
-    ){
-        return cache[url].data;
-    }
-    try{
-        const response = await fetch(url,{
-            headers:{
-                "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-                "Accept-Language":
-                "fr-FR,fr;q=0.9"
-            }
-        });
-        const html = await response.text();
-        const views =
-        html.match(
-            /"playCount":(\d+)/
-        );
-        const likes =
-        html.match(
-            /"diggCount":(\d+)/
-        );
-        const shares =
-        html.match(
-            /"shareCount":(\d+)/
-        );
-        const title =
-        html.match(
-            /"desc":"(.*?)"/
-        );
-        const data={
-            platform:"tiktok",
-            views:
-            views ? Number(views[1]) : 0,
-            likes:
-            likes ? Number(likes[1]) : 0,
-            shares:
-            shares ? Number(shares[1]) : 0,
-            title:
-            title
-            ? title[1].replace(/\\n/g," ")
-            : "Titre introuvable"
-        };
-        cache[url]={
-            data:data,
-            time:Date.now()
-        };
-        console.log("Stats TikTok récupérées:", data);
-        return data;
-    }
-    catch(error){
-        console.log(
-            "Erreur fetch TikTok:",
-            error.message
-        );
+
+async function getTikTokStats(url) {
+    const videoId = url.match(/\/video\/(\d+)/)?.[1];
+
+    if (!videoId) {
         return {
-            platform:"tiktok",
-            views:0,
-            likes:0,
-            shares:0,
-            title:"Erreur TikTok",
-            error:error.message
+            platform: "tiktok",
+            error: "ID vidéo introuvable"
+        };
+    }
+
+    try {
+        const response = await fetch(
+            `https://www.tiktok.com/@fruitstoryanime/video/${videoId}`,
+            {
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+                    "Accept-Language": "fr-FR,fr;q=0.9",
+                    "Cache-Control": "no-cache"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`TikTok HTTP ${response.status}`);
+        }
+
+        const html = await response.text();
+
+        const script = html.match(
+            /<script[^>]+id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+        );
+
+        if (!script) {
+            throw new Error("Données structurées TikTok absentes");
+        }
+
+        const json = JSON.parse(script[1]);
+
+        const detail = json.__DEFAULT_SCOPE__?.["webapp.video-detail"];
+
+        const item = detail?.itemInfo?.itemStruct;
+
+        if (!item || String(item.id) !== videoId) {
+            throw new Error("Statistiques de la vidéo introuvables");
+        }
+
+        const stats = item.stats || {};
+
+        const data = {
+            platform: "tiktok",
+            views: Number(stats.playCount) || 0,
+            likes: Number(stats.diggCount) || 0,
+            shares: Number(stats.shareCount) || 0,
+            comments: Number(stats.commentCount) || 0,
+            title: item.desc || "Sans titre",
+            createTime: Number(item.createTime) || null
+        };
+
+        console.log("TikTok stats :", data);
+
+        return data;
+
+    } catch (error) {
+        console.error("Erreur TikTok :", error.message);
+
+        return {
+            platform: "tiktok",
+            error: error.message
         };
     }
 }
+
 
 // ---------- YouTube (API Data v3) ----------
 function extractYouTubeId(url){
