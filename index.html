@@ -140,18 +140,32 @@ async function testTikTok() {
     const button = document.getElementById("testBtn");
 
     button.disabled = true;
-    status.textContent = "Lancement de Chromium...";
-
-    for (const id of ["views", "likes", "shares", "comments"]) {
-        document.getElementById(id).textContent = "—";
-    }
+    status.textContent = "Test Chromium en cours...";
 
     try {
         const response = await fetch(
-            "/test?url=" + encodeURIComponent(url)
+            "/test?url=" + encodeURIComponent(url),
+            { cache: "no-store" }
         );
 
-        const data = await response.json();
+        const contentType =
+            response.headers.get("content-type") || "";
+
+        const text = await response.text();
+
+        console.log("HTTP Render :", response.status);
+        console.log("Content-Type :", contentType);
+        console.log("Réponse brute :", text.slice(0, 1000));
+
+        if (!contentType.includes("application/json")) {
+            throw new Error(
+                "Le serveur a renvoyé du HTML au lieu du JSON. " +
+                "HTTP " + response.status +
+                " — Consulte la console du navigateur."
+            );
+        }
+
+        const data = JSON.parse(text);
 
         if (!response.ok || data.error) {
             throw new Error(data.error || "Erreur serveur");
@@ -179,6 +193,7 @@ async function testTikTok() {
             " — Source : " + data.source;
 
     } catch (error) {
+        console.error("Erreur test :", error);
         status.textContent = "❌ " + error.message;
     } finally {
         button.disabled = false;
