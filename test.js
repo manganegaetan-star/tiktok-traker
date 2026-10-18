@@ -1,21 +1,52 @@
-const video = "https://www.tiktok.com/@fruitstoryanime/video/7697545039135788310";
+
+const { chromium } = require("playwright");
+
+const videoUrl =
+    "https://www.tiktok.com/@fruitstoryanime/video/7697545039135788310";
 
 async function test() {
-    const url = "https://www.tikwm.com/api/?url=" +
-        encodeURIComponent(video);
+    const browser = await chromium.launch({
+        headless: true
+    });
 
     try {
-        const response = await fetch(url);
+        const page = await browser.newPage();
 
-        console.log("HTTP :", response.status);
-        console.log("URL :", response.url);
-        console.log("Headers :", Object.fromEntries(response.headers));
+        const apiUrl =
+            "https://www.tikwm.com/api/?url=" +
+            encodeURIComponent(videoUrl);
 
-        const body = await response.text();
+        console.log("Ouverture de TikWM avec Chromium...");
 
-        console.log("Réponse :", body.slice(0, 1500));
+        const response = await page.goto(apiUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000
+        });
+
+        console.log("HTTP :", response?.status());
+
+        const content = await page.locator("body").innerText();
+
+        try {
+            const json = JSON.parse(content);
+
+            console.log("Code TikWM :", json.code);
+            console.log("Vues :", json.data?.play_count);
+            console.log("Likes :", json.data?.digg_count);
+            console.log("Partages :", json.data?.share_count);
+            console.log("Commentaires :", json.data?.comment_count);
+
+        } catch {
+            console.log(
+                "Réponse non JSON :",
+                content.slice(0, 500)
+            );
+        }
+
     } catch (error) {
-        console.error("Erreur réseau :", error.message);
+        console.error("Erreur Chromium :", error.message);
+    } finally {
+        await browser.close();
     }
 }
 
