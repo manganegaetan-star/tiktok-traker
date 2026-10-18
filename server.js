@@ -13,6 +13,7 @@ let cache = {};
 
 // ---------- TikTok (scraping HTML, inchangé) ----------
 
+
 async function getTikTokStats(url) {
     const videoId = url.match(/\/video\/(\d+)/)?.[1];
 
@@ -24,59 +25,60 @@ async function getTikTokStats(url) {
     }
 
     try {
-        const response = await fetch(
-            `https://www.tiktok.com/@fruitstoryanime/video/${videoId}`,
-            {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-                    "Accept-Language": "fr-FR,fr;q=0.9",
-                    "Cache-Control": "no-cache"
-                }
-            }
-        );
+        const apiUrl =
+            "https://www.tikwm.com/api/?url=" +
+            encodeURIComponent(url);
+
+        const response = await fetch(apiUrl, {
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0"
+            },
+            signal: AbortSignal.timeout(15000)
+        });
 
         if (!response.ok) {
-            throw new Error(`TikTok HTTP ${response.status}`);
+            throw new Error(`TikWM HTTP ${response.status}`);
         }
 
-        const html = await response.text();
+        const json = await response.json();
 
-        const script = html.match(
-            /<script[^>]+id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
-        );
-
-        if (!script) {
-            throw new Error("Données structurées TikTok absentes");
+        if (json.code !== 0 || !json.data) {
+            throw new Error(
+                json.msg || "Statistiques TikWM introuvables"
+            );
         }
 
-        const json = JSON.parse(script[1]);
+        const video = json.data;
 
-        const detail = json.__DEFAULT_SCOPE__?.["webapp.video-detail"];
-
-        const item = detail?.itemInfo?.itemStruct;
-
-        if (!item || String(item.id) !== videoId) {
-            throw new Error("Statistiques de la vidéo introuvables");
+        // Vérifie que les données correspondent
+        // bien à la vidéo demandée.
+        if (String(video.id) !== videoId) {
+            throw new Error(
+                "Les statistiques ne correspondent pas à la vidéo demandée"
+            );
         }
 
-        const stats = item.stats || {};
+        if (video.play_count == null) {
+            throw new Error("Nombre de vues indisponible");
+        }
 
         const data = {
             platform: "tiktok",
-            views: Number(stats.playCount) || 0,
-            likes: Number(stats.diggCount) || 0,
-            shares: Number(stats.shareCount) || 0,
-            comments: Number(stats.commentCount) || 0,
-            title: item.desc || "Sans titre",
-            createTime: Number(item.createTime) || null
+            views: Number(video.play_count),
+            likes: Number(video.digg_count ?? 0),
+            shares: Number(video.share_count ?? 0),
+            comments: Number(video.comment_count ?? 0),
+            title: video.title || "Sans titre",
+            createTime: Number(video.create_time) || null
         };
 
-        console.log("TikTok stats :", data);
+        console.log("TikTok stats (TikWM) :", data);
 
         return data;
 
     } catch (error) {
-        console.error("Erreur TikTok :", error.message);
+        console.error("Erreur TikWM :", error.message);
 
         return {
             platform: "tiktok",
@@ -84,6 +86,7 @@ async function getTikTokStats(url) {
         };
     }
 }
+
 
 
 // ---------- YouTube (API Data v3) ----------
