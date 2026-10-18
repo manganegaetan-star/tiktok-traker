@@ -8,112 +8,82 @@ app.use(cors());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.static(__dirname));
 
-// =====================================================
-// CONFIGURATION
-// =====================================================
-
 const PORT = process.env.PORT || 3000;
 
-const VIDEO_CACHE_DURATION = 4000;
-const PROFILE_CACHE_DURATION = 30000;
-const SESSION_TIMEOUT = 35000;
-const REQUEST_TIMEOUT = 12000;
-const MAX_CACHE_ITEMS = 1000;
-
-// =====================================================
-// STOCKAGE
-// =====================================================
+const VIDEO_CACHE_MS = 4000;
+const PROFILE_CACHE_MS = 30000;
+const PROFILE_ERROR_CACHE_MS = 5 * 60 * 1000;
+const SESSION_TTL_MS = 35000;
+const REQUEST_TIMEOUT_MS = 12000;
 
 const videoCache = new Map();
 const profileCache = new Map();
-const pendingRequests = new Map();
-const activeSessions = new Map();
+const profileErrors = new Map();
+const pending = new Map();
+const sessions = new Map();
 
 // =====================================================
 // OUTILS
 // =====================================================
 
 function numberOrNull(value) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
+    if (value === null || value === undefined || value === "") {
         return null;
     }
 
-    const number = Number(value);
-
-    return Number.isFinite(number)
-        ? number
-        : null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
 }
 
 function safeImageUrl(value) {
-    if (typeof value !== "string") {
-        return null;
-    }
-
     try {
         const url = new URL(value);
-
-        return url.protocol === "https:"
-            ? url.href
-            : null;
-
+        return url.protocol === "https:" ? url.href : null;
     } catch {
         return null;
     }
 }
 
-function getCache(storage, key, duration) {
-    const item = storage.get(key);
+function getCached(map, key, duration) {
+    const item = map.get(key);
 
-    if (!item) {
-        return null;
-    }
+    if (!item) return null;
 
     if (Date.now() - item.time >= duration) {
-        storage.delete(key);
+        map.delete(key);
         return null;
     }
 
     return item.data;
 }
 
-function setCache(storage, key, data) {
-    if (storage.size >= MAX_CACHE_ITEMS) {
-        const oldest = storage.keys().next().value;
-
-        if (oldest !== undefined) {
-            storage.delete(oldest);
-        }
+function putCached(map, key, data) {
+    if (map.size >= 1000) {
+        map.delete(map.keys().next().value);
     }
 
-    storage.set(key, {
+    map.set(key, {
         data,
         time: Date.now()
     });
 }
 
-async function deduplicate(key, callback) {
-    if (pendingRequests.has(key)) {
-        return pendingRequests.get(key);
+async function once(key, callback) {
+    if (pending.has(key)) {
+        return pending.get(key);
     }
 
     const promise = Promise.resolve().then(callback);
-
-    pendingRequests.set(key, promise);
+    pending.set(key, promise);
 
     try {
         return await promise;
-
     } finally {
-        pendingRequests.delete(key);
+        pending.delete(key);
     }
 }
 
-function formatError(message) {
+function errorResult(message) {
     return {
         platform: "tiktok",
         views: null,
@@ -129,20 +99,18 @@ function formatError(message) {
     };
 }
 
-function normalizeUsername(value) {
-    if (typeof value !== "string") {
-        return null;
-    }
+function validUsername(value) {
+    if (typeof value !== "string") return null;
 
-    const username = value.trim().replace(/^@/, "");
+    const clean = value.replace(/^@/, "").trim();
 
-    return /^[a-zA-Z0-9._]{1,30}$/.test(username)
-        ? username
+    return /^[a-zA-Z0-9._]{1,30}$/.test(clean)
+        ? clean
         : null;
 }
 
 // =====================================================
-// VALIDATION DES LIENS TIKTOK
+// LIENS TIKTOK
 // =====================================================
 
 function isTikTokHost(hostname) {
@@ -158,10 +126,7 @@ function parseTikTokUrl(value) {
     try {
         const url = new URL(value);
 
-        if (
-            url.protocol !== "https:" &&
-            url.protocol !== "http:"
-        ) {
+        if (!["http:", "https:"].includes(url.protocol)) {
             return null;
         }
 
@@ -175,15 +140,10 @@ function parseTikTokUrl(value) {
         }
 
         return url;
-
     } catch {
         return null;
     }
 }
-
-// =====================================================
-// EXTRACTION DES LIENS DE PARTAGE
-// =====================================================
 
 function extractSharedUrl(input) {
     if (
@@ -193,8 +153,6 @@ function extractSharedUrl(input) {
         return null;
     }
 
-    // Exemple :
-    // "Regarde cette vidéo ! https://vm.tiktok.com/xxx/"
     const candidates = input.match(
         /https?:\/\/[^\s<>"'`]+/gi
     ) || [];
@@ -207,17 +165,11 @@ function extractSharedUrl(input) {
 
         const parsed = parseTikTokUrl(clean);
 
-        if (parsed) {
-            return parsed;
-        }
+        if (parsed) return parsed;
     }
 
     return parseTikTokUrl(input.trim());
 }
-
-// =====================================================
-// EXTRACTION DE L'IDENTIFIANT VIDÉO
-// =====================================================
 
 function extractVideoId(url) {
     return (
@@ -233,6 +185,12 @@ function extractVideoId(url) {
     );
 }
 
+function extractUsername(url) {
+    return url.pathname.match(
+        /^\/@([a-zA-Z0-9._]+)\/video\//
+    )?.[1] || null;
+}
+
 // =====================================================
 // RÉSOLUTION DES LIENS COURTS
 // =====================================================
@@ -241,52 +199,50 @@ async function resolveTikTokLink(input) {
     let url = extractSharedUrl(input);
 
     if (!url) {
-        throw new Error(
-            "Lien TikTok invalide"
-        );
+        throw new Error("Lien TikTok invalide");
     }
 
-    // Le lien contient déjà l'identifiant.
     if (extractVideoId(url)) {
         return url;
     }
 
-    // Suit les redirections TikTok.
     for (let hop = 0; hop < 6; hop++) {
-        const response = await fetch(url.href, {
-            method: "GET",
-            redirect: "manual",
+        let response;
 
-            headers: {
-                "User-Agent":
-                    "Mozilla/5.0 (compatible; TikTokPulse/1.0)",
+        try {
+            response = await fetch(url.href, {
+                method: "GET",
+                redirect: "manual",
+                headers: {
+                    "User-Agent": "Mozilla/5.0",
+                    Accept: "text/html"
+                },
+                signal: AbortSignal.timeout(
+                    REQUEST_TIMEOUT_MS
+                )
+            });
+        } catch (error) {
+            console.warn(
+                "[LINK] Résolution impossible :",
+                error.message
+            );
 
-                Accept: "text/html"
-            },
+            // TikWM peut parfois résoudre
+            // directement un lien court.
+            return url;
+        }
 
-            signal: AbortSignal.timeout(
-                REQUEST_TIMEOUT
-            )
-        });
-
-        const location = response.headers.get(
-            "location"
-        );
+        const location = response.headers.get("location");
 
         if (
             !location ||
             response.status < 300 ||
             response.status >= 400
         ) {
-            // TikWM pourra éventuellement
-            // traiter directement le lien court.
             return url;
         }
 
-        const next = new URL(
-            location,
-            url
-        );
+        const next = new URL(location, url);
 
         if (!parseTikTokUrl(next.href)) {
             throw new Error(
@@ -301,13 +257,11 @@ async function resolveTikTokLink(input) {
         }
     }
 
-    throw new Error(
-        "Trop de redirections TikTok"
-    );
+    return url;
 }
 
 // =====================================================
-// API TIKWM
+// REQUÊTES API TIKWM
 // =====================================================
 
 async function fetchTikWM(endpoint, parameters = {}) {
@@ -317,35 +271,34 @@ async function fetchTikWM(endpoint, parameters = {}) {
 
     for (const [key, value] of Object.entries(parameters)) {
         if (value !== undefined && value !== null) {
-            apiUrl.searchParams.set(
-                key,
-                String(value)
-            );
+            apiUrl.searchParams.set(key, String(value));
         }
     }
 
     const response = await fetch(apiUrl, {
+        method: "GET",
         headers: {
-            Accept: "application/json"
+            Accept: "application/json, text/plain, */*",
+            "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+            "User-Agent": "TikTokPulse/1.0"
         },
-
         signal: AbortSignal.timeout(
-            REQUEST_TIMEOUT
+            REQUEST_TIMEOUT_MS
         )
     });
 
     if (!response.ok) {
-        throw new Error(
+        const error = new Error(
             `TikWM HTTP ${response.status}`
         );
+
+        error.status = response.status;
+        throw error;
     }
 
     const json = await response.json();
 
-    if (
-        Number(json.code) !== 0 ||
-        !json.data
-    ) {
+    if (Number(json.code) !== 0 || !json.data) {
         throw new Error(
             json.msg ||
             "Données TikWM indisponibles"
@@ -356,37 +309,27 @@ async function fetchTikWM(endpoint, parameters = {}) {
 }
 
 // =====================================================
-// EXTRACTION DES STATISTIQUES CRÉATEUR
+// EXTRACTION DU PROFIL
 // =====================================================
 
-function extractProfile(data, fallbackUsername) {
-    if (!data || typeof data !== "object") {
-        return null;
-    }
-
-    const root = data.userInfo || data;
-
-    const user =
-        root.user ||
-        data.user ||
-        root;
+function parseProfile(data, fallback) {
+    const root = data?.userInfo || data || {};
+    const user = root.user || data?.user || root;
 
     const stats =
         root.stats ||
-        data.stats ||
+        data?.stats ||
         root.statistics ||
-        data.statistics ||
+        data?.statistics ||
         {};
 
-    const username = normalizeUsername(
-        user.uniqueId ||
-        user.unique_id ||
-        user.username ||
-        fallbackUsername
-    );
-
     const profile = {
-        username,
+        username: validUsername(
+            user.uniqueId ||
+            user.unique_id ||
+            user.username ||
+            fallback
+        ),
 
         nickname:
             user.nickname ||
@@ -398,8 +341,6 @@ function extractProfile(data, fallbackUsername) {
             user.avatarMedium ||
             user.avatarThumb ||
             user.avatar ||
-            user.avatar_larger ||
-            user.avatar_medium ||
             user.avatar_thumb
         ),
 
@@ -429,7 +370,6 @@ function extractProfile(data, fallbackUsername) {
             stats.heartCount ??
             stats.heart_count ??
             stats.heart ??
-            stats.diggCount ??
             stats.likes
         ),
 
@@ -451,235 +391,230 @@ function extractProfile(data, fallbackUsername) {
 }
 
 // =====================================================
-// RÉCUPÉRATION DU PROFIL TIKTOK
+// STATISTIQUES CRÉATEUR
 // =====================================================
 
-async function getTikTokProfile(username) {
-    username = normalizeUsername(username);
+async function getProfile(username) {
+    username = validUsername(username);
 
-    if (!username) {
-        return null;
-    }
+    if (!username) return null;
 
     const key = username.toLowerCase();
 
-    const cached = getCache(
+    // Conserver les dernières données connues,
+    // même lorsque leur cache a expiré.
+    const previousProfile =
+        profileCache.get(key)?.data || null;
+
+    const cached = getCached(
         profileCache,
         key,
-        PROFILE_CACHE_DURATION
+        PROFILE_CACHE_MS
     );
 
-    if (cached) {
-        return cached;
+    if (cached) return cached;
+
+    // Si TikWM a récemment refusé la requête,
+    // éviter de recommencer immédiatement.
+    const blockedUntil = profileErrors.get(key);
+
+    if (blockedUntil && Date.now() < blockedUntil) {
+        return previousProfile;
     }
 
-    return deduplicate(
-        "profile:" + key,
-        async () => {
-            try {
-                const data = await fetchTikWM(
-                    "/api/user/info",
-                    {
-                        unique_id: username
-                    }
-                );
+    return once("profile:" + key, async () => {
+        try {
+            const data = await fetchTikWM(
+                "/api/user/info",
+                {
+                    unique_id: username
+                }
+            );
 
-                const profile = extractProfile(
-                    data,
+            const profile = parseProfile(
+                data,
+                username
+            );
+
+            if (!profile) {
+                console.warn(
+                    "[PROFILE] Données absentes :",
                     username
                 );
 
-                if (!profile) {
-                    console.warn(
-                        "[PROFILE] Statistiques indisponibles :",
-                        username
-                    );
-
-                    return null;
-                }
-
-                setCache(
-                    profileCache,
+                profileErrors.set(
                     key,
-                    profile
+                    Date.now() + 60000
                 );
 
-                console.log(
-                    "[PROFILE]",
-                    {
-                        username: profile.username,
-                        followers: profile.followers,
-                        following: profile.following,
-                        likes: profile.likes,
-                        videos: profile.videos
-                    }
-                );
-
-                return profile;
-
-            } catch (error) {
-                console.warn(
-                    "[PROFILE] Erreur :",
-                    username,
-                    error.message
-                );
-
-                return null;
+                return previousProfile;
             }
+
+            putCached(
+                profileCache,
+                key,
+                profile
+            );
+
+            profileErrors.delete(key);
+
+            console.log(
+                "[PROFILE] Actualisé :",
+                username,
+                {
+                    followers: profile.followers,
+                    following: profile.following,
+                    likes: profile.likes,
+                    videos: profile.videos
+                }
+            );
+
+            return profile;
+
+        } catch (error) {
+            console.warn(
+                "[PROFILE] Erreur :",
+                username,
+                error.message
+            );
+
+            if (error.status === 403) {
+                console.warn(
+                    "[PROFILE] Accès refusé par TikWM depuis Cloud Run"
+                );
+            }
+
+            profileErrors.set(
+                key,
+                Date.now() + PROFILE_ERROR_CACHE_MS
+            );
+
+            return previousProfile;
         }
-    );
+    });
 }
 
 // =====================================================
-// RÉCUPÉRATION DES STATISTIQUES VIDÉO
+// STATISTIQUES VIDÉO
 // =====================================================
 
-async function getTikTokVideo(input) {
-    let resolved;
+async function getVideo(input) {
+    const resolved = await resolveTikTokLink(input);
 
-    try {
-        resolved = await resolveTikTokLink(input);
-    } catch (error) {
-        return formatError(error.message);
-    }
+    const expectedId = extractVideoId(resolved);
 
-    const videoId = extractVideoId(resolved);
+    const key = expectedId
+        ? `video:${expectedId}`
+        : `short:${resolved.href}`;
 
-    const cacheKey = videoId
-        ? "video:" + videoId
-        : "short:" + resolved.href;
-
-    const cached = getCache(
+    const cached = getCached(
         videoCache,
-        cacheKey,
-        VIDEO_CACHE_DURATION
+        key,
+        VIDEO_CACHE_MS
     );
 
-    if (cached) {
-        return cached;
-    }
+    if (cached) return cached;
 
-    return deduplicate(
-        cacheKey,
-        async () => {
-            try {
-                const video = await fetchTikWM(
-                    "/api/",
-                    {
-                        url: resolved.href
-                    }
-                );
-
-                if (
-                    !video.id ||
-                    video.play_count == null
-                ) {
-                    throw new Error(
-                        "Statistiques vidéo indisponibles"
-                    );
-                }
-
-                if (
-                    videoId &&
-                    String(video.id) !== videoId
-                ) {
-                    throw new Error(
-                        "L'identifiant vidéo ne correspond pas"
-                    );
-                }
-
-                const authorData = video.author || {};
-
-                const username = normalizeUsername(
-                    authorData.unique_id ||
-                    authorData.uniqueId
-                );
-
-                const author = {
-                    id:
-                        authorData.id ||
-                        null,
-
-                    username,
-
-                    nickname:
-                        authorData.nickname ||
-                        username ||
-                        null,
-
-                    avatar: safeImageUrl(
-                        authorData.avatar ||
-                        authorData.avatar_thumb
-                    )
-                };
-
-                const data = {
-                    platform: "tiktok",
-
-                    id: String(video.id),
-
-                    views: numberOrNull(
-                        video.play_count
-                    ),
-
-                    likes: numberOrNull(
-                        video.digg_count
-                    ),
-
-                    shares: numberOrNull(
-                        video.share_count
-                    ),
-
-                    comments: numberOrNull(
-                        video.comment_count
-                    ),
-
-                    favorites: numberOrNull(
-                        video.collect_count
-                    ),
-
-                    title:
-                        video.title ||
-                        "Vidéo TikTok",
-
-                    createTime: numberOrNull(
-                        video.create_time
-                    ),
-
-                    duration: numberOrNull(
-                        video.duration
-                    ),
-
-                    cover: safeImageUrl(
-                        video.cover ||
-                        video.origin_cover
-                    ),
-
-                    author,
-
-                    source: "tikwm"
-                };
-
-                setCache(
-                    videoCache,
-                    cacheKey,
-                    data
-                );
-
-                return data;
-
-            } catch (error) {
-                console.error(
-                    "[VIDEO] Erreur TikWM :",
-                    error.message
-                );
-
-                return formatError(
-                    error.message
-                );
+    return once(key, async () => {
+        const video = await fetchTikWM(
+            "/api/",
+            {
+                url: resolved.href
             }
+        );
+
+        if (
+            !video.id ||
+            video.play_count == null
+        ) {
+            throw new Error(
+                "Statistiques vidéo indisponibles"
+            );
         }
-    );
+
+        if (
+            expectedId &&
+            String(video.id) !== expectedId
+        ) {
+            throw new Error(
+                "Identifiant vidéo incohérent"
+            );
+        }
+
+        const authorData = video.author || {};
+
+        const username = validUsername(
+            authorData.unique_id ||
+            authorData.uniqueId ||
+            extractUsername(resolved)
+        );
+
+        const data = {
+            platform: "tiktok",
+
+            id: String(video.id),
+
+            views: numberOrNull(
+                video.play_count
+            ),
+
+            likes: numberOrNull(
+                video.digg_count
+            ),
+
+            shares: numberOrNull(
+                video.share_count
+            ),
+
+            comments: numberOrNull(
+                video.comment_count
+            ),
+
+            favorites: numberOrNull(
+                video.collect_count
+            ),
+
+            title:
+                video.title ||
+                "Vidéo TikTok",
+
+            createTime: numberOrNull(
+                video.create_time
+            ),
+
+            duration: numberOrNull(
+                video.duration
+            ),
+
+            cover: safeImageUrl(
+                video.cover ||
+                video.origin_cover
+            ),
+
+            author: {
+                id: authorData.id || null,
+                username,
+                nickname:
+                    authorData.nickname ||
+                    username ||
+                    null,
+                avatar: safeImageUrl(
+                    authorData.avatar ||
+                    authorData.avatar_thumb
+                )
+            },
+
+            source: "tikwm"
+        };
+
+        putCached(
+            videoCache,
+            key,
+            data
+        );
+
+        return data;
+    });
 }
 
 // =====================================================
@@ -687,43 +622,31 @@ async function getTikTokVideo(input) {
 // =====================================================
 
 app.get("/stats", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
     const input = req.query.url;
 
     if (
         typeof input !== "string" ||
         !input.trim()
     ) {
-        return res.status(400).json({
-            error: "Lien TikTok manquant"
-        });
+        return res.status(400).json(
+            errorResult("Lien TikTok manquant")
+        );
     }
 
     if (!extractSharedUrl(input)) {
         return res.status(400).json(
-            formatError(
-                "Lien TikTok invalide"
-            )
+            errorResult("Lien TikTok invalide")
         );
     }
 
-    res.set("Cache-Control", "no-store");
-
     try {
-        const video = await getTikTokVideo(input);
+        const video = await getVideo(input);
 
-        if (video.error) {
-            return res.json(video);
-        }
-
-        const username = video.author?.username;
-
-        // Cache indépendant :
-        // vidéo = 4 secondes
-        // créateur = 30 secondes
-
-        const profile = username
-            ? await getTikTokProfile(username)
-            : null;
+        const profile = await getProfile(
+            video.author?.username
+        );
 
         return res.json({
             ...video,
@@ -732,96 +655,92 @@ app.get("/stats", async (req, res) => {
 
     } catch (error) {
         console.error(
-            "[STATS] Erreur :",
+            "[STATS]",
             error.message
         );
 
-        return res.status(500).json(
-            formatError(
-                "Erreur interne du serveur"
-            )
+        return res.json(
+            errorResult(error.message)
         );
     }
 });
 
 // =====================================================
-// COMPTEUR DE SESSIONS ACTIVES
+// SESSIONS ACTIVES
 // =====================================================
 
-function cleanExpiredSessions() {
+function cleanSessions() {
     const now = Date.now();
 
-    for (const [id, lastSeen] of activeSessions) {
-        if (now - lastSeen > SESSION_TIMEOUT) {
-            activeSessions.delete(id);
+    for (const [id, lastSeen] of sessions) {
+        if (now - lastSeen > SESSION_TTL_MS) {
+            sessions.delete(id);
         }
     }
 }
 
-function getOnlineCount() {
-    cleanExpiredSessions();
-
-    return activeSessions.size;
+function online() {
+    cleanSessions();
+    return sessions.size;
 }
 
-// POST /presence
-//
-// {
-//     "sessionId": "identifiant-unique",
-//     "active": true
-// }
-
 app.post("/presence", (req, res) => {
-    const { sessionId, active } = req.body || {};
+    const {
+        sessionId,
+        active,
+        action
+    } = req.body || {};
 
     if (
         typeof sessionId !== "string" ||
-        sessionId.length < 16 ||
-        sessionId.length > 128 ||
-        !/^[a-zA-Z0-9_-]+$/.test(sessionId)
+        !/^[a-zA-Z0-9_-]{16,128}$/.test(sessionId)
     ) {
         return res.status(400).json({
             error: "Identifiant de session invalide"
         });
     }
 
-    if (typeof active !== "boolean") {
+    const isActive =
+        typeof active === "boolean"
+            ? active
+            : action === "leave"
+                ? false
+                : ["heartbeat", "join"].includes(action)
+                    ? true
+                    : null;
+
+    if (isActive === null) {
         return res.status(400).json({
-            error: "Le champ active doit être un booléen"
+            error: "Présence invalide"
         });
     }
 
-    cleanExpiredSessions();
+    cleanSessions();
 
-    if (active) {
-        activeSessions.set(
-            sessionId,
-            Date.now()
-        );
+    if (isActive) {
+        sessions.set(sessionId, Date.now());
     } else {
-        activeSessions.delete(sessionId);
+        sessions.delete(sessionId);
     }
 
     res.set("Cache-Control", "no-store");
 
     return res.json({
         success: true,
-        online: getOnlineCount()
+        online: online()
     });
 });
-
-// GET /presence
 
 app.get("/presence", (req, res) => {
     res.set("Cache-Control", "no-store");
 
     return res.json({
-        online: getOnlineCount()
+        online: online()
     });
 });
 
 // =====================================================
-// ROUTE DE TEST
+// TEST DU SERVEUR
 // =====================================================
 
 app.get("/test", (req, res) => {
@@ -829,17 +748,12 @@ app.get("/test", (req, res) => {
 
     res.json({
         success: true,
-        name: "TikTok Pulse",
-        platform: "tiktok",
+        message: "TikTok Pulse fonctionne !",
+        online: online(),
         timestamp: new Date().toISOString(),
-        online: getOnlineCount(),
-
         cache: {
-            videoSeconds:
-                VIDEO_CACHE_DURATION / 1000,
-
-            profileSeconds:
-                PROFILE_CACHE_DURATION / 1000
+            videoSeconds: VIDEO_CACHE_MS / 1000,
+            profileSeconds: PROFILE_CACHE_MS / 1000
         }
     });
 });
@@ -852,41 +766,44 @@ setInterval(() => {
     const now = Date.now();
 
     for (const [key, item] of videoCache) {
-        if (
-            now - item.time >
-            VIDEO_CACHE_DURATION
-        ) {
+        if (now - item.time > VIDEO_CACHE_MS) {
             videoCache.delete(key);
         }
     }
 
+    // On conserve les dernières statistiques
+    // du profil pour pouvoir les afficher
+    // lorsqu'une requête échoue.
     for (const [key, item] of profileCache) {
-        if (
-            now - item.time >
-            PROFILE_CACHE_DURATION
-        ) {
+        if (now - item.time > 24 * 60 * 60 * 1000) {
             profileCache.delete(key);
         }
     }
 
-    cleanExpiredSessions();
+    for (const [key, until] of profileErrors) {
+        if (now >= until) {
+            profileErrors.delete(key);
+        }
+    }
+
+    cleanSessions();
 
 }, 15000).unref();
 
 // =====================================================
-// DÉMARRAGE DU SERVEUR
+// DÉMARRAGE
 // =====================================================
 
 app.listen(PORT, "0.0.0.0", () => {
-    console.log("==================================");
-    console.log("          TIKTOK PULSE");
-    console.log("==================================");
-    console.log(`Serveur : port ${PORT}`);
-    console.log("Plateforme : TikTok uniquement");
-    console.log("Source : TikWM");
-    console.log("Liens courts : activés");
+    console.log("================================");
+    console.log("        TIKTOK PULSE");
+    console.log("================================");
+    console.log("Port :", PORT);
+    console.log("TikTok uniquement");
+    console.log("Liens de partage : activés");
     console.log("Cache vidéo : 4 secondes");
     console.log("Cache profil : 30 secondes");
+    console.log("Protection erreur 403 : activée");
     console.log("Sessions actives : activées");
-    console.log("==================================");
+    console.log("================================");
 });
