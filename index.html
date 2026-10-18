@@ -772,6 +772,30 @@ footer b{
 .views-display{display:flex;justify-content:center;align-items:center;width:100%;min-height:100px}
 .views{max-width:100%;font-variant-numeric:tabular-nums}
 @media(max-width:560px){.views-display{min-height:80px}}
+
+/* Nouveaux modules Pulse — aucun cercle autour du compteur */
+.views-wrap {padding:30px 0 26px}
+.views {max-width:100%; flex-wrap:nowrap}
+.creator-head {display:flex;align-items:center;gap:12px;margin:18px 0 0;min-height:44px}
+.creator-avatar {width:44px;height:44px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
+.creator-name {font-weight:700;font-size:13px;overflow-wrap:anywhere}
+.creator-handle {font-size:11px;color:var(--muted)}
+.video-cover {width:100%;max-height:190px;object-fit:cover;border-radius:17px;margin-top:16px;border:1px solid var(--line)}
+.extra-stats {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.extra-stat {border:1px solid var(--line);background:rgba(255,255,255,.035);padding:14px;border-radius:16px;min-width:0}
+.extra-stat span {display:block;font-size:11px;color:var(--muted);margin-bottom:8px}
+.extra-stat strong {font-family:"Space Grotesk";font-size:19px;overflow-wrap:anywhere}
+.trend-card {margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.035)}
+.trend-heading {font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
+.trend-chart {width:100%;height:150px;display:block;overflow:visible}
+.trend-axis {display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px}
+.profile-panel {margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035)}
+.profile-panel h3 {font-size:13px;margin:0 0 10px}
+.profile-metrics {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;font-size:12px}
+.profile-metrics div {display:flex;flex-direction:column;gap:4px}
+.profile-metrics span {color:var(--muted);font-size:11px}
+.profile-metrics strong {font-size:15px}
+@media(max-width:560px){.extra-stats{gap:8px}.extra-stat{padding:11px}.extra-stat strong{font-size:16px}}
 </style>
 </head>
 
@@ -1006,6 +1030,12 @@ footer b{
       Colle un lien pour commencer
     </div>
 
+    <div class="creator-head hidden" data-role="creatorBlock">
+      <img class="creator-avatar" data-role="avatar" alt="Photo du créateur" referrerpolicy="no-referrer">
+      <div><div class="creator-name" data-role="nickname"></div><div class="creator-handle" data-role="username"></div></div>
+    </div>
+    <img class="video-cover hidden" data-role="cover" alt="Miniature de la vidéo" loading="lazy" referrerpolicy="no-referrer">
+
     <div class="views-wrap">
 
       <div
@@ -1088,6 +1118,26 @@ footer b{
 
       </div>
 
+    </div>
+    <div class="extra-stats">
+      <div class="extra-stat"><span>💬 Commentaires</span><strong data-role="comments">—</strong></div>
+      <div class="extra-stat"><span>🔖 Favoris</span><strong data-role="favorites">—</strong></div>
+      <div class="extra-stat"><span>📈 Engagement</span><strong data-role="engagement">—</strong></div>
+      <div class="extra-stat"><span>⚡ Vues / minute</span><strong data-role="perMinute">—</strong></div>
+    </div>
+    <div class="trend-card">
+      <div class="trend-heading">ÉVOLUTION DES VUES · SESSION EN COURS</div>
+      <svg class="trend-chart" data-role="chart" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Évolution des vues"><path data-role="chartArea" fill="rgba(37,244,238,.08)" d=""/><path data-role="chartLine" fill="none" stroke="#25f4ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d=""/></svg>
+      <div class="trend-axis"><span data-role="chartStart">Début</span><span data-role="chartEnd">Maintenant</span></div>
+    </div>
+    <div class="profile-panel hidden" data-role="profilePanel">
+      <h3>STATISTIQUES DU PROFIL</h3>
+      <div class="profile-metrics">
+        <div><span>Abonnés</span><strong data-role="followers">—</strong></div>
+        <div><span>Abonnements</span><strong data-role="following">—</strong></div>
+        <div><span>Likes du profil</span><strong data-role="profileLikes">—</strong></div>
+        <div><span>Vidéos publiées</span><strong data-role="videoCount">—</strong></div>
+      </div>
     </div>
 
   </article>
@@ -1303,6 +1353,7 @@ class VideoTracker {
     this.url = "";
     this.platform = null;
     this.oldViews = null;
+    this.history = [];
     this.isTracking = false;
     this.isUpdating = false;
     this.refreshTimer = null;
@@ -1326,6 +1377,8 @@ class VideoTracker {
     this.url = url;
     this.platform = platform;
     this.oldViews = null;
+    this.history = [];
+    this.resetExtras();
     this.applyPlatformStyle();
     this.odometer.set(0);
     this.role("likes").textContent = "0";
@@ -1396,6 +1449,73 @@ class VideoTracker {
     }
   }
 
+  resetExtras() {
+    for(const key of ["comments","favorites","engagement","perMinute","followers","following","profileLikes","videoCount"]) this.role(key).textContent = "—";
+    this.role("creatorBlock").classList.add("hidden");
+    this.role("cover").classList.add("hidden");
+    this.role("profilePanel").classList.add("hidden");
+    this.role("chartLine").setAttribute("d", "");
+    this.role("chartArea").setAttribute("d", "");
+  }
+
+  drawHistory() {
+    const points = this.history;
+    if(!points.length) return;
+    const low = Math.min(...points.map(p=>p.v));
+    const high = Math.max(...points.map(p=>p.v));
+    const minTime = points[0].t;
+    const spanTime = Math.max(1, points[points.length-1].t - minTime);
+    const spanValue = Math.max(1, high - low);
+    const coords = points.map((p,i)=>[
+      points.length === 1 ? 0 : (p.t-minTime)/spanTime*600,
+      135-(p.v-low)/spanValue*120
+    ]);
+    const d = coords.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+    this.role("chartLine").setAttribute("d",d);
+    this.role("chartArea").setAttribute("d",d+` L${coords[coords.length-1][0].toFixed(1)} 150 L${coords[0][0].toFixed(1)} 150 Z`);
+    this.role("chartStart").textContent = new Date(minTime).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    this.role("chartEnd").textContent = new Date(points[points.length-1].t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  }
+
+  updateExtras(data, views, likes, shares) {
+    const show = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value)) ? "—" : formatNumber(value);
+    this.role("comments").textContent = show(data.comments);
+    this.role("favorites").textContent = show(data.favorites);
+    const comments = Number(data.comments);
+    if(views > 0 && data.comments != null && data.shares != null && data.likes != null) {
+      this.role("engagement").textContent = (((likes+comments+shares)/views)*100).toLocaleString("fr-FR",{maximumFractionDigits:2})+" %";
+    } else this.role("engagement").textContent = "—";
+    const now = Date.now();
+    this.history.push({t:now,v:views});
+    // Une heure de données en mémoire, pas d'historique inventé.
+    this.history = this.history.filter(p=>now-p.t<=3600000).slice(-720);
+    const earlier = this.history.find(p=>p.t <= now-60000) || this.history[0];
+    const elapsed = (now-earlier.t)/60000;
+    this.role("perMinute").textContent = elapsed >= 0.08 && this.history.length>1
+      ? (Math.max(0,(views-earlier.v)/elapsed)).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "—";
+    this.drawHistory();
+    const creator = data.author || {};
+    const hasCreator = Boolean(creator.nickname || creator.username);
+    this.role("creatorBlock").classList.toggle("hidden", !hasCreator);
+    this.role("nickname").textContent = creator.nickname || creator.username || "";
+    this.role("username").textContent = creator.username ? "@"+creator.username.replace(/^@/,"") : "";
+    const avatar = this.role("avatar");
+    avatar.style.display = creator.avatar ? "" : "none";
+    if(creator.avatar && /^https:\/\//.test(creator.avatar)) avatar.src = creator.avatar;
+    const cover = this.role("cover");
+    const coverUrl = data.cover;
+    cover.classList.toggle("hidden", !coverUrl);
+    if(coverUrl && /^https:\/\//.test(coverUrl)) cover.src = coverUrl;
+    const profile = data.profile;
+    this.role("profilePanel").classList.toggle("hidden", !profile);
+    if(profile) {
+      this.role("followers").textContent = show(profile.followers);
+      this.role("following").textContent = show(profile.following);
+      this.role("profileLikes").textContent = show(profile.likes);
+      this.role("videoCount").textContent = show(profile.videos);
+    }
+  }
+
   async update() {
     if(!this.isTracking || !this.url || document.hidden || this.isUpdating) return;
     const generation = this.generation;
@@ -1412,6 +1532,7 @@ class VideoTracker {
       if(!res.ok) throw new Error("Le serveur a répondu avec le statut " + res.status);
       const data = await res.json();
       if(generation !== this.generation || !this.isTracking || document.hidden) return;
+      if(data.error || data.views == null) throw new Error(data.error || "Statistiques indisponibles");
       const views = Number(data.views) || 0;
       const likes = Number(data.likes) || 0;
       const shares = Number(data.shares) || 0;
@@ -1423,6 +1544,7 @@ class VideoTracker {
       this.role("likes").textContent = formatNumber(likes);
       this.role("shares").textContent = this.platform === "youtube" ? "—" : formatNumber(shares);
       this.role("title").textContent = data.title || (this.platform === "youtube" ? "Vidéo YouTube" : "Vidéo TikTok");
+      this.updateExtras(data, views, likes, shares);
       this.updateMeta(views, data.createTime);
       this.oldViews = views;
       this.setTrackingState(true);
