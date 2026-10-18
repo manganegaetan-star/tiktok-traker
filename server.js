@@ -29,13 +29,8 @@ async function getTikTokStats(url) {
             "https://www.tikwm.com/api/?url=" +
             encodeURIComponent(url);
 
-        const response = await fetch(apiUrl, {
-            headers: {
-                "Accept": "application/json",
-                "User-Agent": "Mozilla/5.0"
-            },
-            signal: AbortSignal.timeout(15000)
-        });
+        // Même requête que ton script de test fonctionnel
+        const response = await fetch(apiUrl);
 
         if (!response.ok) {
             throw new Error(`TikWM HTTP ${response.status}`);
@@ -51,8 +46,6 @@ async function getTikTokStats(url) {
 
         const video = json.data;
 
-        // Vérifie que les données correspondent
-        // bien à la vidéo demandée.
         if (String(video.id) !== videoId) {
             throw new Error(
                 "Les statistiques ne correspondent pas à la vidéo demandée"
