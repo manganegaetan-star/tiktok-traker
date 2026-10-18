@@ -14,30 +14,19 @@ app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 
-// Statistiques vidéo : 4 secondes
 const VIDEO_CACHE_DURATION = 4000;
-
-// Statistiques du créateur : 30 secondes
 const PROFILE_CACHE_DURATION = 30000;
-
-// Sessions : expiration après 35 secondes
 const SESSION_TIMEOUT = 35000;
-
-// Durée maximale des requêtes TikWM
 const REQUEST_TIMEOUT = 12000;
-
-// Limite de requêtes externes
 const MAX_CACHE_ITEMS = 1000;
 
 // =====================================================
-// STOCKAGE TEMPORAIRE
+// STOCKAGE
 // =====================================================
 
 const videoCache = new Map();
 const profileCache = new Map();
-
 const pendingRequests = new Map();
-
 const activeSessions = new Map();
 
 // =====================================================
@@ -156,13 +145,18 @@ function normalizeUsername(value) {
 // VALIDATION DES LIENS TIKTOK
 // =====================================================
 
+function isTikTokHost(hostname) {
+    const host = hostname.toLowerCase();
+
+    return (
+        host === "tiktok.com" ||
+        host.endsWith(".tiktok.com")
+    );
+}
+
 function parseTikTokUrl(value) {
     try {
-        if (typeof value !== "string") {
-            return null;
-        }
-
-        const url = new URL(value.trim());
+        const url = new URL(value);
 
         if (
             url.protocol !== "https:" &&
@@ -171,11 +165,11 @@ function parseTikTokUrl(value) {
             return null;
         }
 
-        const host = url.hostname.toLowerCase();
-
         if (
-            host !== "tiktok.com" &&
-            !host.endsWith(".tiktok.com")
+            !isTikTokHost(url.hostname) ||
+            url.username ||
+            url.password ||
+            url.port
         ) {
             return null;
         }
@@ -187,10 +181,129 @@ function parseTikTokUrl(value) {
     }
 }
 
+// =====================================================
+// EXTRACTION DES LIENS DE PARTAGE
+// =====================================================
+
+function extractSharedUrl(input) {
+    if (
+        typeof input !== "string" ||
+        input.length > 5000
+    ) {
+        return null;
+    }
+
+    // Exemple :
+    // "Regarde cette vidéo ! https://vm.tiktok.com/xxx/"
+    const candidates = input.match(
+        /https?:\/\/[^\s<>"'`]+/gi
+    ) || [];
+
+    for (const candidate of candidates) {
+        const clean = candidate.replace(
+            /[),.;!?\]}]+$/g,
+            ""
+        );
+
+        const parsed = parseTikTokUrl(clean);
+
+        if (parsed) {
+            return parsed;
+        }
+    }
+
+    return parseTikTokUrl(input.trim());
+}
+
+// =====================================================
+// EXTRACTION DE L'IDENTIFIANT VIDÉO
+// =====================================================
+
 function extractVideoId(url) {
-    return url.pathname.match(
-        /\/(?:@[^/]+\/)?video\/(\d+)/
-    )?.[1] || null;
+    return (
+        url.pathname.match(
+            /\/(?:@[^/]+\/)?video\/(\d+)/
+        )?.[1] ||
+
+        url.pathname.match(
+            /\/v\/(\d+)/
+        )?.[1] ||
+
+        null
+    );
+}
+
+// =====================================================
+// RÉSOLUTION DES LIENS COURTS
+// =====================================================
+
+async function resolveTikTokLink(input) {
+    let url = extractSharedUrl(input);
+
+    if (!url) {
+        throw new Error(
+            "Lien TikTok invalide"
+        );
+    }
+
+    // Le lien contient déjà l'identifiant.
+    if (extractVideoId(url)) {
+        return url;
+    }
+
+    // Suit les redirections TikTok.
+    for (let hop = 0; hop < 6; hop++) {
+        const response = await fetch(url.href, {
+            method: "GET",
+            redirect: "manual",
+
+            headers: {
+                "User-Agent":
+                    "Mozilla/5.0 (compatible; TikTokPulse/1.0)",
+
+                Accept: "text/html"
+            },
+
+            signal: AbortSignal.timeout(
+                REQUEST_TIMEOUT
+            )
+        });
+
+        const location = response.headers.get(
+            "location"
+        );
+
+        if (
+            !location ||
+            response.status < 300 ||
+            response.status >= 400
+        ) {
+            // TikWM pourra éventuellement
+            // traiter directement le lien court.
+            return url;
+        }
+
+        const next = new URL(
+            location,
+            url
+        );
+
+        if (!parseTikTokUrl(next.href)) {
+            throw new Error(
+                "Redirection hors de TikTok refusée"
+            );
+        }
+
+        url = next;
+
+        if (extractVideoId(url)) {
+            return url;
+        }
+    }
+
+    throw new Error(
+        "Trop de redirections TikTok"
+    );
 }
 
 // =====================================================
@@ -215,7 +328,10 @@ async function fetchTikWM(endpoint, parameters = {}) {
         headers: {
             Accept: "application/json"
         },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+
+        signal: AbortSignal.timeout(
+            REQUEST_TIMEOUT
+        )
     });
 
     if (!response.ok) {
@@ -240,7 +356,7 @@ async function fetchTikWM(endpoint, parameters = {}) {
 }
 
 // =====================================================
-// EXTRACTION DES STATISTIQUES DU CRÉATEUR
+// EXTRACTION DES STATISTIQUES CRÉATEUR
 // =====================================================
 
 function extractProfile(data, fallbackUsername) {
@@ -248,7 +364,6 @@ function extractProfile(data, fallbackUsername) {
         return null;
     }
 
-    // TikWM peut renvoyer plusieurs structures.
     const root = data.userInfo || data;
 
     const user =
@@ -376,7 +491,7 @@ async function getTikTokProfile(username) {
 
                 if (!profile) {
                     console.warn(
-                        "[PROFILE] Aucune statistique exploitable :",
+                        "[PROFILE] Statistiques indisponibles :",
                         username
                     );
 
@@ -390,7 +505,7 @@ async function getTikTokProfile(username) {
                 );
 
                 console.log(
-                    "[PROFILE] Statistiques récupérées :",
+                    "[PROFILE]",
                     {
                         username: profile.username,
                         followers: profile.followers,
@@ -409,8 +524,6 @@ async function getTikTokProfile(username) {
                     error.message
                 );
 
-                // Une erreur du profil ne doit pas
-                // bloquer les statistiques vidéo.
                 return null;
             }
         }
@@ -421,24 +534,20 @@ async function getTikTokProfile(username) {
 // RÉCUPÉRATION DES STATISTIQUES VIDÉO
 // =====================================================
 
-async function getTikTokVideo(url) {
-    const parsed = parseTikTokUrl(url);
+async function getTikTokVideo(input) {
+    let resolved;
 
-    if (!parsed) {
-        return formatError(
-            "Lien TikTok invalide"
-        );
+    try {
+        resolved = await resolveTikTokLink(input);
+    } catch (error) {
+        return formatError(error.message);
     }
 
-    const videoId = extractVideoId(parsed);
+    const videoId = extractVideoId(resolved);
 
-    if (!videoId) {
-        return formatError(
-            "ID vidéo introuvable dans le lien TikTok"
-        );
-    }
-
-    const cacheKey = "video:" + videoId;
+    const cacheKey = videoId
+        ? "video:" + videoId
+        : "short:" + resolved.href;
 
     const cached = getCache(
         videoCache,
@@ -457,19 +566,25 @@ async function getTikTokVideo(url) {
                 const video = await fetchTikWM(
                     "/api/",
                     {
-                        url: parsed.href
+                        url: resolved.href
                     }
                 );
 
-                if (String(video.id) !== videoId) {
+                if (
+                    !video.id ||
+                    video.play_count == null
+                ) {
                     throw new Error(
-                        "ID de vidéo différent de celui demandé"
+                        "Statistiques vidéo indisponibles"
                     );
                 }
 
-                if (video.play_count == null) {
+                if (
+                    videoId &&
+                    String(video.id) !== videoId
+                ) {
                     throw new Error(
-                        "Nombre de vues indisponible"
+                        "L'identifiant vidéo ne correspond pas"
                     );
                 }
 
@@ -572,52 +687,48 @@ async function getTikTokVideo(url) {
 // =====================================================
 
 app.get("/stats", async (req, res) => {
-    const url = req.query.url;
+    const input = req.query.url;
 
     if (
-        typeof url !== "string" ||
-        !url.trim()
+        typeof input !== "string" ||
+        !input.trim()
     ) {
         return res.status(400).json({
             error: "Lien TikTok manquant"
         });
     }
 
-    if (!parseTikTokUrl(url)) {
+    if (!extractSharedUrl(input)) {
         return res.status(400).json(
-            formatError("Lien TikTok invalide")
+            formatError(
+                "Lien TikTok invalide"
+            )
         );
     }
 
     res.set("Cache-Control", "no-store");
 
     try {
-        const video = await getTikTokVideo(url);
+        const video = await getTikTokVideo(input);
 
         if (video.error) {
             return res.json(video);
         }
 
-        // IMPORTANT :
-        // Le profil est récupéré indépendamment
-        // du cache des statistiques vidéo.
-        //
-        // Ainsi, le profil peut être actualisé
-        // toutes les 30 secondes, même si les
-        // vues sont récupérées toutes les 5 secondes.
-
         const username = video.author?.username;
+
+        // Cache indépendant :
+        // vidéo = 4 secondes
+        // créateur = 30 secondes
 
         const profile = username
             ? await getTikTokProfile(username)
             : null;
 
-        const result = {
+        return res.json({
             ...video,
             profile
-        };
-
-        return res.json(result);
+        });
 
     } catch (error) {
         console.error(
@@ -634,7 +745,7 @@ app.get("/stats", async (req, res) => {
 });
 
 // =====================================================
-// SESSIONS ACTIVES
+// COMPTEUR DE SESSIONS ACTIVES
 // =====================================================
 
 function cleanExpiredSessions() {
@@ -722,9 +833,13 @@ app.get("/test", (req, res) => {
         platform: "tiktok",
         timestamp: new Date().toISOString(),
         online: getOnlineCount(),
+
         cache: {
-            videoSeconds: VIDEO_CACHE_DURATION / 1000,
-            profileSeconds: PROFILE_CACHE_DURATION / 1000
+            videoSeconds:
+                VIDEO_CACHE_DURATION / 1000,
+
+            profileSeconds:
+                PROFILE_CACHE_DURATION / 1000
         }
     });
 });
@@ -738,7 +853,8 @@ setInterval(() => {
 
     for (const [key, item] of videoCache) {
         if (
-            now - item.time > VIDEO_CACHE_DURATION
+            now - item.time >
+            VIDEO_CACHE_DURATION
         ) {
             videoCache.delete(key);
         }
@@ -746,7 +862,8 @@ setInterval(() => {
 
     for (const [key, item] of profileCache) {
         if (
-            now - item.time > PROFILE_CACHE_DURATION
+            now - item.time >
+            PROFILE_CACHE_DURATION
         ) {
             profileCache.delete(key);
         }
@@ -757,16 +874,17 @@ setInterval(() => {
 }, 15000).unref();
 
 // =====================================================
-// DÉMARRAGE
+// DÉMARRAGE DU SERVEUR
 // =====================================================
 
 app.listen(PORT, "0.0.0.0", () => {
     console.log("==================================");
-    console.log("       TIKTOK PULSE");
+    console.log("          TIKTOK PULSE");
     console.log("==================================");
     console.log(`Serveur : port ${PORT}`);
-    console.log("Plateforme : TikTok");
+    console.log("Plateforme : TikTok uniquement");
     console.log("Source : TikWM");
+    console.log("Liens courts : activés");
     console.log("Cache vidéo : 4 secondes");
     console.log("Cache profil : 30 secondes");
     console.log("Sessions actives : activées");
