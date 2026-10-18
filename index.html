@@ -1,1736 +1,283 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#08080d">
-<title>TikTok Pulse — Live Tracker</title>
-
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813"><title>TikTok Pulse — Live analytics</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{color-scheme:dark;--bg:#08090e;--panel:#11131b;--panel2:#161924;--line:#292d3b;--muted:#8e93a7;--text:#f5f6fc;--cyan:#42e9e3;--pink:#ff477e;--green:#5ff0b1;--violet:#a78bfa}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 650px 400px at 80% -15%,#38203970,transparent),radial-gradient(ellipse 500px 300px at 0 40%,#0c3d4550,transparent),var(--bg);font:15px 'DM Sans',sans-serif;color:var(--text);min-height:100vh}button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.shell{max-width:1330px;margin:auto;padding:0 36px}.topbar{height:88px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff10}.brand{display:flex;align-items:center;gap:12px;font:700 21px 'Space Grotesk'}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(140deg,#3cebe2,#fe487f);color:#08090e;font-size:25px;box-shadow:0 0 35px #43e9e325}.brand span span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:13px}.pill{border:1px solid var(--line);background:#141620;border-radius:50px;padding:9px 14px;font-size:12px;color:#b7baca;font-weight:700;letter-spacing:.04em}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7b8191;margin-right:7px}.dot.on{background:var(--green);box-shadow:0 0 0 4px #5ff0b119;animation:breathe 2s infinite}@keyframes breathe{50%{opacity:.5}}.main{padding:50px 0 70px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.headline{font:700 clamp(34px,4.3vw,59px)/1.07 'Space Grotesk';letter-spacing:-.05em;margin:14px 0}.headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#c0a5ff,var(--pink));background-clip:text;color:transparent}.lead{color:#a1a5b6;max-width:650px;line-height:1.65;margin:0 0 30px}.search{display:flex;gap:12px;background:#151720;border:1px solid #343747;border-radius:19px;padding:9px;box-shadow:0 18px 60px #0004;max-width:930px}.input-wrap{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:0 14px}.input-wrap svg{flex-shrink:0;color:var(--cyan)}.search input{width:100%;border:0;outline:0;background:transparent;color:white;padding:12px 0;font-size:14px}.search input::placeholder{color:#6e7388}.primary{border:0;border-radius:12px;background:linear-gradient(110deg,var(--cyan),#85f5e4);color:#071216;padding:14px 24px;font-weight:800;white-space:nowrap;box-shadow:0 5px 25px #40e9e322;transition:transform .2s,filter .2s}.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}.primary:disabled{opacity:.5;cursor:wait}.hint{font-size:12px;color:#777e91;margin:12px 4px 0}.dashboard{margin-top:36px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.95fr);gap:20px}.surface{background:linear-gradient(155deg,#191b27,#11131b 62%);border:1px solid #303241;border-radius:23px;box-shadow:0 12px 40px #0002}.hero{padding:30px;position:relative;overflow:hidden;min-height:335px}.hero:before{content:"";position:absolute;right:-140px;top:-160px;width:370px;height:370px;border-radius:50%;background:#40e9e30b;filter:blur(25px);pointer-events:none}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.micro{color:#8b91a4;text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:800}.live{border:1px solid #5ff0b12d;color:var(--green);background:#5ff0b10c;padding:8px 11px;border-radius:30px;font-size:11px;font-weight:800;letter-spacing:.1em}.live:before{content:"";display:inline-block;background:var(--green);width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:2px}.live.off{color:#a6a9b8;border-color:#ffffff1b;background:#ffffff06}.live.off:before{background:#777e91}.counter-area{margin:42px 0 31px}.number{display:flex;align-items:center;flex-wrap:nowrap;font:700 clamp(42px,5.4vw,82px)/1 'Space Grotesk';letter-spacing:-.055em;font-variant-numeric:tabular-nums;white-space:nowrap;min-height:1.15em}.digit{display:inline-block;position:relative;overflow:hidden;height:1.16em;width:.66em;flex:0 0 .66em}.digit>span{position:absolute;inset:0 auto auto 0;width:100%;height:100%;display:block;will-change:transform}.digit b{height:1.16em;display:flex;align-items:center;justify-content:center;font-weight:700}.comma{display:inline-block;width:.28em;text-align:center;color:#72768a}.number-label{margin-top:9px;color:#9a9fb1;font-weight:700;font-size:12px;letter-spacing:.13em}.growth{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:13px;background:#5ff0b10b;padding:9px 12px;border-radius:10px}.growth.neutral{color:#a5aabd;background:#ffffff09}.growth.negative{color:var(--pink);background:#ff477e0c}.video{padding:23px;display:flex;gap:16px;min-height:170px}.thumb{width:110px;height:145px;flex:0 0 110px;border-radius:13px;background:linear-gradient(135deg,#2e3140,#151720);object-fit:cover;border:1px solid #ffffff15}.video-info{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}.video-title{font-size:15px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.creator{display:flex;align-items:center;gap:9px;margin-top:18px}.avatar{width:33px;height:33px;border-radius:50%;object-fit:cover;background:#292b37;border:1px solid #ffffff22}.creator-name{font-size:13px;font-weight:800}.handle{font-size:11px;color:#9298a8}.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.metric{padding:22px;min-width:0}.metric-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.metric-icon{font-size:21px}.metric-value{font:700 clamp(23px,2.4vw,35px) 'Space Grotesk';letter-spacing:-.045em;margin-top:18px;overflow:hidden;text-overflow:ellipsis}.metric-label{color:#9298aa;font-size:12px;margin-top:6px}.bottom{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:20px}.chart-panel,.profile-panel{padding:26px}.section-title{font:700 17px 'Space Grotesk';letter-spacing:-.02em}.sub{color:#84899e;font-size:12px;margin-top:5px}.chart-wrap{height:220px;position:relative;margin-top:23px}canvas{width:100%;height:100%;display:block}.empty-chart{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#777e91;font-size:13px;pointer-events:none}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:23px}.profile-stat{background:#ffffff06;border:1px solid #ffffff09;border-radius:13px;padding:17px}.profile-stat strong{display:block;font:700 22px 'Space Grotesk'}.profile-stat span{display:block;font-size:11px;color:#9196a9;margin-top:7px}.notice{margin-top:20px;font-size:12px;color:#808699;line-height:1.7}.error{margin:15px 0 0;padding:13px 16px;border:1px solid #ff477e55;background:#ff477e12;color:#ff99b4;border-radius:12px;display:none}.error.show{display:block}.footer{border-top:1px solid #ffffff12;color:#73798c;font-size:12px;padding:24px 0 38px;display:flex;justify-content:space-between;gap:12px}.hidden{display:none!important}@media(max-width:950px){.dashboard{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}.number{font-size:clamp(42px,8vw,80px)}}@media(max-width:560px){.shell{padding:0 17px}.topbar{height:72px}.brand{font-size:18px}.top-right .pill:last-child{display:none}.main{padding-top:36px}.headline{font-size:38px}.search{flex-direction:column}.primary{width:100%}.hero{padding:23px;min-height:300px}.number{font-size:clamp(35px,9vw,55px)}.counter-area{margin-top:39px}.video{padding:18px}.thumb{width:90px;height:120px;flex-basis:90px}.stats{gap:10px}.metric{padding:17px}.metric-value{font-size:25px}.footer{flex-direction:column}}
 
-:root{
-  --bg:#07070b;
-  --panel:rgba(17,17,25,.72);
-  --panel-strong:rgba(22,22,32,.9);
-  --line:rgba(255,255,255,.09);
-  --text:#f7f7fb;
-  --muted:#8e8e9e;
-  --cyan:#25f4ee;
-  --pink:#ff2d70;
-  --violet:#8b5cf6;
-  --green:#57f287;
-  --youtube:#ff0033;
-  --shadow:0 30px 90px rgba(0,0,0,.45);
-}
-
-*{
-  box-sizing:border-box;
-}
-
-html{
-  scroll-behavior:smooth;
-}
-
+/* ═══════════════════════════════════════════════════════════
+   TIKTOK PULSE // FUTURE OPS — visual skin
+   ═══════════════════════════════════════════════════════════ */
+:root{color-scheme:dark;--bg:#040813;--panel:#0a1323;--panel2:#101d30;--line:#21405a;--muted:#7f9caf;--text:#eafaff;--cyan:#3bf7ef;--pink:#ff4c9a;--green:#73ffb8;--violet:#b597ff}
+html{background:#040813}
 body{
-  margin:0;
-  min-height:100vh;
-  color:var(--text);
-  font-family:"DM Sans",Arial,sans-serif;
-  background:
-    radial-gradient(circle at 12% 0%,rgba(255,45,112,.17),transparent 28%),
-    radial-gradient(circle at 88% 8%,rgba(37,244,238,.14),transparent 30%),
-    radial-gradient(circle at 50% 100%,rgba(139,92,246,.12),transparent 35%),
-    var(--bg);
-  overflow-x:hidden;
+ color:var(--text);
+ background:
+ radial-gradient(ellipse 700px 450px at 86% 4%,rgba(49,91,198,.21),transparent 72%),
+ radial-gradient(ellipse 600px 480px at -5% 48%,rgba(0,211,224,.075),transparent 75%),
+ #040813;
+ position:relative;isolation:isolate;min-height:100vh;
+}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+ background-image:linear-gradient(#57d8ff0a 1px,transparent 1px),linear-gradient(90deg,#57d8ff0a 1px,transparent 1px);
+ background-size:46px 46px;mask-image:linear-gradient(to bottom,#0008,transparent 85%);
+}
+body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
+ background:linear-gradient(90deg,transparent,#3bf7ef 28%,#ff4c9a 72%,transparent);
+ box-shadow:0 0 26px #3bf7ef55;pointer-events:none}
+.shell{max-width:1380px;padding-inline:clamp(18px,4vw,60px)}
+.topbar{height:94px;border-bottom:1px solid #4fbbdf2b}
+.brand{font:700 23px 'Space Grotesk',sans-serif;letter-spacing:-.06em}
+.brand-mark{width:43px;height:43px;border-radius:8px;
+ background:#071927;border:1px solid #3bf7ef88;color:#3bf7ef;
+ box-shadow:inset 0 0 18px #3bf7ef15,0 0 24px #3bf7ef17;font-size:25px}
+.brand span span{color:#3bf7ef}
+.pill{background:#09192a;border:1px solid #3c6c8955;color:#9dd5e6;
+ font:700 10px 'Space Grotesk';letter-spacing:.16em;border-radius:4px}
+.dot.on{background:#73ffb8;box-shadow:0 0 0 3px #73ffb81b,0 0 14px #73ffb8}
+.main{padding-top:68px}
+.eyebrow{color:#3bf7ef;font:700 11px 'Space Grotesk';letter-spacing:.27em}
+.eyebrow:before{content:"◈";margin-right:11px;color:#ff4c9a}
+.headline{font:700 clamp(47px,6.5vw,94px)/.98 'Space Grotesk';letter-spacing:-.075em;
+ max-width:1000px;margin:23px 0 22px}
+.headline em{font-style:normal;color:#3bf7ef;
+ background:linear-gradient(95deg,#3bf7ef,#8efbf4 52%,#ff73b2);
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lead{color:#8eafc2;font-size:15px;line-height:1.8;max-width:640px;margin-bottom:34px}
+.search{background:#091626;border:1px solid #3b7b977d;border-radius:8px;max-width:1000px;
+ box-shadow:0 0 0 1px #1f5d7426,0 18px 55px #0007,inset 0 1px #ffffff08;
+ padding:8px;position:relative}
+.search:before{content:"";position:absolute;left:0;top:0;width:35px;height:2px;background:#3bf7ef;box-shadow:0 0 13px #3bf7ef}
+.search:focus-within{border-color:#3bf7ef;box-shadow:0 0 0 3px #3bf7ef12,0 0 35px #3bf7ef10}
+.input-wrap svg{color:#3bf7ef}
+.search input{color:#eafaff;font-size:14px;padding-block:15px}
+.search input::placeholder{color:#617e92}
+.primary{background:linear-gradient(110deg,#3bf7ef,#68d8ff);color:#061421;border:0;border-radius:5px;
+ box-shadow:0 0 25px #3bf7ef25;font:800 12px 'Space Grotesk';letter-spacing:.04em;padding:17px 25px}
+.primary:hover{background:#8afff8;box-shadow:0 0 30px #3bf7ef55;transform:translateY(-1px)}
+.hint{color:#5f8399;font-size:11px}
+.dashboard{margin-top:48px;gap:17px;grid-template-columns:minmax(0,1.65fr) minmax(310px,.9fr)}
+.surface{background:linear-gradient(155deg,#0d1b2e,#08111e 85%);
+ border:1px solid #2d536c9e;border-radius:9px;box-shadow:0 16px 50px #00000045,inset 0 1px #d1faff08;
+ position:relative}
+.surface:after{content:"";position:absolute;right:-1px;bottom:-1px;width:24px;height:24px;
+ pointer-events:none;background:linear-gradient(135deg,transparent 47%,#3bf7ef66 50%,#3bf7ef66 53%,transparent 56%);
+ opacity:.55}
+.hero{min-height:348px;padding:36px 38px;border-color:#3c8392a3;
+ background:radial-gradient(ellipse 70% 100% at 95% 100%,#1b537d32,transparent),linear-gradient(125deg,#102437,#091625 65%)}
+.hero:before{content:"";position:absolute;right:-80px;top:-100px;width:330px;height:330px;
+ background:radial-gradient(circle,#3bf7ef13,transparent 65%);filter:none;border-radius:50%;pointer-events:none}
+.hero:after{content:"";position:absolute;left:0;top:0;right:auto;bottom:auto;width:150px;height:2px;
+ background:linear-gradient(90deg,#3bf7ef,transparent);box-shadow:0 0 20px #3bf7ef}
+.micro{color:#8bb3c8;font:700 10px 'Space Grotesk';letter-spacing:.18em}
+.live{border-radius:4px;background:#73ffb80b;border:1px solid #73ffb84b;color:#73ffb8;
+ font:700 10px 'Space Grotesk';letter-spacing:.14em}
+.live.off{background:#ffffff05;color:#8ea5b7;border-color:#48657a6b}
+.counter-area{margin:50px 0 31px}
+.number{font:700 clamp(46px,6vw,88px)/1 'Space Grotesk';letter-spacing:0;
+ color:#f3ffff;text-shadow:0 0 25px #3bf7ef35,0 0 55px #3bf7ef15;
+ font-variant-numeric:tabular-nums;min-height:1.18em}
+.digit{height:1.18em;width:.64em;flex:0 0 .64em;overflow:hidden;position:relative}
+.digit-glyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+ width:100%;height:100%;line-height:1;font-weight:700;will-change:transform}
+.comma{width:.18em;flex:0 0 .18em;color:#4e8696}
+.number-label{color:#72a5bc;font:700 10px 'Space Grotesk';letter-spacing:.24em;margin-top:14px}
+.growth{border:1px solid #73ffb829;background:#73ffb80b;border-radius:5px;color:#73ffb8;font-size:12px}
+.growth.neutral{background:#ffffff05;color:#a1bac9;border-color:#45617b44}
+.growth.negative{color:#ff8aaa;border-color:#ff4c9a44}
+.video{padding:18px;gap:17px;min-height:348px;align-items:stretch}
+.thumb{width:44%;height:auto;min-height:300px;flex:0 0 44%;border-radius:5px;
+ border:1px solid #4b7d965e;background:linear-gradient(140deg,#142b3d,#070e19)}
+.video-info{padding:10px 0;justify-content:center}
+.video-title{font-size:15px;line-height:1.65;color:#e8f9ff}
+.creator{border-top:1px solid #2c53684d;padding-top:20px;margin-top:22px}
+.avatar{width:39px;height:39px;border:1px solid #3bf7ef77}
+.creator-name{font-size:13px;color:#eafaff}.handle{font-size:11px;color:#80a1b6}
+.stats{gap:14px}
+.metric{min-height:152px;padding:23px;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
+.metric:before{content:"";position:absolute;top:0;left:0;width:46px;height:2px;
+ background:linear-gradient(90deg,#3bf7efaa,transparent)}
+.metric:hover{transform:translateY(-3px);border-color:#3bf7ef9e;
+ box-shadow:0 14px 38px #0006,0 0 24px #3bf7ef0c}
+.metric-icon{font-size:23px;text-shadow:0 0 18px currentColor}
+.metric-value{font:700 clamp(24px,2.5vw,36px) 'Space Grotesk';color:#f0fdff;letter-spacing:-.035em;margin-top:20px}
+.metric-label{font-size:11px;color:#7895a9}
+.bottom{gap:17px}
+.chart-panel,.profile-panel{padding:29px}
+.section-title{font:700 19px 'Space Grotesk';color:#e8faff}
+.sub{color:#7296ac;line-height:1.6}
+.chart-wrap{height:255px}
+.profile-grid{gap:11px}
+.profile-stat{background:#071727;border:1px solid #2c587050;border-radius:5px;padding:18px}
+.profile-stat strong{font:700 25px 'Space Grotesk';color:#e9fcff}
+.profile-stat span{color:#7399b0}
+.notice{border-top:1px solid #31546a52;color:#7596a9}
+.footer{border-color:#31546a52;color:#6d91a6}
+.error{border-radius:5px;background:#ff4c9a0d;border-color:#ff4c9a66;color:#ff9bbd}
+@media(max-width:1100px){
+ .dashboard{grid-template-columns:1fr 1fr}
+ .hero{grid-column:1/-1}
+ .video{grid-column:1/-1;min-height:190px}
+ .thumb{width:132px;height:175px;min-height:0;flex:0 0 132px}
+ .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bottom{grid-template-columns:1fr}
+ .number{font-size:clamp(46px,8vw,85px)}
 }
-
-body:before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  opacity:.22;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-  background-size:46px 46px;
-  mask-image:linear-gradient(to bottom,black,transparent 85%);
-}
-
-button,
-input{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
-
-.shell{
-  width:min(1120px,92%);
-  margin:0 auto;
-  padding:34px 0 70px;
-  position:relative;
-  z-index:1;
-}
-
-/* Header */
-
-.nav{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:56px;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-weight:700;
-  letter-spacing:-.03em;
-}
-
-.brand-mark{
-  width:38px;
-  height:38px;
-  border-radius:12px;
-  display:grid;
-  place-items:center;
-  background:linear-gradient(135deg,var(--pink),var(--violet) 52%,var(--cyan));
-  box-shadow:0 0 28px rgba(255,45,112,.25);
-}
-
-.brand-mark:after{
-  content:"▶";
-  font-size:14px;
-  transform:translateX(1px);
-}
-
-.brand span{
-  font-family:"Space Grotesk";
-  font-size:18px;
-}
-
-.status{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:9px 13px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.045);
-  border-radius:999px;
-  color:#d8d8df;
-  font-size:12px;
-  font-weight:600;
-  backdrop-filter:blur(14px);
-}
-
-.status i{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:var(--green);
-  box-shadow:0 0 14px var(--green);
-  animation:pulse 1.6s infinite;
-}
-
-/* Hero */
-
-.hero{
-  text-align:center;
-  max-width:900px;
-  margin:0 auto 34px;
-}
-
-.eyebrow{
-  display:inline-flex;
-  gap:8px;
-  align-items:center;
-  padding:7px 11px;
-  border:1px solid rgba(37,244,238,.18);
-  border-radius:999px;
-  color:var(--cyan);
-  background:rgba(37,244,238,.06);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-}
-
-.hero h1{
-  margin:20px 0 16px;
-  font-family:"Space Grotesk";
-  font-size:clamp(42px,7vw,76px);
-  line-height:.95;
-  letter-spacing:-.07em;
-}
-
-.gradient{
-  background:linear-gradient(
-    100deg,
-    #fff 10%,
-    #fff 28%,
-    var(--cyan) 58%,
-    var(--pink) 90%
-  );
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-
-.hero p{
-  margin:0 auto;
-  color:var(--muted);
-  font-size:16px;
-  max-width:600px;
-  line-height:1.7;
-}
-
-/* Mode switch */
-
-.mode-switch{
-  display:flex;
-  gap:4px;
-  width:max-content;
-  margin:26px auto 0;
-  padding:4px;
-  border:1px solid var(--line);
-  border-radius:999px;
-  background:rgba(255,255,255,.04);
-  backdrop-filter:blur(14px);
-}
-
-.mode-btn{
-  border:0;
-  padding:9px 18px;
-  border-radius:999px;
-  background:transparent;
-  color:#8e8e9e;
-  font-size:13px;
-  font-weight:700;
-  transition:.2s;
-}
-
-.mode-btn.active{
-  background:linear-gradient(135deg,var(--cyan),#8ffefa);
-  color:#050508;
-}
-
-/* Search */
-
-.search-zone{
-  width:min(760px,100%);
-  margin:30px auto 38px;
-}
-
-.search-zone.compare-zone{
-  width:min(920px,100%);
-}
-
-.search-card{
-  padding:8px;
-  border:1px solid var(--line);
-  border-radius:24px;
-  background:rgba(255,255,255,.045);
-  box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.05);
-  backdrop-filter:blur(24px);
-}
-
-.search-card + .search-card{
-  margin-top:12px;
-}
-
-.search-inner{
-  display:flex;
-  gap:8px;
-}
-
-.search-inner input{
-  min-width:0;
-  flex:1;
-  border:0;
-  outline:0;
-  color:#fff;
-  background:#0e0e15;
-  border-radius:17px;
-  padding:17px 18px;
-  font-size:15px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
-}
-
-.search-inner input::placeholder{
-  color:#666675;
-}
-
-.search-inner input:focus{
-  box-shadow:
-    inset 0 0 0 1px rgba(37,244,238,.45),
-    0 0 0 4px rgba(37,244,238,.06);
-}
-
-.platform-tag{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:0 16px;
-  border-radius:17px;
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.06em;
-  white-space:nowrap;
-}
-
-.platform-tag.tiktok{
-  background:rgba(37,244,238,.08);
-  color:var(--cyan);
-}
-
-.platform-tag.youtube{
-  background:rgba(255,0,51,.08);
-  color:#ff5c78;
-}
-
-.cta{
-  border:0;
-  border-radius:17px;
-  padding:0 24px;
-  color:#050508;
-  font-weight:800;
-  background:linear-gradient(135deg,var(--cyan),#8ffefa);
-  box-shadow:0 10px 35px rgba(37,244,238,.2);
-  transition:.25s transform,.25s box-shadow;
-  white-space:nowrap;
-}
-
-.cta:hover{
-  transform:translateY(-2px);
-  box-shadow:0 15px 45px rgba(37,244,238,.3);
-}
-
-.cta:active{
-  transform:scale(.98);
-}
-
-.compare-cta{
-  width:100%;
-  margin-top:4px;
-  padding:16px 0;
-  border-radius:17px;
-}
-
-.hint{
-  text-align:center;
-  color:#656574;
-  font-size:11px;
-  margin-top:12px;
-}
-
-.error{
-  display:none;
-  margin:15px auto 0;
-  width:min(760px,100%);
-  padding:11px 14px;
-  border-radius:14px;
-  border:1px solid rgba(255,45,112,.2);
-  background:rgba(255,45,112,.07);
-  color:#ff9ab7;
-  text-align:center;
-  font-size:12px;
-}
-
-.error.show{
-  display:block;
-}
-
-/* Dashboard grid */
-
-.dashboard{
-  display:grid;
-  grid-template-columns:1.55fr .9fr;
-  gap:16px;
-}
-
-.compare-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-}
-
-.card{
-  position:relative;
-  overflow:hidden;
-  border:1px solid var(--line);
-  border-radius:28px;
-  background:var(--panel);
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(24px);
-}
-
-.card:before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:linear-gradient(
-    135deg,
-    rgba(255,255,255,.06),
-    transparent 32%
-  );
-}
-
-.card.platform-youtube .live-badge{
-  background:rgba(255,0,51,.1);
-  border-color:rgba(255,0,51,.2);
-  color:#ff7085;
-}
-
-.card.platform-youtube .live-badge i{
-  background:var(--youtube);
-  box-shadow:0 0 10px var(--youtube);
-}
-
-.main-card{
-  padding:34px;
-  min-height:460px;
-}
-
-.card-label{
-  color:#777787;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.14em;
-  font-weight:700;
-}
-
-.video-title{
-  margin-top:12px;
-  font-family:"Space Grotesk";
-  font-size:clamp(16px,2.2vw,23px);
-  font-weight:600;
-  line-height:1.25;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-
-.live-badge{
-  position:absolute;
-  right:24px;
-  top:24px;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  padding:7px 10px;
-  border-radius:999px;
-  background:rgba(255,45,112,.1);
-  border:1px solid rgba(255,45,112,.2);
-  color:#ff7ea5;
-  font-size:10px;
-  font-weight:800;
-  letter-spacing:.1em;
-}
-
-.live-badge i{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:var(--pink);
-  box-shadow:0 0 10px var(--pink);
-  animation:pulse 1.2s infinite;
-}
-
-.views-wrap{
-  text-align:center;
-  padding:44px 0 34px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-/* ODOMÈTRE */
-
-.views{
-  position:relative;
-  z-index:1;
-  font-family:"Space Grotesk";
-  font-weight:700;
-  line-height:1;
-  letter-spacing:-.02em;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  max-width:80%;
-  text-shadow:0 0 45px rgba(37,244,238,.11);
-  font-size:clamp(26px,7vw,60px);
-}
-
-.odo-digit{
-  position:relative;
-  height:1.15em;
-  overflow:hidden;
-  width:.62em;
-  text-align:center;
-}
-
-.odo-strip{
-  position:absolute;
-  left:0;
-  right:0;
-  top:0;
-  display:flex;
-  flex-direction:column;
-  will-change:transform;
-}
-
-.odo-strip span{
-  display:block;
-  height:1.15em;
-  line-height:1.15em;
-}
-
-.views-label{
-  margin-top:16px;
-  color:#777787;
-  font-size:11px;
-  letter-spacing:.3em;
-  font-weight:700;
-}
-
-.delta{
-  margin:14px auto 0;
-  width:max-content;
-  max-width:100%;
-  padding:7px 10px;
-  border-radius:999px;
-  background:rgba(87,242,135,.08);
-  color:var(--green);
-  font-size:11px;
-  font-weight:700;
-}
-
-.stats-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-.stat{
-  padding:18px;
-  border-radius:20px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.035);
-}
-
-.stat-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  color:#777787;
-  font-size:11px;
-}
-
-.stat-icon{
-  font-size:16px;
-}
-
-.stat-value{
-  margin-top:9px;
-  font-family:"Space Grotesk";
-  font-size:24px;
-  font-weight:700;
-}
-
-.likes .stat-value{
-  color:#ff76a2;
-}
-
-.shares .stat-value{
-  color:var(--cyan);
-}
-
-.side-card{
-  padding:25px;
-}
-
-.side-title{
-  font-family:"Space Grotesk";
-  font-size:17px;
-  font-weight:600;
-  margin:8px 0 20px;
-}
-
-.metric-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:12px 0;
-  border-bottom:1px solid var(--line);
-  font-size:13px;
-}
-
-.metric-row:last-child{
-  border-bottom:0;
-}
-
-.metric-row span:first-child{
-  color:#777787;
-}
-
-.metric-row strong{
-  font-weight:700;
-}
-
-/* Comparaison */
-
-.verdict{
-  margin-top:16px;
-  padding:20px;
-  border-radius:20px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.035);
-  text-align:center;
-}
-
-.verdict-label{
-  color:#777787;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.14em;
-  font-weight:700;
-}
-
-.verdict-value{
-  margin-top:8px;
-  font-family:"Space Grotesk";
-  font-size:20px;
-  font-weight:700;
-}
-
-.verdict-bar{
-  margin-top:14px;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,255,255,.06);
-  overflow:hidden;
-  display:flex;
-}
-
-.verdict-bar-a{
-  background:linear-gradient(90deg,var(--cyan),#8ffefa);
-  height:100%;
-  transition:width .6s ease;
-}
-
-.verdict-bar-b{
-  background:linear-gradient(90deg,#ff5c78,var(--youtube));
-  height:100%;
-  transition:width .6s ease;
-}
-
-/* Empty state / motion */
-
-.shimmer{
-  position:absolute;
-  inset:-100%;
-  background:linear-gradient(
-    90deg,
-    transparent,
-    rgba(255,255,255,.04),
-    transparent
-  );
-  transform:translateX(-100%);
-  animation:shimmer 4s infinite;
-  pointer-events:none;
-}
-
-.flash{
-  animation:flash .5s ease;
-}
-
-@keyframes flash{
-  50%{
-    color:var(--green);
-    transform:scale(1.03);
-  }
-}
-
-@keyframes shimmer{
-  50%,100%{
-    transform:translateX(100%);
-  }
-}
-
-@keyframes pulse{
-  50%{
-    opacity:.35;
-    transform:scale(.72);
-  }
-}
-
-/* Footer */
-
-footer{
-  text-align:center;
-  color:#50505c;
-  font-size:11px;
-  margin-top:32px;
-}
-
-footer b{
-  color:#777787;
-}
-
-.hidden{
-  display:none !important;
-}
-
-/* Mobile */
-
-@media(max-width:800px){
-  .shell{
-    padding-top:22px;
-  }
-
-  .nav{
-    margin-bottom:44px;
-  }
-
-  .dashboard{
-    grid-template-columns:1fr;
-  }
-
-  .compare-grid{
-    grid-template-columns:1fr;
-  }
-
-  .main-card{
-    min-height:0;
-  }
-}
-
 @media(max-width:560px){
-  .shell{
-    width:94%;
-  }
-
-  .brand span{
-    display:none;
-  }
-
-  .hero h1{
-    font-size:46px;
-  }
-
-  .hero p{
-    font-size:14px;
-  }
-
-  .search-inner{
-    flex-direction:column;
-  }
-
-  .platform-tag{
-    justify-content:center;
-    padding:10px;
-  }
-
-  .cta{
-    height:54px;
-  }
-
-  .main-card{
-    padding:22px;
-  }
-
-  .live-badge{
-    top:18px;
-    right:18px;
-  }
-
-  .views-wrap{
-    padding:34px 0 26px;
-  }
-.views{
-    font-size:clamp(22px,7vw,46px);
-  }
-
-  .stats-grid{
-    gap:8px;
-  }
-
-  .stat{
-    padding:14px;
-  }
-
-  .stat-value{
-    font-size:21px;
-  }
+ .shell{padding-inline:17px}.topbar{height:75px}
+ .brand{font-size:19px}.main{padding-top:45px}
+ .headline{font-size:clamp(43px,11vw,62px)}
+ .lead{font-size:13px}
+ .search{flex-direction:column}
+ .primary{width:100%}
+ .dashboard{margin-top:34px;gap:12px}
+ .hero{padding:24px;min-height:290px}
+ .counter-area{margin:42px 0 28px}
+ .number{font-size:clamp(32px,8.5vw,60px)}
+ .video{padding:14px;min-height:160px}
+ .thumb{width:103px;height:146px;flex:0 0 103px}
+ .video-title{font-size:13px}
+ .metric{padding:18px;min-height:137px}
+ .metric-value{font-size:25px}
+ .chart-panel,.profile-panel{padding:22px}
+ .chart-wrap{height:215px}
 }
-/* Compteur sans cercle */
-.views-display{display:flex;justify-content:center;align-items:center;width:100%;min-height:100px}
-.views{max-width:100%;font-variant-numeric:tabular-nums}
-@media(max-width:560px){.views-display{min-height:80px}}
-
-/* Nouveaux modules Pulse — aucun cercle autour du compteur */
-.views-wrap {padding:30px 0 26px}
-.views {max-width:100%; flex-wrap:nowrap}
-.creator-head {display:flex;align-items:center;gap:12px;margin:18px 0 0;min-height:44px}
-.creator-avatar {width:44px;height:44px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
-.creator-name {font-weight:700;font-size:13px;overflow-wrap:anywhere}
-.creator-handle {font-size:11px;color:var(--muted)}
-.video-cover {width:100%;max-height:190px;object-fit:cover;border-radius:17px;margin-top:16px;border:1px solid var(--line)}
-.extra-stats {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
-.extra-stat {border:1px solid var(--line);background:rgba(255,255,255,.035);padding:14px;border-radius:16px;min-width:0}
-.extra-stat span {display:block;font-size:11px;color:var(--muted);margin-bottom:8px}
-.extra-stat strong {font-family:"Space Grotesk";font-size:19px;overflow-wrap:anywhere}
-.trend-card {margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.035)}
-.trend-heading {font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px}
-.trend-chart {width:100%;height:150px;display:block;overflow:visible}
-.trend-axis {display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px}
-.profile-panel {margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035)}
-.profile-panel h3 {font-size:13px;margin:0 0 10px}
-.profile-metrics {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;font-size:12px}
-.profile-metrics div {display:flex;flex-direction:column;gap:4px}
-.profile-metrics span {color:var(--muted);font-size:11px}
-.profile-metrics strong {font-size:15px}
-@media(max-width:560px){.extra-stats{gap:8px}.extra-stat{padding:11px}.extra-stat strong{font-size:16px}}
-</style>
-</head>
-
-<body>
-
-<div class="shell">
-
-  <nav class="nav">
-    <div class="brand">
-      <div class="brand-mark"></div>
-      <span>TikTok Pulse</span>
-    </div>
-
-    <div class="status">
-      <i></i> SYSTÈME EN DIRECT
-    </div>
-  </nav>
-
-  <header class="hero">
-
-    <div class="eyebrow">
-      ✦ Real-time social analytics
-    </div>
-
-    <h1>
-      Regarde une vidéo<br>
-      <span class="gradient">prendre vie.</span>
-    </h1>
-
-    <p>
-      Colle un lien TikTok ou YouTube et transforme ses statistiques
-      en une expérience live, fluide et spectaculaire.
-    </p>
-
-    <div class="mode-switch">
-      <button
-        class="mode-btn active"
-        id="modeSimpleBtn"
-        onclick="setMode('simple')"
-      >
-        Suivi simple
-      </button>
-
-      <button
-        class="mode-btn"
-        id="modeCompareBtn"
-        onclick="setMode('compare')"
-      >
-        Comparaison
-      </button>
-    </div>
-
-  </header>
-
-  <!-- MODE SIMPLE -->
-
-  <section class="search-zone" id="simpleSearch">
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <input
-          id="url-solo"
-          type="url"
-          autocomplete="off"
-          placeholder="Lien TikTok ou YouTube…"
-        >
-
-        <button
-          class="cta"
-          onclick="startSolo()"
-        >
-          Lancer le suivi ↗
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="hint">
-      Actualisation toutes les 5 secondes lorsque la page est visible
-    </div>
-
-  </section>
-
-  <!-- MODE COMPARAISON -->
-
-  <section
-    class="search-zone compare-zone hidden"
-    id="compareSearch"
-  >
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <span class="platform-tag tiktok">
-          TikTok
-        </span>
-
-        <input
-          id="url-a"
-          type="url"
-          autocomplete="off"
-          placeholder="Lien TikTok…"
-        >
-
-      </div>
-
-    </div>
-
-    <div class="search-card">
-
-      <div class="search-inner">
-
-        <span class="platform-tag youtube">
-          YouTube
-        </span>
-
-        <input
-          id="url-b"
-          type="url"
-          autocomplete="off"
-          placeholder="Lien YouTube…"
-        >
-
-      </div>
-
-    </div>
-
-    <button
-      class="cta compare-cta"
-      onclick="startCompare()"
-    >
-      Comparer les deux vidéos ↗
-    </button>
-
-    <div class="hint">
-      Actualisation toutes les 5 secondes lorsque la page est visible
-    </div>
-
-  </section>
-
-  <div class="error" id="errorBox"></div>
-
-  <!-- DASHBOARD SIMPLE -->
-
-  <section
-    class="dashboard hidden"
-    id="dashboardSimple"
-  ></section>
-
-  <!-- DASHBOARD COMPARAISON -->
-
-  <section
-    class="hidden"
-    id="dashboardCompare"
-  >
-
-    <div
-      class="compare-grid"
-      id="compareGrid"
-    ></div>
-
-    <div
-      class="verdict"
-      id="verdict"
-    >
-
-      <div class="verdict-label">
-        Qui mène la course
-      </div>
-
-      <div
-        class="verdict-value"
-        id="verdictValue"
-      >
-        En attente des données…
-      </div>
-
-      <div class="verdict-bar">
-
-        <div
-          class="verdict-bar-a"
-          id="verdictBarA"
-          style="width:50%"
-        ></div>
-
-        <div
-          class="verdict-bar-b"
-          id="verdictBarB"
-          style="width:50%"
-        ></div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-  <footer>
-    Propulsé par <b>TikTok Pulse</b> · données fournies par votre endpoint de statistiques
-  </footer>
-
-</div>
-
-
-<!-- TEMPLATE CARTE -->
-
-<template id="cardTemplate">
-
-  <article class="card main-card">
-
-    <div class="shimmer"></div>
-
-    <div class="live-badge">
-      <i></i> LIVE TRACKING
-    </div>
-
-    <div
-      class="card-label"
-      data-role="platform-label"
-    >
-      Vidéo suivie
-    </div>
-
-    <div
-      class="video-title"
-      data-role="title"
-    >
-      Colle un lien pour commencer
-    </div>
-
-    <div class="creator-head hidden" data-role="creatorBlock">
-      <img class="creator-avatar" data-role="avatar" alt="Photo du créateur" referrerpolicy="no-referrer">
-      <div><div class="creator-name" data-role="nickname"></div><div class="creator-handle" data-role="username"></div></div>
-    </div>
-    <img class="video-cover hidden" data-role="cover" alt="Miniature de la vidéo" loading="lazy" referrerpolicy="no-referrer">
-
-    <div class="views-wrap">
-
-      <div
-          class="views"
-          data-role="counter"
-        ></div>
-
-      <div class="views-label">
-        VUES EN DIRECT
-      </div>
-
-      <div
-        class="delta"
-        data-role="delta"
-      >
-        ● En attente des premières données
-      </div>
-
-    </div>
-
-    <div class="stats-grid">
-
-      <div class="stat likes">
-
-        <div class="stat-top">
-          <span data-role="stat2-label">
-            ENGAGEMENT
-          </span>
-
-          <span class="stat-icon">
-            ♥
-          </span>
-        </div>
-
-        <div
-          class="stat-value"
-          data-role="likes"
-        >
-          0
-        </div>
-
-        <div
-          class="card-label"
-          style="margin-top:4px"
-          data-role="stat2-name"
-        >
-          Likes
-        </div>
-
-      </div>
-
-      <div class="stat shares">
-
-        <div class="stat-top">
-
-          <span data-role="stat3-label">
-            VIRALITÉ
-          </span>
-
-          <span class="stat-icon">
-            ↗
-          </span>
-
-        </div>
-
-        <div
-          class="stat-value"
-          data-role="shares"
-        >
-          0
-        </div>
-
-        <div
-          class="card-label"
-          style="margin-top:4px"
-          data-role="stat3-name"
-        >
-          Partages
-        </div>
-
-      </div>
-
-    </div>
-    <div class="extra-stats">
-      <div class="extra-stat"><span>💬 Commentaires</span><strong data-role="comments">—</strong></div>
-      <div class="extra-stat"><span>🔖 Favoris</span><strong data-role="favorites">—</strong></div>
-      <div class="extra-stat"><span>📈 Engagement</span><strong data-role="engagement">—</strong></div>
-      <div class="extra-stat"><span>⚡ Vues / minute</span><strong data-role="perMinute">—</strong></div>
-    </div>
-    <div class="trend-card">
-      <div class="trend-heading">ÉVOLUTION DES VUES · SESSION EN COURS</div>
-      <svg class="trend-chart" data-role="chart" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Évolution des vues"><path data-role="chartArea" fill="rgba(37,244,238,.08)" d=""/><path data-role="chartLine" fill="none" stroke="#25f4ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d=""/></svg>
-      <div class="trend-axis"><span data-role="chartStart">Début</span><span data-role="chartEnd">Maintenant</span></div>
-    </div>
-    <div class="profile-panel hidden" data-role="profilePanel">
-      <h3>STATISTIQUES DU PROFIL</h3>
-      <div class="profile-metrics">
-        <div><span>Abonnés</span><strong data-role="followers">—</strong></div>
-        <div><span>Abonnements</span><strong data-role="following">—</strong></div>
-        <div><span>Likes du profil</span><strong data-role="profileLikes">—</strong></div>
-        <div><span>Vidéos publiées</span><strong data-role="videoCount">—</strong></div>
-      </div>
-    </div>
-
-  </article>
-
-</template>
-
-
-<!-- TEMPLATE SIDE -->
-
-<template id="sideTemplate">
-
-  <aside class="card side-card">
-
-    <div class="card-label">
-      Instantané
-    </div>
-
-    <div class="side-title">
-      Performance
-    </div>
-
-    <div class="metric-row">
-      <span>Statut</span>
-      <strong data-role="trackingStatus">
-        En attente
-      </strong>
-    </div>
-
-    <div class="metric-row">
-      <span>Dernière mise à jour</span>
-      <strong data-role="lastUpdate">
-        —
-      </strong>
-    </div>
-
-    <div class="metric-row">
-      <span>Publié le</span>
-      <strong data-role="publishDate">
-        —
-      </strong>
-    </div>
-
-    <div class="metric-row">
-      <span>Évolution</span>
-      <strong data-role="growth">
-        —
-      </strong>
-    </div>
-
-  </aside>
-
-</template>
-
-
+@media(prefers-reduced-motion:reduce){.metric,.primary{transition:none}}
+
+/* Session indicator — display only, data hookup will come later */
+.online-pill{display:inline-flex;align-items:center;gap:7px;border-color:#73ffb84a;color:#a9ffdc;white-space:nowrap}
+.online-led{display:inline-block;width:7px;height:7px;border-radius:50%;background:#73ffb8;box-shadow:0 0 10px #73ffb8aa;flex-shrink:0}
+#onlineCount{font-variant-numeric:tabular-nums;font-weight:800;color:#eafff3}
+</style></head><body>
+<header class="shell topbar"><a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a><div class="top-right"><span class="pill"><span id="headerDot" class="dot"></span><span id="headerStatus">EN ATTENTE</span></span><span class="pill online-pill" aria-live="polite" title="Nombre de sessions actives"><span class="online-led" aria-hidden="true"></span><span id="onlineCount">—</span> EN LIGNE</span></div></header>
+<main class="shell main"><div class="eyebrow">✦ TABLEAU DE BORD TIKTOK</div><h1 class="headline">Chaque vue.<br><em>En temps réel.</em></h1><p class="lead">Suis les performances de ta vidéo TikTok dans une interface pensée pour les créateurs. Vues, engagement, croissance et historique au même endroit.</p>
+<form class="search" id="searchForm"><div class="input-wrap"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><input id="videoUrl" type="url" placeholder="Colle le lien de ta vidéo TikTok ici…" required aria-label="Lien de la vidéo TikTok" autocomplete="off"></div><button class="primary" id="startBtn" type="submit">Suivre la vidéo ↗</button></form><div class="hint">Compatible avec les liens TikTok /@utilisateur/video/… · Les données dépendent de TikWM.</div><div id="error" class="error" role="alert"></div>
+<section class="dashboard" aria-label="Statistiques TikTok"><article class="surface hero"><div class="row"><span class="micro">Performance de la vidéo</span><span class="live off" id="liveBadge">EN ATTENTE</span></div><div class="counter-area"><div class="number" id="views" aria-label="Nombre de vues">0</div><div class="number-label">VUES TOTALES</div></div><div class="growth neutral" id="growth">↗ En attente des premières données</div></article>
+<article class="surface video"><img id="cover" class="thumb" alt="Miniature de la vidéo" referrerpolicy="no-referrer"><div class="video-info"><div class="micro">VIDÉO SUIVIE</div><div id="title" class="video-title" style="margin-top:11px">Ta prochaine vidéo virale commence ici.</div><div class="creator"><img id="avatar" class="avatar" alt="Avatar du créateur" referrerpolicy="no-referrer"><div><div id="nickname" class="creator-name">Créateur TikTok</div><div id="username" class="handle">En attente d'une vidéo</div></div></div></div></article>
+<div class="stats"><article class="surface metric"><div class="metric-head"><span class="micro">J'AIME</span><span class="metric-icon" style="color:var(--pink)">♥</span></div><div class="metric-value" id="likes">—</div><div class="metric-label">Likes reçus</div></article><article class="surface metric"><div class="metric-head"><span class="micro">COMMENTAIRES</span><span class="metric-icon" style="color:var(--violet)">◉</span></div><div class="metric-value" id="comments">—</div><div class="metric-label">Réactions écrites</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PARTAGES</span><span class="metric-icon" style="color:var(--cyan)">↗</span></div><div class="metric-value" id="shares">—</div><div class="metric-label">Viralité</div></article><article class="surface metric"><div class="metric-head"><span class="micro">FAVORIS</span><span class="metric-icon" style="color:#f7c56a">★</span></div><div class="metric-value" id="favorites">—</div><div class="metric-label">Enregistrements</div></article><article class="surface metric"><div class="metric-head"><span class="micro">ENGAGEMENT</span><span class="metric-icon" style="color:var(--green)">%</span></div><div class="metric-value" id="engagement">—</div><div class="metric-label">Likes + commentaires + partages / vues</div></article><article class="surface metric"><div class="metric-head"><span class="micro">VUES / MIN</span><span class="metric-icon" style="color:var(--cyan)">⚡</span></div><div class="metric-value" id="perMinute">—</div><div class="metric-label">Évolution observée</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PROGRESSION</span><span class="metric-icon" style="color:var(--green)">↑</span></div><div class="metric-value" id="gain">—</div><div class="metric-label">Depuis le début du suivi</div></article><article class="surface metric"><div class="metric-head"><span class="micro">DERNIER RELEVÉ</span><span class="metric-icon" style="color:#adb2c5">◷</span></div><div class="metric-value" id="lastUpdate" style="font-size:25px">—</div><div class="metric-label">Heure locale</div></article></div>
+<div class="bottom"><article class="surface chart-panel"><div class="row"><div><div class="section-title">Évolution des vues</div><div class="sub">Historique de cette session · dernières 60 minutes</div></div><span class="pill">LIVE</span></div><div class="chart-wrap"><canvas id="chart" aria-label="Graphique des vues" role="img"></canvas><div class="empty-chart" id="chartEmpty">Les premières mesures apparaîtront ici.</div></div></article><article class="surface profile-panel"><div class="section-title">Statistiques du créateur</div><div class="sub">Données publiques du profil, si disponibles</div><div class="profile-grid"><div class="profile-stat"><strong id="followers">—</strong><span>Abonnés</span></div><div class="profile-stat"><strong id="following">—</strong><span>Abonnements</span></div><div class="profile-stat"><strong id="profileLikes">—</strong><span>Likes du profil</span></div><div class="profile-stat"><strong id="videos">—</strong><span>Vidéos publiées</span></div></div><div class="notice">Les compteurs reflètent les données renvoyées par TikWM, pas nécessairement les valeurs instantanées affichées sur TikTok.</div></article></div></section></main><footer class="shell footer"><span>© TikTok Pulse · Tableau de bord créateur</span><span>Projet indépendant · Non affilié à TikTok</span></footer>
 <script>
-const $ = id => document.getElementById(id);
-
-function formatNumber(value){
-  return Number(value || 0).toLocaleString("fr-FR");
-}
-
-function detectPlatform(url){
-  if(/tiktok\.com/i.test(url)){
-    return "tiktok";
-  }
-  if(/youtube\.com|youtu\.be/i.test(url)){
-    return "youtube";
-  }
-  return null;
-}
-
-/* ---------------------------------------------------------
-   VRAI ODOMÈTRE
---------------------------------------------------------- */
-const REFRESH_MS = 5000;
-
-class Odometer {
-  constructor(containerEl) {
-    this.box = containerEl;
-    this.digits = [];
+'use strict';
+const $=id=>document.getElementById(id);const nf=new Intl.NumberFormat('fr-FR');const fmt=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?nf.format(Number(v)):'—';
+function validTikTok(raw){try{const u=new URL(raw);return /^https?:$/.test(u.protocol)&&(u.hostname==='tiktok.com'||u.hostname.endsWith('.tiktok.com'))&&/\/video\/\d+/.test(u.pathname)}catch{return false}}
+class RollingCounter {
+  constructor(el) {
+    this.el = el;
     this.value = 0;
-    this.target = 0;
-    this.frame = null;
-    this.token = 0;
-  }
-
-  adjustFontSize(count) {
-    const sizes = [
-      "clamp(26px,7vw,60px)", "clamp(24px,6.4vw,52px)",
-      "clamp(21px,5.6vw,44px)", "clamp(18px,4.8vw,36px)",
-      "clamp(16px,4.2vw,30px)", "clamp(14px,3.7vw,26px)",
-      "clamp(12px,3.2vw,22px)"
-    ];
-    this.box.style.fontSize = sizes[Math.min(Math.max(count - 4, 0), 6)];
-  }
-
-  cancel() {
-    this.token++;
-    if (this.frame !== null) cancelAnimationFrame(this.frame);
-    this.frame = null;
-  }
-
-  build(text) {
-    this.box.innerHTML = "";
-    this.digits = [];
-    this.adjustFontSize(text.length);
-    for (const char of text) {
-      const cell = document.createElement("div");
-      cell.className = "odo-digit";
-      const strip = document.createElement("div");
-      strip.className = "odo-strip";
-      // Neuf cycles pour permettre plusieurs tours sans saut visuel.
-      for (let cycle = 0; cycle < 9; cycle++) {
-        for (let n = 0; n < 10; n++) {
-          const span = document.createElement("span");
-          span.textContent = n;
-          strip.appendChild(span);
-        }
-      }
-      const position = 40 + Number(char);
-      strip.style.transition = "none";
-      strip.style.transform = `translateY(-${position * (100 / 90)}%)`;
-      cell.appendChild(strip);
-      this.box.appendChild(cell);
-      this.digits.push({ strip });
-    }
-  }
-
-  set(value) {
-    this.cancel();
-    this.value = Math.max(0, Math.floor(Number(value) || 0));
-    this.target = this.value;
-    this.build(String(this.value));
-  }
-
-  rollTo(target) {
-    const next = Math.max(0, Math.floor(Number(target) || 0));
-    this.cancel();
-    const token = this.token;
-    const from = this.value;
-    this.target = next;
-    if (next === from) return;
-
-    const diff = next - from;
-    const small = Math.abs(diff) <= 35;
-    const duration = small
-      ? Math.min(3600, Math.max(700, Math.abs(diff) * 140))
-      : 2100;
-    const start = performance.now();
-    const fromText = String(from);
-    const toText = String(next);
-    const count = Math.max(fromText.length, toText.length);
-
-    // On construit les colonnes une seule fois au début de l'animation.
-    // Chaque chiffre glisse de manière continue (pas de transition CSS relancée).
-    if (this.digits.length !== count) {
-      this.build(String(from).padStart(count, "0"));
-    }
-    this.adjustFontSize(count);
-
-    const columns = this.digits.map((state, i) => {
-      const place = Math.pow(10, count - i - 1);
-      const first = Math.floor(from / place) % 10;
-      const last = Math.floor(next / place) % 10;
-      // Pour une grande variation, on anime un tour partiel par colonne.
-      const delta = small
-        ? diff / place
-        : diff > 0 ? (last - first + 10) % 10 : -((first - last + 10) % 10);
-      return { strip: state.strip, first, delta };
-    });
-
-    const step = now => {
-      if (token !== this.token) return;
-      const progress = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      for (const col of columns) {
-        const position = 40 + col.first + col.delta * eased;
-        col.strip.style.transform = `translateY(-${position * (100 / 90)}%)`;
-      }
-      if (progress < 1) {
-        this.frame = requestAnimationFrame(step);
-      } else {
-        this.frame = null;
-        this.value = next;
-        // Recentre à l'identique pour préparer la prochaine animation.
-        this.build(String(next));
-      }
-    };
-    this.frame = requestAnimationFrame(step);
-  }
-}
-
-/* ---------------------------------------------------------
-   TRACKER : une requête toutes les 5 secondes, uniquement
-   lorsque la page et le mode de suivi sont visibles.
---------------------------------------------------------- */
-class VideoTracker {
-  constructor({ mainCardEl, sideCardEl, onUpdate }) {
-    this.main = mainCardEl;
-    this.side = sideCardEl;
-    this.onUpdate = onUpdate || (() => {});
-    this.role = tag => this.main.querySelector(`[data-role="${tag}"]`);
-    this.sideRole = tag => this.side.querySelector(`[data-role="${tag}"]`);
-    this.odometer = new Odometer(this.role("counter"));
-    this.url = "";
-    this.platform = null;
-    this.oldViews = null;
-    this.history = [];
-    this.isTracking = false;
-    this.isUpdating = false;
-    this.refreshTimer = null;
-    this.controller = null;
+    this.columns = [];
     this.generation = 0;
-    this.odometer.set(0);
+    this.draw(0);
   }
 
-  applyPlatformStyle() {
-    this.main.classList.toggle("platform-youtube", this.platform === "youtube");
-    this.role("stat2-label").textContent = "ENGAGEMENT";
-    this.role("stat2-name").textContent = "Likes";
-    this.role("stat3-label").textContent = this.platform === "youtube" ? "—" : "VIRALITÉ";
-    this.role("stat3-name").textContent = this.platform === "youtube" ? "Partages (n/a)" : "Partages";
-  }
-
-  start(url) {
-    const platform = detectPlatform(url);
-    if(!platform) throw new Error("Lien non reconnu (TikTok ou YouTube uniquement).");
-    this.stop();
-    this.url = url;
-    this.platform = platform;
-    this.oldViews = null;
-    this.history = [];
-    this.resetExtras();
-    this.applyPlatformStyle();
-    this.odometer.set(0);
-    this.role("likes").textContent = "0";
-    this.role("shares").textContent = "0";
-    this.role("title").textContent = "Chargement des données…";
-    this.sideRole("lastUpdate").textContent = "Synchronisation…";
-    this.sideRole("publishDate").textContent = "—";
-    this.sideRole("growth").textContent = "—";
-    this.role("delta").textContent = "● Connexion aux statistiques…";
-    this.isTracking = true;
-    this.setTrackingState(true);
-    if(!document.hidden) this.update();
-  }
-
-  stop() {
-    this.isTracking = false;
+  draw(value, width = String(value).length) {
     this.generation++;
-    clearTimeout(this.refreshTimer);
-    this.refreshTimer = null;
-    if(this.controller) this.controller.abort();
-    this.controller = null;
-    this.isUpdating = false;
-    this.odometer.cancel();
+    this.el.replaceChildren();
+    this.columns = [];
+    const digits = String(value).padStart(width, '0');
+    for (let i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 === 0) {
+        const comma = document.createElement('span');
+        comma.className = 'comma';
+        comma.textContent = '·';
+        this.el.append(comma);
+      }
+      const column = document.createElement('span');
+      column.className = 'digit';
+      const strip = document.createElement('span');
+      for (let n = 0; n < 30; n++) {
+        const digit = document.createElement('b');
+        digit.textContent = n % 10;
+        strip.append(digit);
+      }
+      column.append(strip);
+      this.el.append(column);
+      const digit = Number(digits[i]);
+      strip.style.transition = 'none';
+      strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + digit}), 0)`;
+      this.columns.push({ strip, digit });
+    }
   }
 
-  pause() {
-    clearTimeout(this.refreshTimer);
-    this.refreshTimer = null;
-    if(this.controller) this.controller.abort();
-    this.controller = null;
-    this.generation++;
-    this.isUpdating = false;
-    this.odometer.cancel();
-    if(this.isTracking) this.setTrackingState(false, "En pause");
-  }
+  set(next) {
+    next = Math.max(0, Math.floor(Number(next) || 0));
+    if (next === this.value) return;
+    const old = this.value;
+    this.value = next;
+    const width = Math.max(String(old).length, String(next).length);
+    if (this.columns.length !== width) this.draw(old, width);
+    const token = ++this.generation;
+    const oldText = String(old).padStart(width, '0');
+    const newText = String(next).padStart(width, '0');
+    const changed = [];
 
-  resume() {
-    if(!this.isTracking || document.hidden) return;
-    clearTimeout(this.refreshTimer);
-    this.refreshTimer = null;
-    this.update();
-  }
-
-  setTrackingState(active, label) {
-    const el = this.sideRole("trackingStatus");
-    el.textContent = label || (active ? "Actif" : "En attente");
-    el.style.color = active ? "var(--green)" : "";
-  }
-
-  updateMeta(views, createTime) {
-    this.sideRole("lastUpdate").textContent = new Date().toLocaleTimeString("fr-FR", {
-      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    this.columns.forEach((column, i) => {
+      const before = Number(oldText[i]);
+      const after = Number(newText[i]);
+      const strip = column.strip;
+      strip.getAnimations().forEach(animation => animation.cancel());
+      strip.style.transition = 'none';
+      strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + before}), 0)`;
+      column.digit = after;
+      if (before !== after) {
+        // Le chiffre suivant arrive du bas. Les colonnes inchangées restent fixes.
+        const distance = next >= old
+          ? (after - before + 10) % 10
+          : -((before - after + 10) % 10);
+        changed.push({ strip, after, distance, before });
+      }
     });
-    this.sideRole("publishDate").textContent = createTime
-      ? new Date(createTime * 1000).toLocaleDateString("fr-FR", {
-          day: "2-digit", month: "short", year: "numeric"
-        }) : "—";
-    if(this.oldViews !== null) {
-      const diff = views - this.oldViews;
-      const growth = this.sideRole("growth");
-      const delta = this.role("delta");
-      growth.textContent = diff > 0 ? `+${formatNumber(diff)}` : diff < 0 ? formatNumber(diff) : "Stable";
-      growth.style.color = diff > 0 ? "var(--green)" : "";
-      delta.textContent = diff > 0
-        ? `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`
-        : "● +0 vues depuis la dernière synchro";
-      delta.style.color = diff > 0 ? "var(--green)" : "";
-    }
-  }
 
-  resetExtras() {
-    for(const key of ["comments","favorites","engagement","perMinute","followers","following","profileLikes","videoCount"]) this.role(key).textContent = "—";
-    this.role("creatorBlock").classList.add("hidden");
-    this.role("cover").classList.add("hidden");
-    this.role("profilePanel").classList.add("hidden");
-    this.role("chartLine").setAttribute("d", "");
-    this.role("chartArea").setAttribute("d", "");
-  }
-
-  drawHistory() {
-    const points = this.history;
-    if(!points.length) return;
-    const low = Math.min(...points.map(p=>p.v));
-    const high = Math.max(...points.map(p=>p.v));
-    const minTime = points[0].t;
-    const spanTime = Math.max(1, points[points.length-1].t - minTime);
-    const spanValue = Math.max(1, high - low);
-    const coords = points.map((p,i)=>[
-      points.length === 1 ? 0 : (p.t-minTime)/spanTime*600,
-      135-(p.v-low)/spanValue*120
-    ]);
-    const d = coords.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
-    this.role("chartLine").setAttribute("d",d);
-    this.role("chartArea").setAttribute("d",d+` L${coords[coords.length-1][0].toFixed(1)} 150 L${coords[0][0].toFixed(1)} 150 Z`);
-    this.role("chartStart").textContent = new Date(minTime).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-    this.role("chartEnd").textContent = new Date(points[points.length-1].t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  }
-
-  updateExtras(data, views, likes, shares) {
-    const show = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value)) ? "—" : formatNumber(value);
-    this.role("comments").textContent = show(data.comments);
-    this.role("favorites").textContent = show(data.favorites);
-    const comments = Number(data.comments);
-    if(views > 0 && data.comments != null && data.shares != null && data.likes != null) {
-      this.role("engagement").textContent = (((likes+comments+shares)/views)*100).toLocaleString("fr-FR",{maximumFractionDigits:2})+" %";
-    } else this.role("engagement").textContent = "—";
-    const now = Date.now();
-    this.history.push({t:now,v:views});
-    // Une heure de données en mémoire, pas d'historique inventé.
-    this.history = this.history.filter(p=>now-p.t<=3600000).slice(-720);
-    const earlier = this.history.find(p=>p.t <= now-60000) || this.history[0];
-    const elapsed = (now-earlier.t)/60000;
-    this.role("perMinute").textContent = elapsed >= 0.08 && this.history.length>1
-      ? (Math.max(0,(views-earlier.v)/elapsed)).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "—";
-    this.drawHistory();
-    const creator = data.author || {};
-    const hasCreator = Boolean(creator.nickname || creator.username);
-    this.role("creatorBlock").classList.toggle("hidden", !hasCreator);
-    this.role("nickname").textContent = creator.nickname || creator.username || "";
-    this.role("username").textContent = creator.username ? "@"+creator.username.replace(/^@/,"") : "";
-    const avatar = this.role("avatar");
-    avatar.style.display = creator.avatar ? "" : "none";
-    if(creator.avatar && /^https:\/\//.test(creator.avatar)) avatar.src = creator.avatar;
-    const cover = this.role("cover");
-    const coverUrl = data.cover;
-    cover.classList.toggle("hidden", !coverUrl);
-    if(coverUrl && /^https:\/\//.test(coverUrl)) cover.src = coverUrl;
-    const profile = data.profile;
-    this.role("profilePanel").classList.toggle("hidden", !profile);
-    if(profile) {
-      this.role("followers").textContent = show(profile.followers);
-      this.role("following").textContent = show(profile.following);
-      this.role("profileLikes").textContent = show(profile.likes);
-      this.role("videoCount").textContent = show(profile.videos);
-    }
-  }
-
-  async update() {
-    if(!this.isTracking || !this.url || document.hidden || this.isUpdating) return;
-    const generation = this.generation;
-    const controller = new AbortController();
-    this.controller = controller;
-    this.isUpdating = true;
-    const started = Date.now();
-    try {
-      const res = await fetch("/stats?url=" + encodeURIComponent(this.url), {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-        signal: controller.signal
+    // On force la pose initiale avant de lancer la transition CSS.
+    void this.el.offsetHeight;
+    requestAnimationFrame(() => {
+      if (token !== this.generation) return;
+      changed.forEach(({ strip, before, distance }) => {
+        strip.style.transition = 'transform 850ms cubic-bezier(.22,.61,.36,1)';
+        strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + before + distance}), 0)`;
       });
-      if(!res.ok) throw new Error("Le serveur a répondu avec le statut " + res.status);
-      const data = await res.json();
-      if(generation !== this.generation || !this.isTracking || document.hidden) return;
-      if(data.error || data.views == null) throw new Error(data.error || "Statistiques indisponibles");
-      const views = Number(data.views) || 0;
-      const likes = Number(data.likes) || 0;
-      const shares = Number(data.shares) || 0;
-      if(this.oldViews === null) {
-        this.odometer.set(views);
-      } else if(views !== this.oldViews) {
-        this.odometer.rollTo(views);
-      }
-      this.role("likes").textContent = formatNumber(likes);
-      this.role("shares").textContent = this.platform === "youtube" ? "—" : formatNumber(shares);
-      this.role("title").textContent = data.title || (this.platform === "youtube" ? "Vidéo YouTube" : "Vidéo TikTok");
-      this.updateExtras(data, views, likes, shares);
-      this.updateMeta(views, data.createTime);
-      this.oldViews = views;
-      this.setTrackingState(true);
-      this.onUpdate({ views, likes, shares, title: data.title, platform: this.platform });
-    } catch(error) {
-      if(error.name !== "AbortError" && generation === this.generation) {
-        console.error("Erreur stats:", error);
-        this.setTrackingState(false);
-        setError(error.message);
-      }
-    } finally {
-      if(generation === this.generation) {
-        this.isUpdating = false;
-        this.controller = null;
-        if(this.isTracking && !document.hidden) {
-          // Espacement de 5 s entre les débuts de requêtes ; jamais en parallèle.
-          const delay = Math.max(0, REFRESH_MS - (Date.now() - started));
-          this.refreshTimer = setTimeout(() => this.update(), delay);
-        }
-      }
-    }
+      setTimeout(() => {
+        if (token !== this.generation) return;
+        changed.forEach(({ strip, after }) => {
+          strip.style.transition = 'none';
+          strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + after}), 0)`;
+        });
+      }, 900);
+    });
   }
 }
 
-/* ---------------------------------------------------------
-   CONSTRUCTION DES CARTES
---------------------------------------------------------- */
-function buildCard(){
-  const mainCard = document.importNode($("cardTemplate").content, true).firstElementChild;
-  const sideCard = document.importNode($("sideTemplate").content, true).firstElementChild;
-  return { mainCard, sideCard };
-}
-
-function setError(message = ""){
-  $("errorBox").textContent = message;
-  $("errorBox").classList.toggle("show", !!message);
-}
-
-/* ---------------------------------------------------------
-   MODE SIMPLE
---------------------------------------------------------- */
-let soloTracker = null;
-
-function initSoloDashboard(){
-  const dash = $("dashboardSimple");
-  dash.innerHTML = "";
-  const { mainCard, sideCard } = buildCard();
-  dash.appendChild(mainCard);
-  dash.appendChild(sideCard);
-  soloTracker = new VideoTracker({
-    mainCardEl: mainCard,
-    sideCardEl: sideCard
-  });
-}
-
-function startSolo(){
-  const value = $("url-solo").value.trim();
-  if(!value){
-    setError("Ajoute un lien TikTok ou YouTube pour lancer le suivi.");
-    $("url-solo").focus();
+const normalPageTitle=document.title;
+const pausedPageTitle='🔴 Actualisation arrêtée';
+const isPageActive=()=>document.visibilityState==='visible'&&document.hasFocus();
+function syncPageTitle(){document.title=isPageActive()?normalPageTitle:pausedPageTitle}
+const counter=new RollingCounter($('views'));let currentUrl='',timer=null,controller=null,requestId=0,history=[],initialViews=null,previous=null,tracking=false;
+function status(active,label){$('headerDot').classList.toggle('on',active);$('headerStatus').textContent=label;$('liveBadge').textContent=active?'● SUIVI ACTIF':label;$('liveBadge').classList.toggle('off',!active)}function error(msg){$('error').textContent=msg||'';$('error').classList.toggle('show',!!msg)}function imageSet(id,url){const el=$(id);if(typeof url==='string'&&/^https:\/\//i.test(url)){el.src=url;el.style.opacity='1'}else{el.removeAttribute('src');el.style.opacity='.25'}}function show(id,val){$(id).textContent=fmt(val)}
+function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect();if(!rect.width)return;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:55,r:10,t:15,b:25};ctx.clearRect(0,0,w,h);ctx.font='11px DM Sans';ctx.fillStyle='#8990a6';ctx.strokeStyle='#ffffff13';ctx.lineWidth=1;if(history.length<2){$('chartEmpty').classList.remove('hidden');return}$('chartEmpty').classList.add('hidden');const values=history.map(p=>p.v),min=Math.min(...values),max=Math.max(...values),spread=Math.max(1,max-min),lo=min-spread*.12,hi=max+spread*.12;for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(nf.format(Math.round(hi-(hi-lo)*i/3)),3,y+4)}const x=i=>pad.l+(w-pad.l-pad.r)*i/(history.length-1),y=v=>pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#42e9e344');grad.addColorStop(1,'#42e9e300');ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.lineTo(x(history.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.strokeStyle='#42e9e3';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();ctx.fillStyle='#8d93a6';ctx.fillText(new Date(history[0].t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),pad.l,h-5);ctx.textAlign='right';ctx.fillText(new Date(history.at(-1).t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),w-pad.r,h-5);ctx.textAlign='left'}
+function update(data){if(!Number.isFinite(Number(data.views))||data.views===null)throw Error('Compteur de vues indisponible');const views=Number(data.views),now=Date.now();counter.set(views);show('likes',data.likes);show('comments',data.comments);show('shares',data.shares);show('favorites',data.favorites);$('title').textContent=data.title||'Vidéo TikTok';imageSet('cover',data.cover);const a=data.author||{},p=data.profile||{};imageSet('avatar',a.avatar||p.avatar);$('nickname').textContent=a.nickname||p.nickname||'Créateur TikTok';$('username').textContent=a.username?'@'+a.username:'Profil TikTok';show('followers',p.followers);show('following',p.following);show('profileLikes',p.likes);show('videos',p.videos);const likes=Number(data.likes||0),comments=Number(data.comments||0),shares=Number(data.shares||0);$('engagement').textContent=views>0?((likes+comments+shares)/views*100).toLocaleString('fr-FR',{maximumFractionDigits:2})+' %':'—';if(initialViews===null)initialViews=views;const gain=views-initialViews;$('gain').textContent=(gain>0?'+':'')+fmt(gain);if(previous){const delta=views-previous.v;$('growth').className='growth '+(delta>0?'':delta<0?'negative':'neutral');$('growth').textContent=(delta>0?'↗ +':delta<0?'↘ ':'↗ ')+fmt(delta)+' vue(s) depuis le dernier relevé'}else{$('growth').textContent='↗ Suivi démarré · en attente de progression'}previous={v:views,t:now};history.push({v:views,t:now});history=history.filter(p=>p.t>=now-3600000).slice(-750);if(history.length>=2){const first=history[0],last=history.at(-1),minutes=(last.t-first.t)/60000;$('perMinute').textContent=minutes>0?fmt(Math.round((last.v-first.v)/minutes)):'—'}else{$('perMinute').textContent='—'}$('lastUpdate').textContent=new Date(now).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});plot()}
+async function refresh(){if(!tracking||!isPageActive()||!currentUrl)return;const id=++requestId;controller=new AbortController();try{const response=await fetch('/stats?url='+encodeURIComponent(currentUrl),{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('Serveur HTTP '+response.status);const data=await response.json();if(id!==requestId||!isPageActive())return;if(data.error)throw Error(data.error);update(data);error('');status(true,'EN DIRECT')}catch(e){if(e.name!=='AbortError'&&id===requestId){error('Impossible de récupérer les données : '+e.message);status(false,'ERREUR API')}}finally{if(id===requestId){controller=null;if(tracking&&isPageActive())timer=setTimeout(refresh,5000)}}}
+function stop(){tracking=false;clearTimeout(timer);timer=null;controller?.abort();controller=null;requestId++}function start(url){stop();currentUrl=url;history=[];previous=null;initialViews=null;counter.draw(0);counter.value=0;['likes','comments','shares','favorites','engagement','perMinute','gain','lastUpdate','followers','following','profileLikes','videos'].forEach(id=>$(id).textContent='—');$('growth').textContent='↗ En attente des premières données';$('growth').className='growth neutral';plot();error('');tracking=true;status(false,isPageActive()?'CHARGEMENT':'EN PAUSE');syncPageTitle();if(isPageActive())refresh()}
+$('searchForm').addEventListener('submit',e=>{e.preventDefault();const url=$('videoUrl').value.trim();if(!validTikTok(url)){error('Utilise un lien TikTok complet contenant /video/ et son identifiant.');return}start(url)});function syncActivity(){
+  const active=isPageActive();
+  syncPageTitle();
+  if(!active){
+    clearTimeout(timer);timer=null;
+    controller?.abort();controller=null;
+    requestId++;
+    if(tracking)status(false,'EN PAUSE');
     return;
   }
-  setError("");
-  $("dashboardSimple").classList.remove("hidden");
-  try{
-    soloTracker.start(value);
-  }
-  catch(e){
-    setError(e.message);
+  if(tracking){
+    clearTimeout(timer);timer=null;
+    // One request immediately on return, then the normal 5-second cycle.
+    if(!controller)refresh();
   }
 }
-
-$("url-solo").addEventListener("keydown", e=>{
-  if(e.key === "Enter"){
-    startSolo();
-  }
-});
-
-/* ---------------------------------------------------------
-   MODE COMPARAISON
---------------------------------------------------------- */
-let trackerA = null;
-let trackerB = null;
-
-function initCompareDashboard(){
-  const grid = $("compareGrid");
-  grid.innerHTML = "";
-  const cardA = buildCard();
-  const cardB = buildCard();
-  grid.appendChild(cardA.mainCard);
-  grid.appendChild(cardB.mainCard);
-
-  trackerA = new VideoTracker({
-    mainCardEl: cardA.mainCard,
-    sideCardEl: cardA.sideCard,
-    onUpdate: updateVerdict
-  });
-  trackerB = new VideoTracker({
-    mainCardEl: cardB.mainCard,
-    sideCardEl: cardB.sideCard,
-    onUpdate: updateVerdict
-  });
-}
-
-let lastA = null;
-let lastB = null;
-
-function updateVerdict({ views, platform }){
-  if(platform === "tiktok"){
-    lastA = views;
-  }
-  if(platform === "youtube"){
-    lastB = views;
-  }
-
-  if(lastA === null || lastB === null){
-    $("verdictValue").textContent = "En attente des données…";
-    return;
-  }
-
-  const total = lastA + lastB;
-  const pctA = total > 0 ? (lastA / total) * 100 : 50;
-  const pctB = 100 - pctA;
-
-  $("verdictBarA").style.width = pctA + "%";
-  $("verdictBarB").style.width = pctB + "%";
-
-  if(lastA === lastB){
-    $("verdictValue").textContent = "Égalité parfaite";
-  }
-  else{
-    const winner = lastA > lastB ? "TikTok" : "YouTube";
-    const diff = Math.abs(lastA - lastB);
-    $("verdictValue").textContent = `${winner} mène avec ${formatNumber(diff)} vues d'avance`;
-  }
-}
-
-function startCompare(){
-  const valueA = $("url-a").value.trim();
-  const valueB = $("url-b").value.trim();
-
-  if(!valueA || !valueB){
-    setError("Ajoute un lien TikTok et un lien YouTube pour lancer la comparaison.");
-    return;
-  }
-  if(detectPlatform(valueA) !== "tiktok"){
-    setError("Le premier lien doit être un lien TikTok.");
-    return;
-  }
-  if(detectPlatform(valueB) !== "youtube"){
-    setError("Le second lien doit être un lien YouTube.");
-    return;
-  }
-
-  setError("");
-  lastA = null;
-  lastB = null;
-  $("dashboardCompare").classList.remove("hidden");
-  trackerA.start(valueA);
-  trackerB.start(valueB);
-}
-
-/* ---------------------------------------------------------
-   BASCULE MODE
---------------------------------------------------------- */
-function setMode(mode){
-  // Arrête les trackers du mode quitté pour économiser les requêtes.
-  if(soloTracker) soloTracker.stop();
-  if(trackerA) trackerA.stop();
-  if(trackerB) trackerB.stop();
-  const isSimple = mode === "simple";
-  $("modeSimpleBtn").classList.toggle("active", isSimple);
-  $("modeCompareBtn").classList.toggle("active", !isSimple);
-  $("simpleSearch").classList.toggle("hidden", !isSimple);
-  $("compareSearch").classList.toggle("hidden", isSimple);
-  $("dashboardSimple").classList.add("hidden");
-  $("dashboardCompare").classList.add("hidden");
-  setError("");
-}
-
-/* ---------------------------------------------------------
-   INIT
---------------------------------------------------------- */
-initSoloDashboard();
-initCompareDashboard();
-
-// Les trackers ne consomment plus de requêtes quand l'onglet est masqué.
-document.addEventListener("visibilitychange", () => {
-  [soloTracker, trackerA, trackerB].forEach(tracker => {
-    if(!tracker || !tracker.isTracking) return;
-    if(document.hidden) tracker.pause();
-    else tracker.resume();
-  });
-});
-</script>
-</body>
-</html>
+document.addEventListener('visibilitychange',syncActivity);
+window.addEventListener('focus',syncActivity);
+window.addEventListener('blur',syncActivity);
+window.addEventListener('pageshow',syncActivity);
+window.addEventListener('resize',plot);
+imageSet('cover',null);imageSet('avatar',null);plot();syncPageTitle();
+</script></body></html>
