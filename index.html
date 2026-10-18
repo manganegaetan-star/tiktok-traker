@@ -391,10 +391,6 @@ button{
   box-shadow:0 0 10px var(--youtube);
 }
 
-.card.platform-youtube .views-circle{
-  box-shadow:0 0 40px rgba(255,0,51,.16);
-}
-
 .main-card{
   padding:34px;
   min-height:460px;
@@ -453,45 +449,6 @@ button{
   flex-direction:column;
   align-items:center;
 }
-
-.views-circle{
-  width:min(260px,70vw);
-  height:min(260px,70vw);
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-
-  /* IMPORTANT :
-     plus de transition CSS du background.
-     Le remplissage est maintenant animé image par image
-     via requestAnimationFrame. */
-  background:conic-gradient(
-    var(--pink) 0deg,
-    #292934 0deg
-  );
-
-  position:relative;
-
-  /* Lueur constante autour du cercle */
-  box-shadow:0 0 40px rgba(255,45,112,.18);
-}
-
-.card.platform-youtube .views-circle{
-  background:conic-gradient(
-    var(--youtube) 0deg,
-    #292934 0deg
-  );
-}
-
-.views-circle:after{
-  content:"";
-  position:absolute;
-  inset:10px;
-  border-radius:50%;
-  background:#0b0b11;
-  box-shadow:inset 0 0 30px rgba(0,0,0,.4);
-}
-
 /* ODOMÈTRE */
 
 .views{
@@ -795,13 +752,7 @@ footer b{
   .views-wrap{
     padding:34px 0 26px;
   }
-
-  .views-circle{
-    width:min(220px,68vw);
-    height:min(220px,68vw);
-  }
-
-  .views{
+.views{
     font-size:clamp(22px,7vw,46px);
   }
 
@@ -817,6 +768,10 @@ footer b{
     font-size:21px;
   }
 }
+/* Compteur sans cercle */
+.views-display{display:flex;justify-content:center;align-items:center;width:100%;min-height:100px}
+.views{max-width:100%;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.views-display{min-height:80px}}
 </style>
 </head>
 
@@ -898,7 +853,7 @@ footer b{
     </div>
 
     <div class="hint">
-      Actualisation automatique toutes les 20 secondes · aucune page à recharger
+      Actualisation toutes les 5 secondes lorsque la page est visible
     </div>
 
   </section>
@@ -956,7 +911,7 @@ footer b{
     </button>
 
     <div class="hint">
-      Actualisation automatique toutes les 20 secondes · aucune page à recharger
+      Actualisation toutes les 5 secondes lorsque la page est visible
     </div>
 
   </section>
@@ -1054,16 +1009,9 @@ footer b{
     <div class="views-wrap">
 
       <div
-        class="views-circle"
-        data-role="timerCircle"
-      >
-
-        <div
           class="views"
           data-role="counter"
         ></div>
-
-      </div>
 
       <div class="views-label">
         VUES EN DIRECT
@@ -1214,174 +1162,171 @@ function detectPlatform(url){
 /* ---------------------------------------------------------
    VRAI ODOMÈTRE
 --------------------------------------------------------- */
-const ROLL_DURATION = 900;
-const ROLL_STAGGER = 90;
-const ROLL_EASING = "cubic-bezier(.32,.94,.24,1)";
+const REFRESH_MS = 5000;
 
-class Odometer{
-  constructor(containerEl){
+class Odometer {
+  constructor(containerEl) {
     this.box = containerEl;
     this.digits = [];
+    this.value = 0;
+    this.target = 0;
+    this.frame = null;
+    this.timeouts = [];
+    this.token = 0;
   }
 
-  adjustFontSize(digitCount){
-    let size;
-    if(digitCount <= 4){
-      size = "clamp(26px, 7vw, 60px)";
-    }
-    else if(digitCount === 5){
-      size = "clamp(24px, 6.4vw, 52px)";
-    }
-    else if(digitCount === 6){
-      size = "clamp(21px, 5.6vw, 44px)";
-    }
-    else if(digitCount === 7){
-      size = "clamp(18px, 4.8vw, 36px)";
-    }
-    else if(digitCount === 8){
-      size = "clamp(16px, 4.2vw, 30px)";
-    }
-    else if(digitCount === 9){
-      size = "clamp(14px, 3.7vw, 26px)";
-    }
-    else{
-      size = "clamp(12px, 3.2vw, 22px)";
-    }
-    this.box.style.fontSize = size;
+  adjustFontSize(count) {
+    const sizes = [
+      "clamp(26px,7vw,60px)", "clamp(24px,6.4vw,52px)",
+      "clamp(21px,5.6vw,44px)", "clamp(18px,4.8vw,36px)",
+      "clamp(16px,4.2vw,30px)", "clamp(14px,3.7vw,26px)",
+      "clamp(12px,3.2vw,22px)"
+    ];
+    this.box.style.fontSize = sizes[Math.min(Math.max(count - 4, 0), 6)];
   }
 
-  build(digitCount, initialDigits){
+  cancel() {
+    this.token++;
+    if(this.frame !== null) cancelAnimationFrame(this.frame);
+    this.frame = null;
+    this.timeouts.forEach(clearTimeout);
+    this.timeouts = [];
+  }
+
+  build(text) {
     this.box.innerHTML = "";
     this.digits = [];
-    for(let i = 0; i < digitCount; i++){
-      const digitEl = document.createElement("div");
-      digitEl.className = "odo-digit";
+    this.adjustFontSize(text.length);
+    for(const char of text) {
+      const cell = document.createElement("div");
+      cell.className = "odo-digit";
       const strip = document.createElement("div");
       strip.className = "odo-strip";
-      strip.style.transition = "none";
-      for(let cycle = 0; cycle < 2; cycle++){
-        for(let n = 0; n <= 9; n++){
+      for(let cycle = 0; cycle < 3; cycle++) {
+        for(let n = 0; n < 10; n++) {
           const span = document.createElement("span");
           span.textContent = n;
           strip.appendChild(span);
         }
       }
-      const startIndex = initialDigits ? Number(initialDigits[i]) : 0;
-      strip.style.transform = `translateY(-${startIndex * 5}%)`;
-      digitEl.appendChild(strip);
-      this.box.appendChild(digitEl);
-      this.digits.push({
-        strip,
-        index: startIndex
-      });
+      const index = Number(char) + 10;
+      strip.style.transition = "none";
+      strip.style.transform = `translateY(-${index * (100 / 30)}%)`;
+      cell.appendChild(strip);
+      this.box.appendChild(cell);
+      this.digits.push({ strip, index });
     }
   }
 
-  set(value){
-    const text = String(Math.max(0, Math.floor(Number(value) || 0)));
-    const digits = [...text];
-    this.adjustFontSize(digits.length);
-    this.build(digits.length, digits);
+  set(value) {
+    this.cancel();
+    this.value = Math.max(0, Math.floor(Number(value) || 0));
+    this.target = this.value;
+    this.build(String(this.value));
   }
 
-  rollTo(target){
-    const text = String(Math.max(0, Math.floor(Number(target) || 0)));
-    const digits = [...text];
-    if(digits.length !== this.digits.length){
-      this.adjustFontSize(digits.length);
-      this.build(digits.length, digits);
+  showNumber(value, duration = 100) {
+    const text = String(value);
+    if(text.length !== this.digits.length) {
+      this.build(text);
       return;
     }
-    digits.forEach((d, i)=>{
-      const targetDigit = Number(d);
+    this.adjustFontSize(text.length);
+    text.split("").forEach((char, i) => {
       const state = this.digits[i];
+      const wanted = Number(char);
       const current = state.index % 10;
-      let delta = targetDigit - current;
-      if(delta < 0){
-        delta += 10;
+      if(wanted === current) return;
+      // Roulement vers l'avant, y compris 9 -> 0.
+      const delta = (wanted - current + 10) % 10;
+      const nextIndex = state.index + delta;
+      if(nextIndex >= 30) {
+        state.index = current + 10;
+        state.strip.style.transition = "none";
+        state.strip.style.transform = `translateY(-${state.index * (100 / 30)}%)`;
+        void state.strip.offsetHeight;
       }
-      if(delta === 0){
-        return;
-      }
-      const newIndex = state.index + delta;
-      const delay = (digits.length - 1 - i) * ROLL_STAGGER;
-      setTimeout(()=>{
-        state.strip.style.transition = `transform ${ROLL_DURATION}ms ${ROLL_EASING}`;
-        state.strip.style.transform = `translateY(-${newIndex * 5}%)`;
-      }, delay);
-      state.index = newIndex;
-      setTimeout(()=>{
-        if(state.index >= 10){
-          state.index -= 10;
-          state.strip.style.transition = "none";
-          state.strip.style.transform = `translateY(-${state.index * 5}%)`;
-          void state.strip.offsetHeight;
-        }
-      }, delay + ROLL_DURATION + 30);
+      state.index += delta;
+      state.strip.style.transition = `transform ${duration}ms cubic-bezier(.32,.94,.24,1)`;
+      state.strip.style.transform = `translateY(-${state.index * (100 / 30)}%)`;
     });
+  }
+
+  rollTo(target) {
+    const next = Math.max(0, Math.floor(Number(target) || 0));
+    this.cancel();
+    const token = this.token;
+    const from = this.value;
+    this.target = next;
+    if(next === from) return;
+
+    const difference = Math.abs(next - from);
+    // Petites hausses : on affiche chaque entier (10, 11, 12... 20).
+    // Grandes hausses : interpolation progressive, sans bloquer l'interface.
+    const everyInteger = difference <= 35;
+    const duration = everyInteger
+      ? Math.min(3600, Math.max(600, difference * 115))
+      : 2600;
+    const start = performance.now();
+    let last = from;
+    const step = now => {
+      if(token !== this.token) return;
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = everyInteger ? progress : 1 - Math.pow(1 - progress, 3);
+      const calculated = from + (next - from) * eased;
+      const current = progress === 1 ? next :
+        (next >= from ? Math.floor(calculated) : Math.ceil(calculated));
+      if(current !== last) {
+        this.showNumber(current, everyInteger ? 90 : 130);
+        this.value = current;
+        last = current;
+      }
+      if(progress < 1) this.frame = requestAnimationFrame(step);
+      else this.frame = null;
+    };
+    this.frame = requestAnimationFrame(step);
   }
 }
 
 /* ---------------------------------------------------------
-   TRACKER
+   TRACKER : une requête toutes les 5 secondes, uniquement
+   lorsque la page et le mode de suivi sont visibles.
 --------------------------------------------------------- */
-const TIMER_DURATION = 20;
-
-class VideoTracker{
-  constructor({ mainCardEl, sideCardEl, onUpdate }){
+class VideoTracker {
+  constructor({ mainCardEl, sideCardEl, onUpdate }) {
     this.main = mainCardEl;
     this.side = sideCardEl;
-    this.onUpdate = onUpdate || (()=>{});
+    this.onUpdate = onUpdate || (() => {});
     this.role = tag => this.main.querySelector(`[data-role="${tag}"]`);
     this.sideRole = tag => this.side.querySelector(`[data-role="${tag}"]`);
     this.odometer = new Odometer(this.role("counter"));
     this.url = "";
     this.platform = null;
     this.oldViews = null;
-    this.countdown = TIMER_DURATION;
-    this.nextTickAt = null;
-    this.timerAnimation = null;
     this.isTracking = false;
-    this.isUpdating = false; // ← verrou pour éviter les requêtes en parallèle
-
-    document.addEventListener("visibilitychange", ()=>{
-      if(!document.hidden && this.isTracking && this.nextTickAt !== null){
-        this.animateTimer();
-      }
-    });
+    this.isUpdating = false;
+    this.refreshTimer = null;
+    this.controller = null;
+    this.generation = 0;
+    this.odometer.set(0);
   }
 
-  applyPlatformStyle(){
+  applyPlatformStyle() {
     this.main.classList.toggle("platform-youtube", this.platform === "youtube");
-    if(this.platform === "youtube"){
-      this.role("stat2-label").textContent = "ENGAGEMENT";
-      this.role("stat2-name").textContent = "Likes";
-      this.role("stat3-label").textContent = "—";
-      this.role("stat3-name").textContent = "Partages (n/a)";
-    }
-    else{
-      this.role("stat2-label").textContent = "ENGAGEMENT";
-      this.role("stat2-name").textContent = "Likes";
-      this.role("stat3-label").textContent = "VIRALITÉ";
-      this.role("stat3-name").textContent = "Partages";
-    }
+    this.role("stat2-label").textContent = "ENGAGEMENT";
+    this.role("stat2-name").textContent = "Likes";
+    this.role("stat3-label").textContent = this.platform === "youtube" ? "—" : "VIRALITÉ";
+    this.role("stat3-name").textContent = this.platform === "youtube" ? "Partages (n/a)" : "Partages";
   }
 
-  start(url){
+  start(url) {
     const platform = detectPlatform(url);
-    if(!platform){
-      throw new Error("Lien non reconnu (TikTok ou YouTube uniquement).");
-    }
-
-    cancelAnimationFrame(this.timerAnimation);
-    this.timerAnimation = null;
-
+    if(!platform) throw new Error("Lien non reconnu (TikTok ou YouTube uniquement).");
+    this.stop();
     this.url = url;
     this.platform = platform;
-    this.applyPlatformStyle();
     this.oldViews = null;
-    this.isUpdating = false;
-
+    this.applyPlatformStyle();
     this.odometer.set(0);
     this.role("likes").textContent = "0";
     this.role("shares").textContent = "0";
@@ -1390,186 +1335,115 @@ class VideoTracker{
     this.sideRole("publishDate").textContent = "—";
     this.sideRole("growth").textContent = "—";
     this.role("delta").textContent = "● Connexion aux statistiques…";
-
+    this.isTracking = true;
     this.setTrackingState(true);
-    this.startTimer();   // démarre le timer
-    this.update();       // lance la première requête (le timer l’attendra si besoin)
+    if(!document.hidden) this.update();
   }
 
-  setTrackingState(active){
-    this.isTracking = active;
+  stop() {
+    this.isTracking = false;
+    this.generation++;
+    clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    if(this.controller) this.controller.abort();
+    this.controller = null;
+    this.isUpdating = false;
+    this.odometer.cancel();
+  }
+
+  pause() {
+    clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    if(this.controller) this.controller.abort();
+    this.controller = null;
+    this.generation++;
+    this.isUpdating = false;
+    this.odometer.cancel();
+    if(this.isTracking) this.setTrackingState(false, "En pause");
+  }
+
+  resume() {
+    if(!this.isTracking || document.hidden) return;
+    clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    this.update();
+  }
+
+  setTrackingState(active, label) {
     const el = this.sideRole("trackingStatus");
-    el.textContent = active ? "Actif" : "En attente";
+    el.textContent = label || (active ? "Actif" : "En attente");
     el.style.color = active ? "var(--green)" : "";
   }
 
-  updateMeta(views, createTime){
-    const now = new Date();
-    this.sideRole("lastUpdate").textContent = now.toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
+  updateMeta(views, createTime) {
+    this.sideRole("lastUpdate").textContent = new Date().toLocaleTimeString("fr-FR", {
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
     });
-
-    if(createTime){
-      this.sideRole("publishDate").textContent = new Date(createTime * 1000).toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      });
-    }
-    else{
-      this.sideRole("publishDate").textContent = "—";
-    }
-
-    const growthEl = this.sideRole("growth");
-    const deltaEl = this.role("delta");
-
-    if(this.oldViews !== null){
+    this.sideRole("publishDate").textContent = createTime
+      ? new Date(createTime * 1000).toLocaleDateString("fr-FR", {
+          day: "2-digit", month: "short", year: "numeric"
+        }) : "—";
+    if(this.oldViews !== null) {
       const diff = views - this.oldViews;
-      if(diff > 0){
-        growthEl.textContent = `+${formatNumber(diff)}`;
-        growthEl.style.color = "var(--green)";
-        deltaEl.textContent = `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`;
-        deltaEl.style.color = "var(--green)";
-      }
-      else{
-        growthEl.textContent = "Stable";
-        growthEl.style.color = "";
-        deltaEl.textContent = "● +0 vues depuis la dernière synchro";
-        deltaEl.style.color = "";
-      }
+      const growth = this.sideRole("growth");
+      const delta = this.role("delta");
+      growth.textContent = diff > 0 ? `+${formatNumber(diff)}` : diff < 0 ? formatNumber(diff) : "Stable";
+      growth.style.color = diff > 0 ? "var(--green)" : "";
+      delta.textContent = diff > 0
+        ? `▲ +${formatNumber(diff)} vue${diff > 1 ? "s" : ""} depuis la dernière synchro`
+        : "● +0 vues depuis la dernière synchro";
+      delta.style.color = diff > 0 ? "var(--green)" : "";
     }
   }
 
-  async update(){
-    if(!this.url || this.isUpdating){
-      return null;
-    }
-
+  async update() {
+    if(!this.isTracking || !this.url || document.hidden || this.isUpdating) return;
+    const generation = this.generation;
+    const controller = new AbortController();
+    this.controller = controller;
     this.isUpdating = true;
-
-    try{
+    const started = Date.now();
+    try {
       const res = await fetch("/stats?url=" + encodeURIComponent(this.url), {
-        headers: { "Accept": "application/json" },
-        cache: "no-store"
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+        signal: controller.signal
       });
-
-      if(!res.ok){
-        throw new Error("Le serveur a répondu avec le statut " + res.status);
-      }
-
+      if(!res.ok) throw new Error("Le serveur a répondu avec le statut " + res.status);
       const data = await res.json();
+      if(generation !== this.generation || !this.isTracking || document.hidden) return;
       const views = Number(data.views) || 0;
       const likes = Number(data.likes) || 0;
       const shares = Number(data.shares) || 0;
-
-      if(this.oldViews === null || views !== this.oldViews){
-        const counter = this.role("counter");
-        counter.classList.remove("flash");
-        void counter.offsetWidth;
-        counter.classList.add("flash");
+      if(this.oldViews === null) {
+        this.odometer.set(views);
+      } else if(views !== this.oldViews) {
         this.odometer.rollTo(views);
       }
-
       this.role("likes").textContent = formatNumber(likes);
       this.role("shares").textContent = this.platform === "youtube" ? "—" : formatNumber(shares);
       this.role("title").textContent = data.title || (this.platform === "youtube" ? "Vidéo YouTube" : "Vidéo TikTok");
-
       this.updateMeta(views, data.createTime);
       this.oldViews = views;
       this.setTrackingState(true);
-
-      this.onUpdate({
-        views,
-        likes,
-        shares,
-        title: data.title,
-        platform: this.platform
-      });
-
-      return data;
-    }
-    catch(error){
-      console.error("Erreur stats:", error);
-      this.setTrackingState(false);
-      throw error;
-    }
-    finally{
-      this.isUpdating = false;
-    }
-  }
-
-  /*
-    ---------------------------------------------------------
-    TIMER ULTRA FLUIDE + ATTENTE RÉELLE DE LA RÉPONSE
-    ---------------------------------------------------------
-    1. Le cercle tourne pendant 20 secondes
-    2. À 0 seconde → on envoie la requête
-    3. Le cercle RESTE BLOQUÉ à 100 % pendant toute la durée de la requête
-    4. On attend vraiment la fin de /stats
-    5. Seulement après → on relance un nouveau cycle de 20 s
-  */
-  startTimer(){
-    cancelAnimationFrame(this.timerAnimation);
-    this.timerAnimation = null;
-    this.nextTickAt = Date.now() + TIMER_DURATION * 1000;
-    this.countdown = TIMER_DURATION;
-    this.animateTimer();
-  }
-
-  async animateTimer(){
-    if(!this.isTracking && !this.url){
-      return;
-    }
-
-    const now = Date.now();
-    const remainingMs = Math.max(0, this.nextTickAt - now);
-    const elapsed = TIMER_DURATION * 1000 - remainingMs;
-    const progress = Math.min(1, elapsed / (TIMER_DURATION * 1000));
-    const deg = progress * 360;
-    const color = this.platform === "youtube" ? "var(--youtube)" : "var(--pink)";
-
-    // Animation fluide du cercle
-    this.role("timerCircle").style.background =
-      `conic-gradient(${color} ${deg}deg, #292934 ${deg}deg)`;
-
-    this.countdown = Math.max(0, Math.ceil(remainingMs / 1000));
-
-    // Les 20 secondes sont terminées
-    if(remainingMs <= 0){
-      // On stoppe complètement l’animation → le ring reste à 100 %
-      cancelAnimationFrame(this.timerAnimation);
-      this.timerAnimation = null;
-
-      try{
-        // On attend RÉELLEMENT la fin de la requête
-        await this.update();
+      this.onUpdate({ views, likes, shares, title: data.title, platform: this.platform });
+    } catch(error) {
+      if(error.name !== "AbortError" && generation === this.generation) {
+        console.error("Erreur stats:", error);
+        this.setTrackingState(false);
+        setError(error.message);
       }
-      catch(error){
-        // déjà loggé dans update()
+    } finally {
+      if(generation === this.generation) {
+        this.isUpdating = false;
+        this.controller = null;
+        if(this.isTracking && !document.hidden) {
+          // Espacement de 5 s entre les débuts de requêtes ; jamais en parallèle.
+          const delay = Math.max(0, REFRESH_MS - (Date.now() - started));
+          this.refreshTimer = setTimeout(() => this.update(), delay);
+        }
       }
-
-      // Si le tracker a été arrêté pendant la requête, on ne relance pas
-      if(!this.isTracking){
-        return;
-      }
-
-      // La réponse est reçue → on démarre un nouveau cycle de 20 s
-      this.nextTickAt = Date.now() + TIMER_DURATION * 1000;
-      this.countdown = TIMER_DURATION;
-
-      // On remet le cercle à zéro
-      this.role("timerCircle").style.background =
-        `conic-gradient(${color} 0deg, #292934 0deg)`;
-
-      // Nouveau cycle
-      this.animateTimer();
-      return;
     }
-
-    // Tant que les 20 s ne sont pas finies → on continue image par image
-    this.timerAnimation = requestAnimationFrame(() => this.animateTimer());
   }
 }
 
@@ -1715,6 +1589,10 @@ function startCompare(){
    BASCULE MODE
 --------------------------------------------------------- */
 function setMode(mode){
+  // Arrête les trackers du mode quitté pour économiser les requêtes.
+  if(soloTracker) soloTracker.stop();
+  if(trackerA) trackerA.stop();
+  if(trackerB) trackerB.stop();
   const isSimple = mode === "simple";
   $("modeSimpleBtn").classList.toggle("active", isSimple);
   $("modeCompareBtn").classList.toggle("active", !isSimple);
@@ -1730,6 +1608,15 @@ function setMode(mode){
 --------------------------------------------------------- */
 initSoloDashboard();
 initCompareDashboard();
+
+// Les trackers ne consomment plus de requêtes quand l'onglet est masqué.
+document.addEventListener("visibilitychange", () => {
+  [soloTracker, trackerA, trackerB].forEach(tracker => {
+    if(!tracker || !tracker.isTracking) return;
+    if(document.hidden) tracker.pause();
+    else tracker.resume();
+  });
+});
 </script>
 </body>
 </html>
