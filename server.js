@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.static(__dirname));
@@ -14,17 +15,12 @@ const PROFILE_CACHE_MS = 60000;
 const PROFILE_ERROR_CACHE_MS = 5 * 60 * 1000;
 const SESSION_TTL_MS = 35000;
 const REQUEST_TIMEOUT_MS = 12000;
-const PROFILE_NAVIGATION_TIMEOUT_MS = 25000;
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || "/usr/bin/chromium";
 
 const videoCache = new Map();
 const profileCache = new Map();
 const profileErrors = new Map();
 const pending = new Map();
 const sessions = new Map();
-
-let chromiumBrowser = null;
-let chromiumLaunchPromise = null;
 
 // =====================================================
 // OUTILS
@@ -313,20 +309,18 @@ async function fetchTikWM(endpoint, parameters = {}) {
 }
 
 // =====================================================
-// EXTRACTION DU PROFIL PUBLIC TIKTOK (CHROMIUM)
+// EXTRACTION DES DONNÉES PUBLIQUES TIKTOK
 // =====================================================
 
 function parseProfile(data, fallback) {
-    if (!data || typeof data !== "object") return null;
-
-    const root = data.userInfo || data;
-    const user = root.user || data.user || root;
+    const root = data?.userInfo || data || {};
+    const user = root.user || data?.user || root;
 
     const stats =
         root.statsV2 ||
         root.stats ||
-        data.statsV2 ||
-        data.stats ||
+        data?.statsV2 ||
+        data?.stats ||
         root.statistics ||
         {};
 
@@ -387,6 +381,13 @@ function parseProfile(data, fallback) {
         )
     };
 
+    if (
+        profile.username?.toLowerCase() !==
+        fallback.toLowerCase()
+    ) {
+        return null;
+    }
+
     const hasStats = [
         profile.followers,
         profile.following,
@@ -397,94 +398,59 @@ function parseProfile(data, fallback) {
     return hasStats ? profile : null;
 }
 
-function findProfileInHydration(payload, username) {
-    if (!payload || typeof payload !== "object") {
-        return null;
+// =====================================================
+// LECTURE DES JSON INTÉGRÉS À LA PAGE
+// =====================================================
+
+function profileFromEmbeddedJson(data, username) {
+    const scope =
+        data?.__DEFAULT_SCOPE__?.["webapp.user-detail"];
+
+    if (scope?.userInfo) {
+        const profile = parseProfile(
+            scope.userInfo,
+            username
+        );
+
+        if (profile) return profile;
     }
 
-    // TikTok a utilisé plusieurs formats
-    // de données JSON intégrées à ses pages.
-    const candidates = [
-        payload?.__DEFAULT_SCOPE__?.["webapp.user-detail"]?.userInfo,
-        payload?.UserModule?.users?.[username],
-        payload?.UserModule?.users?.[username.toLowerCase()],
-        payload?.userInfo,
-        payload?.userDetail?.userInfo
-    ];
+    if (data?.userInfo) {
+        const profile = parseProfile(
+            data.userInfo,
+            username
+        );
 
-    const userModule = payload.UserModule;
+        if (profile) return profile;
+    }
+
+    // Ancien format TikTok SIGI_STATE.
+    const userModule = data?.UserModule;
 
     if (userModule?.users && userModule?.stats) {
-        for (const [key, user] of Object.entries(userModule.users)) {
+        for (
+            const [key, user] of
+            Object.entries(userModule.users)
+        ) {
             if (
-                key.toLowerCase() === username.toLowerCase() ||
-                String(user?.uniqueId || "").toLowerCase() ===
-                    username.toLowerCase()
+                String(user?.uniqueId || key).toLowerCase() !==
+                username.toLowerCase()
             ) {
-                candidates.push({
+                continue;
+            }
+
+            const profile = parseProfile(
+                {
                     user,
                     stats:
                         userModule.stats[key] ||
                         userModule.stats[user?.id] ||
-                        null
-                });
-            }
-        }
-    }
+                        {}
+                },
+                username
+            );
 
-    for (const candidate of candidates) {
-        const profile = parseProfile(candidate, username);
-
-        if (
-            profile &&
-            profile.username?.toLowerCase() ===
-                username.toLowerCase()
-        ) {
-            return profile;
-        }
-    }
-
-    // Recherche limitée en profondeur
-    // pour les changements de structure JSON.
-    const queue = [{ value: payload, depth: 0 }];
-    const visited = new Set();
-
-    let examined = 0;
-
-    while (queue.length && examined++ < 3000) {
-        const { value, depth } = queue.shift();
-
-        if (
-            !value ||
-            typeof value !== "object" ||
-            visited.has(value)
-        ) {
-            continue;
-        }
-
-        visited.add(value);
-
-        if (value.user && (value.stats || value.statsV2)) {
-            const profile = parseProfile(value, username);
-
-            if (
-                profile &&
-                profile.username?.toLowerCase() ===
-                    username.toLowerCase()
-            ) {
-                return profile;
-            }
-        }
-
-        if (depth >= 8) continue;
-
-        for (const child of Object.values(value)) {
-            if (child && typeof child === "object") {
-                queue.push({
-                    value: child,
-                    depth: depth + 1
-                });
-            }
+            if (profile) return profile;
         }
     }
 
@@ -492,173 +458,134 @@ function findProfileInHydration(payload, username) {
 }
 
 // =====================================================
-// LANCEMENT DE CHROMIUM
+// EXTRACTION DU PROFIL DEPUIS LE HTML
 // =====================================================
 
-async function getChromiumBrowser() {
-    if (chromiumBrowser?.connected) {
-        return chromiumBrowser;
+function extractProfileFromHtml(html, username) {
+    const scriptIds = [
+        "__UNIVERSAL_DATA_FOR_REHYDRATION__",
+        "SIGI_STATE",
+        "__NEXT_DATA__"
+    ];
+
+    for (const id of scriptIds) {
+        const regex = new RegExp(
+            `<script\\b(?=[^>]*\\bid=["']${id}["'])[^>]*>([\\s\\S]*?)<\\/script\\s*>`,
+            "i"
+        );
+
+        const match = html.match(regex);
+
+        if (!match) continue;
+
+        try {
+            const json = JSON.parse(match[1]);
+
+            const profile = profileFromEmbeddedJson(
+                json,
+                username
+            );
+
+            if (profile) return profile;
+
+        } catch (error) {
+            console.warn(
+                "[PROFILE] JSON intégré illisible :",
+                id,
+                error.message
+            );
+        }
     }
 
-    if (chromiumLaunchPromise) {
-        return chromiumLaunchPromise;
-    }
-
-    chromiumLaunchPromise = (async () => {
-        const puppeteer = require("puppeteer-core");
-
-        const browser = await puppeteer.launch({
-            executablePath: CHROMIUM_PATH,
-            headless: true,
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-background-networking"
-            ]
-        });
-
-        browser.on("disconnected", () => {
-            if (chromiumBrowser === browser) {
-                chromiumBrowser = null;
-            }
-        });
-
-        chromiumBrowser = browser;
-
-        return browser;
-    })();
-
-    try {
-        return await chromiumLaunchPromise;
-    } finally {
-        chromiumLaunchPromise = null;
-    }
+    return null;
 }
 
 // =====================================================
-// RÉCUPÉRATION DU PROFIL PUBLIC TIKTOK
+// FETCH DIRECT SUR LE PROFIL PUBLIC TIKTOK
 // =====================================================
 
 async function fetchPublicTikTokProfile(username) {
-    const browser = await getChromiumBrowser();
-    const page = await browser.newPage();
+    const url =
+        `https://www.tiktok.com/@${encodeURIComponent(username)}`;
 
-    try {
-        page.setDefaultNavigationTimeout(
-            PROFILE_NAVIGATION_TIMEOUT_MS
-        );
+    const response = await fetch(url, {
+        redirect: "follow",
 
-        page.setDefaultTimeout(8000);
+        headers: {
+            Accept:
+                "text/html,application/xhtml+xml",
 
-        await page.setViewport({
-            width: 1280,
-            height: 800
-        });
+            "Accept-Language":
+                "fr-FR,fr;q=0.9,en;q=0.8",
 
-        // Les images et médias ne sont pas
-        // nécessaires à l'extraction du JSON.
-        await page.setRequestInterception(true);
+            "User-Agent":
+                "Mozilla/5.0 (X11; Linux x86_64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/120.0.0.0 Safari/537.36"
+        },
 
-        page.on("request", request => {
-            if (
-                ["image", "media", "font"].includes(
-                    request.resourceType()
-                )
-            ) {
-                request.abort().catch(() => {});
-            } else {
-                request.continue().catch(() => {});
-            }
-        });
+        signal: AbortSignal.timeout(
+            REQUEST_TIMEOUT_MS
+        )
+    });
 
-        const target =
-            `https://www.tiktok.com/@${encodeURIComponent(username)}`;
+    console.log(
+        "[PROFILE] TikTok public HTTP :",
+        response.status,
+        username
+    );
 
-        const response = await page.goto(target, {
-            waitUntil: "domcontentloaded",
-            timeout: PROFILE_NAVIGATION_TIMEOUT_MS
-        });
-
-        console.log(
-            "[CHROMIUM] Profil :",
-            username,
-            "HTTP :",
-            response?.status() ?? "inconnu"
-        );
-
-        if (
-            response?.status() === 403 ||
-            response?.status() === 429
-        ) {
-            throw new Error(
-                `TikTok HTTP ${response.status()} depuis Chromium`
-            );
-        }
-
-        // La page peut injecter les données
-        // peu après DOMContentLoaded.
-        for (let attempt = 0; attempt < 4; attempt++) {
-            const hydration = await page.evaluate(() => {
-                const ids = [
-                    "__UNIVERSAL_DATA_FOR_REHYDRATION__",
-                    "SIGI_STATE",
-                    "__NEXT_DATA__"
-                ];
-
-                return ids.map(id => ({
-                    id,
-                    text:
-                        document.getElementById(id)?.textContent ||
-                        ""
-                }));
-            });
-
-            for (const item of hydration) {
-                if (!item.text) continue;
-
-                try {
-                    const payload = JSON.parse(item.text);
-
-                    const profile = findProfileInHydration(
-                        payload,
-                        username
-                    );
-
-                    if (profile) {
-                        return profile;
-                    }
-                } catch (error) {
-                    console.warn(
-                        "[CHROMIUM] JSON",
-                        item.id,
-                        error.message
-                    );
-                }
-            }
-
-            if (attempt < 3) {
-                await new Promise(
-                    resolve => setTimeout(resolve, 1000)
-                );
-            }
-        }
-
-        const title = await page.title();
-
+    if (!response.ok) {
         throw new Error(
-            `Statistiques absentes de la page publique (${title.slice(0, 80)})`
+            `Page TikTok HTTP ${response.status}`
         );
-
-    } finally {
-        await page.close().catch(() => {});
     }
+
+    const contentType =
+        response.headers.get("content-type") || "";
+
+    if (!contentType.includes("text/html")) {
+        throw new Error(
+            "Réponse TikTok non HTML"
+        );
+    }
+
+    const contentLength = Number(
+        response.headers.get("content-length") || 0
+    );
+
+    if (contentLength > 5 * 1024 * 1024) {
+        throw new Error(
+            "Page TikTok trop volumineuse"
+        );
+    }
+
+    const html = await response.text();
+
+    if (html.length > 5 * 1024 * 1024) {
+        throw new Error(
+            "Page TikTok trop volumineuse"
+        );
+    }
+
+    const profile = extractProfileFromHtml(
+        html,
+        username
+    );
+
+    if (!profile) {
+        throw new Error(
+            "Aucune statistique publique trouvée " +
+            "dans le HTML TikTok " +
+            "(page de vérification ou format différent)"
+        );
+    }
+
+    return profile;
 }
 
 // =====================================================
-// STATISTIQUES CRÉATEUR : CACHE ET CHROMIUM
+// STATISTIQUES CRÉATEUR : FETCH DIRECT ET CACHE
 // =====================================================
 
 async function getProfile(username) {
@@ -668,6 +595,8 @@ async function getProfile(username) {
 
     const key = username.toLowerCase();
 
+    // Conserver les dernières données connues,
+    // même lorsque leur cache a expiré.
     const previousProfile =
         profileCache.get(key)?.data || null;
 
@@ -679,6 +608,8 @@ async function getProfile(username) {
 
     if (cached) return cached;
 
+    // Si TikTok a récemment refusé la requête,
+    // éviter de recommencer immédiatement.
     const blockedUntil = profileErrors.get(key);
 
     if (blockedUntil && Date.now() < blockedUntil) {
@@ -687,9 +618,8 @@ async function getProfile(username) {
 
     return once("profile:" + key, async () => {
         try {
-            const profile = await fetchPublicTikTokProfile(
-                username
-            );
+            const profile =
+                await fetchPublicTikTokProfile(username);
 
             putCached(
                 profileCache,
@@ -700,7 +630,7 @@ async function getProfile(username) {
             profileErrors.delete(key);
 
             console.log(
-                "[PROFILE] Chromium actualisé :",
+                "[PROFILE] Actualisé directement :",
                 username,
                 {
                     followers: profile.followers,
@@ -714,7 +644,7 @@ async function getProfile(username) {
 
         } catch (error) {
             console.warn(
-                "[PROFILE] Chromium erreur :",
+                "[PROFILE] Fetch direct échoué :",
                 username,
                 error.message
             );
@@ -728,6 +658,38 @@ async function getProfile(username) {
         }
     });
 }
+
+// =====================================================
+// TEST INDÉPENDANT DU PROFIL PUBLIC
+// =====================================================
+
+app.get("/profile-test", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+
+    const username = validUsername(
+        req.query.username
+    );
+
+    if (!username) {
+        return res.status(400).json({
+            success: false,
+            error: "Nom d'utilisateur invalide"
+        });
+    }
+
+    const profile = await getProfile(username);
+
+    return res.json({
+        success: Boolean(profile),
+        username,
+        source: "tiktok-public-fetch",
+        profile,
+
+        error: profile
+            ? null
+            : "Profil indisponible : consulter les logs Cloud Run"
+    });
+});
 
 // =====================================================
 // STATISTIQUES VIDÉO
@@ -904,37 +866,6 @@ app.get("/stats", async (req, res) => {
 });
 
 // =====================================================
-// TEST DU PROFIL PUBLIC (SANS TIKWM)
-// =====================================================
-
-app.get("/profile-test", async (req, res) => {
-    res.set("Cache-Control", "no-store");
-
-    const username = validUsername(
-        req.query.username
-    );
-
-    if (!username) {
-        return res.status(400).json({
-            success: false,
-            error: "Nom d'utilisateur TikTok invalide"
-        });
-    }
-
-    const profile = await getProfile(username);
-
-    return res.json({
-        success: Boolean(profile),
-        username,
-        source: "chromium",
-        profile,
-        error: profile
-            ? null
-            : "Profil indisponible depuis Cloud Run"
-    });
-});
-
-// =====================================================
 // SESSIONS ACTIVES
 // =====================================================
 
@@ -1020,6 +951,7 @@ app.get("/test", (req, res) => {
         message: "TikTok Pulse fonctionne !",
         online: online(),
         timestamp: new Date().toISOString(),
+
         cache: {
             videoSeconds: VIDEO_CACHE_MS / 1000,
             profileSeconds: PROFILE_CACHE_MS / 1000
@@ -1074,14 +1006,8 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("TikTok uniquement");
     console.log("Liens de partage : activés");
     console.log("Cache vidéo : 4 secondes");
-    console.log("Cache profil : 60 secondes (Chromium)");
-    console.log("Extraction profil public : Chromium");
+    console.log("Cache profil : 60 secondes (fetch public)");
+    console.log("Protection erreurs profil : activée");
     console.log("Sessions actives : activées");
     console.log("================================");
-});
-
-process.on("SIGTERM", () => {
-    if (chromiumBrowser?.connected) {
-        chromiumBrowser.close().catch(() => {});
-    }
 });
