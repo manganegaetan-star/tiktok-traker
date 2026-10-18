@@ -1,15 +1,19 @@
 
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 
 const app = express();
 
 app.use(cors());
+app.use(express.json({ limit: "10kb" }));
 app.use(express.static(__dirname));
 
-// Clé YouTube à définir dans les variables d'environnement.
-// Google Cloud Run : Variables et secrets → YOUTUBE_API_KEY
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+// =====================================================
+// CONFIGURATION
+// =====================================================
+
+const PORT = process.env.PORT || 3000;
 
 // Cache des statistiques vidéo : 4 secondes
 const VIDEO_CACHE_DURATION = 4000;
@@ -17,15 +21,22 @@ const VIDEO_CACHE_DURATION = 4000;
 // Cache des statistiques de profil : 5 minutes
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
 
+// Sessions : expiration après 35 secondes
+const SESSION_TIMEOUT = 35 * 1000;
+
+// Cache des statistiques
 const cache = {};
 const profileCache = {};
 
-// Empêche plusieurs requêtes identiques simultanées
+// Empêche les requêtes identiques simultanées
 const pendingRequests = new Map();
 
-// ---------------------------------------------------------
+// Sessions actives
+const activeSessions = new Map();
+
+// =====================================================
 // OUTILS
-// ---------------------------------------------------------
+// =====================================================
 
 function numberOrNull(value) {
     if (
@@ -76,16 +87,7 @@ function detectPlatform(url) {
             return "tiktok";
         }
 
-        if (
-            host === "youtube.com" ||
-            host.endsWith(".youtube.com") ||
-            host === "youtu.be"
-        ) {
-            return "youtube";
-        }
-
         return null;
-
     } catch {
         return null;
     }
@@ -99,12 +101,9 @@ function safeImageUrl(value) {
     try {
         const url = new URL(value);
 
-        if (url.protocol === "https:") {
-            return value;
-        }
-
-        return null;
-
+        return url.protocol === "https:"
+            ? value
+            : null;
     } catch {
         return null;
     }
@@ -146,9 +145,9 @@ async function deduplicate(key, callback) {
     }
 }
 
-// ---------------------------------------------------------
+// =====================================================
 // TIKWM : REQUÊTE API
-// ---------------------------------------------------------
+// =====================================================
 
 async function fetchTikWM(endpoint, parameters = {}) {
     const apiUrl = new URL(
@@ -183,9 +182,9 @@ async function fetchTikWM(endpoint, parameters = {}) {
     return json.data;
 }
 
-// ---------------------------------------------------------
+// =====================================================
 // TIKTOK : STATISTIQUES DU PROFIL
-// ---------------------------------------------------------
+// =====================================================
 
 async function getTikTokProfile(username) {
     if (!username) {
@@ -213,8 +212,6 @@ async function getTikTokProfile(username) {
                     }
                 );
 
-                // Différentes structures possibles
-                // selon la réponse de TikWM.
                 const userInfo =
                     data.userInfo ||
                     data;
@@ -301,17 +298,15 @@ async function getTikTokProfile(username) {
                     error.message
                 );
 
-                // L'échec du profil ne doit pas
-                // empêcher les statistiques vidéo.
                 return null;
             }
         }
     );
 }
 
-// ---------------------------------------------------------
+// =====================================================
 // TIKTOK : STATISTIQUES VIDÉO
-// ---------------------------------------------------------
+// =====================================================
 
 async function getTikTokStats(url) {
     const videoId = url.match(/\/video\/(\d+)/)?.[1];
@@ -339,7 +334,6 @@ async function getTikTokStats(url) {
         cacheKey,
         async () => {
             try {
-                // Même endpoint TikWM que ton ancien code.
                 const video = await fetchTikWM(
                     "/api/",
                     { url }
@@ -357,7 +351,6 @@ async function getTikTokStats(url) {
                     );
                 }
 
-                // Informations du créateur
                 const authorData = video.author || {};
 
                 const username =
@@ -383,12 +376,10 @@ async function getTikTokStats(url) {
                     )
                 };
 
-                // Récupération facultative du profil.
                 const profile = await getTikTokProfile(
                     username
                 );
 
-                // Informations complètes de la vidéo.
                 const data = {
                     platform: "tiktok",
 
@@ -471,240 +462,88 @@ async function getTikTokStats(url) {
     );
 }
 
-// ---------------------------------------------------------
-// YOUTUBE : EXTRACTION DE L'ID
-// ---------------------------------------------------------
+// =====================================================
+// COMPTEUR DE SESSIONS ACTIVES
+// =====================================================
 
-function extractYouTubeId(url) {
-    try {
-        const parsed = new URL(url);
+// Chaque onglet possède son propre identifiant.
+// Le navigateur devra conserver cet identifiant
+// pendant toute la durée de la session.
 
-        if (detectPlatform(url) !== "youtube") {
-            return null;
+function cleanExpiredSessions() {
+    const now = Date.now();
+
+    for (const [sessionId, lastSeen] of activeSessions) {
+        if (now - lastSeen > SESSION_TIMEOUT) {
+            activeSessions.delete(sessionId);
         }
-
-        let id = null;
-
-        if (parsed.hostname === "youtu.be") {
-            id = parsed.pathname.split("/")[1];
-
-        } else if (parsed.pathname === "/watch") {
-            id = parsed.searchParams.get("v");
-
-        } else {
-            id = parsed.pathname.match(
-                /^\/(?:embed|shorts|live)\/([^/]+)/
-            )?.[1];
-        }
-
-        return /^[a-zA-Z0-9_-]{11}$/.test(id || "")
-            ? id
-            : null;
-
-    } catch {
-        return null;
     }
 }
 
-// ---------------------------------------------------------
-// YOUTUBE : STATISTIQUES VIDÉO
-// ---------------------------------------------------------
+function getOnlineCount() {
+    cleanExpiredSessions();
+    return activeSessions.size;
+}
 
-async function getYouTubeStats(url) {
-    const videoId = extractYouTubeId(url);
+// Enregistrer ou actualiser une session active.
+//
+// POST /presence
+// Body :
+// {
+//     "sessionId": "identifiant-unique",
+//     "active": true
+// }
 
-    if (!videoId) {
-        return formatError(
-            "youtube",
-            "ID vidéo introuvable dans l'URL"
+app.post("/presence", (req, res) => {
+    const { sessionId, active } = req.body || {};
+
+    if (
+        typeof sessionId !== "string" ||
+        sessionId.length < 16 ||
+        sessionId.length > 128 ||
+        !/^[a-zA-Z0-9_-]+$/.test(sessionId)
+    ) {
+        return res.status(400).json({
+            error: "Identifiant de session invalide"
+        });
+    }
+
+    cleanExpiredSessions();
+
+    if (active === true) {
+        activeSessions.set(
+            sessionId,
+            Date.now()
         );
+    } else if (active === false) {
+        activeSessions.delete(sessionId);
+    } else {
+        return res.status(400).json({
+            error: "Le champ active doit être true ou false"
+        });
     }
 
-    const cacheKey = "youtube:" + videoId;
+    return res.json({
+        success: true,
+        online: getOnlineCount()
+    });
+});
 
-    const cached = getCache(
-        cache,
-        cacheKey,
-        VIDEO_CACHE_DURATION
-    );
+// Récupérer le nombre de sessions en ligne.
+//
+// GET /presence
 
-    if (cached) {
-        return cached;
-    }
+app.get("/presence", (req, res) => {
+    res.set("Cache-Control", "no-store");
 
-    if (!YOUTUBE_API_KEY) {
-        return formatError(
-            "youtube",
-            "YOUTUBE_API_KEY manquante"
-        );
-    }
+    res.json({
+        online: getOnlineCount()
+    });
+});
 
-    return deduplicate(
-        cacheKey,
-        async () => {
-            try {
-                const apiUrl = new URL(
-                    "https://www.googleapis.com/youtube/v3/videos"
-                );
-
-                apiUrl.searchParams.set(
-                    "part",
-                    "snippet,statistics"
-                );
-
-                apiUrl.searchParams.set(
-                    "id",
-                    videoId
-                );
-
-                apiUrl.searchParams.set(
-                    "key",
-                    YOUTUBE_API_KEY
-                );
-
-                const response = await fetch(
-                    apiUrl,
-                    {
-                        signal: AbortSignal.timeout(15000)
-                    }
-                );
-
-                const json = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(
-                        json.error?.message ||
-                        `YouTube HTTP ${response.status}`
-                    );
-                }
-
-                if (!json.items?.length) {
-                    throw new Error(
-                        "Vidéo YouTube introuvable"
-                    );
-                }
-
-                const item = json.items[0];
-
-                const stats = item.statistics || {};
-                const snippet = item.snippet || {};
-
-                const data = {
-                    platform: "youtube",
-
-                    id: videoId,
-
-                    views: numberOrNull(
-                        stats.viewCount
-                    ),
-
-                    likes: numberOrNull(
-                        stats.likeCount
-                    ),
-
-                    shares: null,
-
-                    comments: numberOrNull(
-                        stats.commentCount
-                    ),
-
-                    favorites: null,
-
-                    title:
-                        snippet.title ||
-                        "Titre introuvable",
-
-                    createTime: snippet.publishedAt
-                        ? Math.floor(
-                            new Date(
-                                snippet.publishedAt
-                            ).getTime() / 1000
-                        )
-                        : null,
-
-                    cover: safeImageUrl(
-                        snippet.thumbnails?.maxres?.url ||
-                        snippet.thumbnails?.high?.url ||
-                        snippet.thumbnails?.medium?.url ||
-                        snippet.thumbnails?.default?.url
-                    ),
-
-                    author: {
-                        id:
-                            snippet.channelId ||
-                            null,
-
-                        username: null,
-
-                        nickname:
-                            snippet.channelTitle ||
-                            null,
-
-                        avatar: null
-                    },
-
-                    profile: null,
-
-                    source: "youtube"
-                };
-
-                console.log(
-                    "Stats YouTube récupérées :",
-                    {
-                        id: data.id,
-                        views: data.views,
-                        likes: data.likes,
-                        comments: data.comments
-                    }
-                );
-
-                setCache(
-                    cache,
-                    cacheKey,
-                    data
-                );
-
-                return data;
-
-            } catch (error) {
-                console.error(
-                    "Erreur YouTube :",
-                    error.message
-                );
-
-                return formatError(
-                    "youtube",
-                    error.message
-                );
-            }
-        }
-    );
-}
-
-// ---------------------------------------------------------
-// RÉCUPÉRATION AUTOMATIQUE SELON LA PLATEFORME
-// ---------------------------------------------------------
-
-async function fetchOne(url) {
-    const platform = detectPlatform(url);
-
-    if (platform === "tiktok") {
-        return getTikTokStats(url);
-    }
-
-    if (platform === "youtube") {
-        return getYouTubeStats(url);
-    }
-
-    return formatError(
-        null,
-        "Plateforme non reconnue (TikTok ou YouTube uniquement)"
-    );
-}
-
-// ---------------------------------------------------------
+// =====================================================
 // ROUTE /stats
-// ---------------------------------------------------------
+// =====================================================
 
 app.get("/stats", async (req, res) => {
     const url = req.query.url;
@@ -718,57 +557,41 @@ app.get("/stats", async (req, res) => {
         });
     }
 
-    const result = await fetchOne(url);
+    if (detectPlatform(url) !== "tiktok") {
+        return res.status(400).json(
+            formatError(
+                null,
+                "Lien TikTok invalide"
+            )
+        );
+    }
+
+    const result = await getTikTokStats(url);
 
     res.json(result);
 });
 
-// ---------------------------------------------------------
-// ROUTE /compare
-// ---------------------------------------------------------
-
-app.get("/compare", async (req, res) => {
-    const urlA = req.query.urlA;
-    const urlB = req.query.urlB;
-
-    if (
-        typeof urlA !== "string" ||
-        typeof urlB !== "string" ||
-        !urlA.trim() ||
-        !urlB.trim()
-    ) {
-        return res.status(400).json({
-            error: "Les deux liens (urlA et urlB) sont requis"
-        });
-    }
-
-    const [a, b] = await Promise.all([
-        fetchOne(urlA),
-        fetchOne(urlB)
-    ]);
-
-    res.json({ a, b });
-});
-
-// ---------------------------------------------------------
+// =====================================================
 // ROUTE DE TEST
-// ---------------------------------------------------------
+// =====================================================
 
 app.get("/test", (req, res) => {
     res.json({
         success: true,
         message: "TikTok Pulse fonctionne !",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        online: getOnlineCount()
     });
 });
 
-// ---------------------------------------------------------
-// NETTOYAGE DU CACHE
-// ---------------------------------------------------------
+// =====================================================
+// NETTOYAGE AUTOMATIQUE
+// =====================================================
 
 setInterval(() => {
     const now = Date.now();
 
+    // Nettoyage du cache vidéo
     for (const key in cache) {
         if (
             now - cache[key].time > 60000
@@ -777,6 +600,7 @@ setInterval(() => {
         }
     }
 
+    // Nettoyage du cache profil
     for (const key in profileCache) {
         if (
             now - profileCache[key].time >
@@ -785,22 +609,30 @@ setInterval(() => {
             delete profileCache[key];
         }
     }
-}, 60000).unref();
 
-// ---------------------------------------------------------
+    // Nettoyage des sessions
+    cleanExpiredSessions();
+
+}, 15000).unref();
+
+// =====================================================
 // DÉMARRAGE DU SERVEUR
-// ---------------------------------------------------------
-
-const PORT = process.env.PORT || 3000;
+// =====================================================
 
 app.listen(PORT, "0.0.0.0", () => {
     console.log(
         `TikTok Pulse lancé sur le port ${PORT}`
     );
 
-    if (!YOUTUBE_API_KEY) {
-        console.warn(
-            "⚠️ YOUTUBE_API_KEY manquante : les statistiques YouTube ne fonctionneront pas."
-        );
-    }
+    console.log(
+        "Statistiques : TikTok uniquement"
+    );
+
+    console.log(
+        "Compteur de sessions actives activé"
+    );
+
+    console.log(
+        `Expiration des sessions : ${SESSION_TIMEOUT / 1000}s`
+    );
 });
