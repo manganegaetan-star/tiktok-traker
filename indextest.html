@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikWM Chromium Test</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #101018;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 500px;
+            padding: 30px;
+            background: #1b1b28;
+            border-radius: 16px;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #303043;
+            color: white;
+            margin: 15px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #ff315c;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: .5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: #303043;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        #status {
+            margin-top: 15px;
+            color: #aaa;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎵 TikWM Chromium</h1>
+
+    <p>Test des statistiques TikTok depuis Render.</p>
+
+    <input
+        id="url"
+        value="https://www.tiktok.com/@fruitstoryanime/video/7697545039135788310"
+        placeholder="Lien vidéo TikTok"
+    >
+
+    <button id="testBtn" onclick="testTikTok()">
+        Tester la vidéo
+    </button>
+
+    <div id="status"></div>
+
+    <div class="stats">
+
+        <div class="stat">
+            Vues
+            <div class="value" id="views">—</div>
+        </div>
+
+        <div class="stat">
+            Likes
+            <div class="value" id="likes">—</div>
+        </div>
+
+        <div class="stat">
+            Partages
+            <div class="value" id="shares">—</div>
+        </div>
+
+        <div class="stat">
+            Commentaires
+            <div class="value" id="comments">—</div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+async function testTikTok() {
+    const url = document.getElementById("url").value;
+    const status = document.getElementById("status");
+    const button = document.getElementById("testBtn");
+
+    button.disabled = true;
+    status.textContent = "Lancement de Chromium...";
+
+    for (const id of ["views", "likes", "shares", "comments"]) {
+        document.getElementById(id).textContent = "—";
+    }
+
+    try {
+        const response = await fetch(
+            "/test?url=" + encodeURIComponent(url)
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || "Erreur serveur");
+        }
+
+        const format = value =>
+            value == null
+                ? "—"
+                : Number(value).toLocaleString("fr-FR");
+
+        document.getElementById("views").textContent =
+            format(data.views);
+
+        document.getElementById("likes").textContent =
+            format(data.likes);
+
+        document.getElementById("shares").textContent =
+            format(data.shares);
+
+        document.getElementById("comments").textContent =
+            format(data.comments);
+
+        status.textContent =
+            "HTTP " + data.httpStatus +
+            " — Source : " + data.source;
+
+    } catch (error) {
+        status.textContent = "❌ " + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+</script>
+
+</body>
+</html>
