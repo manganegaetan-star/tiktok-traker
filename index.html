@@ -1221,7 +1221,6 @@ class Odometer {
     this.value = 0;
     this.target = 0;
     this.frame = null;
-    this.timeouts = [];
     this.token = 0;
   }
 
@@ -1237,34 +1236,33 @@ class Odometer {
 
   cancel() {
     this.token++;
-    if(this.frame !== null) cancelAnimationFrame(this.frame);
+    if (this.frame !== null) cancelAnimationFrame(this.frame);
     this.frame = null;
-    this.timeouts.forEach(clearTimeout);
-    this.timeouts = [];
   }
 
   build(text) {
     this.box.innerHTML = "";
     this.digits = [];
     this.adjustFontSize(text.length);
-    for(const char of text) {
+    for (const char of text) {
       const cell = document.createElement("div");
       cell.className = "odo-digit";
       const strip = document.createElement("div");
       strip.className = "odo-strip";
-      for(let cycle = 0; cycle < 3; cycle++) {
-        for(let n = 0; n < 10; n++) {
+      // Neuf cycles pour permettre plusieurs tours sans saut visuel.
+      for (let cycle = 0; cycle < 9; cycle++) {
+        for (let n = 0; n < 10; n++) {
           const span = document.createElement("span");
           span.textContent = n;
           strip.appendChild(span);
         }
       }
-      const index = Number(char) + 10;
+      const position = 40 + Number(char);
       strip.style.transition = "none";
-      strip.style.transform = `translateY(-${index * (100 / 30)}%)`;
+      strip.style.transform = `translateY(-${position * (100 / 90)}%)`;
       cell.appendChild(strip);
       this.box.appendChild(cell);
-      this.digits.push({ strip, index });
+      this.digits.push({ strip });
     }
   }
 
@@ -1275,64 +1273,58 @@ class Odometer {
     this.build(String(this.value));
   }
 
-  showNumber(value, duration = 100) {
-    const text = String(value);
-    if(text.length !== this.digits.length) {
-      this.build(text);
-      return;
-    }
-    this.adjustFontSize(text.length);
-    text.split("").forEach((char, i) => {
-      const state = this.digits[i];
-      const wanted = Number(char);
-      const current = state.index % 10;
-      if(wanted === current) return;
-      // Roulement vers l'avant, y compris 9 -> 0.
-      const delta = (wanted - current + 10) % 10;
-      const nextIndex = state.index + delta;
-      if(nextIndex >= 30) {
-        state.index = current + 10;
-        state.strip.style.transition = "none";
-        state.strip.style.transform = `translateY(-${state.index * (100 / 30)}%)`;
-        void state.strip.offsetHeight;
-      }
-      state.index += delta;
-      state.strip.style.transition = `transform ${duration}ms cubic-bezier(.32,.94,.24,1)`;
-      state.strip.style.transform = `translateY(-${state.index * (100 / 30)}%)`;
-    });
-  }
-
   rollTo(target) {
     const next = Math.max(0, Math.floor(Number(target) || 0));
     this.cancel();
     const token = this.token;
     const from = this.value;
     this.target = next;
-    if(next === from) return;
+    if (next === from) return;
 
-    const difference = Math.abs(next - from);
-    // Petites hausses : on affiche chaque entier (10, 11, 12... 20).
-    // Grandes hausses : interpolation progressive, sans bloquer l'interface.
-    const everyInteger = difference <= 35;
-    const duration = everyInteger
-      ? Math.min(3600, Math.max(600, difference * 115))
-      : 2600;
+    const diff = next - from;
+    const small = Math.abs(diff) <= 35;
+    const duration = small
+      ? Math.min(3600, Math.max(700, Math.abs(diff) * 140))
+      : 2100;
     const start = performance.now();
-    let last = from;
+    const fromText = String(from);
+    const toText = String(next);
+    const count = Math.max(fromText.length, toText.length);
+
+    // On construit les colonnes une seule fois au début de l'animation.
+    // Chaque chiffre glisse de manière continue (pas de transition CSS relancée).
+    if (this.digits.length !== count) {
+      this.build(String(from).padStart(count, "0"));
+    }
+    this.adjustFontSize(count);
+
+    const columns = this.digits.map((state, i) => {
+      const place = Math.pow(10, count - i - 1);
+      const first = Math.floor(from / place) % 10;
+      const last = Math.floor(next / place) % 10;
+      // Pour une grande variation, on anime un tour partiel par colonne.
+      const delta = small
+        ? diff / place
+        : diff > 0 ? (last - first + 10) % 10 : -((first - last + 10) % 10);
+      return { strip: state.strip, first, delta };
+    });
+
     const step = now => {
-      if(token !== this.token) return;
+      if (token !== this.token) return;
       const progress = Math.min(1, (now - start) / duration);
-      const eased = everyInteger ? progress : 1 - Math.pow(1 - progress, 3);
-      const calculated = from + (next - from) * eased;
-      const current = progress === 1 ? next :
-        (next >= from ? Math.floor(calculated) : Math.ceil(calculated));
-      if(current !== last) {
-        this.showNumber(current, everyInteger ? 90 : 130);
-        this.value = current;
-        last = current;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      for (const col of columns) {
+        const position = 40 + col.first + col.delta * eased;
+        col.strip.style.transform = `translateY(-${position * (100 / 90)}%)`;
       }
-      if(progress < 1) this.frame = requestAnimationFrame(step);
-      else this.frame = null;
+      if (progress < 1) {
+        this.frame = requestAnimationFrame(step);
+      } else {
+        this.frame = null;
+        this.value = next;
+        // Recentre à l'identique pour préparer la prochaine animation.
+        this.build(String(next));
+      }
     };
     this.frame = requestAnimationFrame(step);
   }
