@@ -264,10 +264,9 @@ $('searchForm').addEventListener('submit',e=>{
   if(!validTikTok(url)){error('Entre un lien TikTok valide.');return;}
   start(url);
 });
-  
 function syncActivity(){
+  const active=isPageActive();
   syncPageTitle();
-
   if(!active){
     clearTimeout(timer);timer=null;
     controller?.abort();controller=null;
@@ -281,12 +280,10 @@ function syncActivity(){
     if(!controller)refresh();
   }
 }
-
 document.addEventListener('visibilitychange',syncActivity);
 window.addEventListener('focus',syncActivity);
 window.addEventListener('blur',syncActivity);
 window.addEventListener('pageshow',syncActivity);
 window.addEventListener('resize',plot);
 imageSet('cover',null);imageSet('avatar',null);plot();syncPageTitle();
-
 </script></body></html>
