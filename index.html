@@ -248,20 +248,35 @@ class RollingCounter {
   }
 }
 
-// Titre défilant : vues et abonnés mis à jour à chaque relevé.
+// Titre de l’onglet : fixe si court, sinon défile vers la fin puis repart au début.
 let titleViews = null;
 let titleFollowers = null;
 let titleOffset = 0;
+let lastTitle = '';
+const TITLE_VISIBLE_CHARS = 22;
+const TITLE_SPEED = 400;
 const titleNumber = value => value === null ? '—' : fmt(value);
+const titleSegmenter = new Intl.Segmenter('fr', { granularity: 'grapheme' });
 function syncPageTitle() {
-  const message = `👀| ${titleNumber(titleViews)}  👩‍👧‍👦| ${titleNumber(titleFollowers)}     •     `;
-  const characters = Array.from(message);
-  const offset = titleOffset % characters.length;
-  document.title = characters.slice(-offset).join('') + characters.slice(0, -offset).join('');
-  titleOffset = (titleOffset + 1) % characters.length;
+  const fullTitle = `👀| ${titleNumber(titleViews)} 👩‍👧‍👦| ${titleNumber(titleFollowers)}`;
+  const chars = Array.from(titleSegmenter.segment(fullTitle), part => part.segment);
+
+  if (fullTitle !== lastTitle) {
+    lastTitle = fullTitle;
+    titleOffset = 0;
+  }
+
+  if (chars.length <= TITLE_VISIBLE_CHARS) {
+    document.title = fullTitle;
+    return;
+  }
+
+  const maxOffset = chars.length - TITLE_VISIBLE_CHARS;
+  document.title = chars.slice(titleOffset, titleOffset + TITLE_VISIBLE_CHARS).join('');
+  titleOffset = titleOffset >= maxOffset ? 0 : titleOffset + 1;
 }
-// Le navigateur peut ralentir l'animation dans un onglet masqué.
-setInterval(syncPageTitle, 450);
+// Le navigateur peut ralentir l’animation dans un onglet masqué.
+setInterval(syncPageTitle, TITLE_SPEED);
 const counter=new RollingCounter($('views'));let currentUrl='',timer=null,controller=null,requestId=0,history=[],initialViews=null,previous=null,tracking=false;
 function status(active,label){$('headerDot').classList.toggle('on',active);$('headerStatus').textContent=label;$('liveBadge').textContent=active?'● SUIVI ACTIF':label;$('liveBadge').classList.toggle('off',!active)}function error(msg){$('error').textContent=msg||'';$('error').classList.toggle('show',!!msg)}function imageSet(id,url){const el=$(id);if(typeof url==='string'&&/^https:\/\//i.test(url)){el.src=url;el.style.opacity='1'}else{el.removeAttribute('src');el.style.opacity='.25'}}function show(id,val){$(id).textContent=fmt(val)}
 function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect();if(!rect.width)return;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:55,r:10,t:15,b:25};ctx.clearRect(0,0,w,h);ctx.font='11px DM Sans';ctx.fillStyle='#8990a6';ctx.strokeStyle='#ffffff13';ctx.lineWidth=1;if(history.length<2){$('chartEmpty').classList.remove('hidden');return}$('chartEmpty').classList.add('hidden');const values=history.map(p=>p.v),min=Math.min(...values),max=Math.max(...values),spread=Math.max(1,max-min),lo=min-spread*.12,hi=max+spread*.12;for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(nf.format(Math.round(hi-(hi-lo)*i/3)),3,y+4)}const x=i=>pad.l+(w-pad.l-pad.r)*i/(history.length-1),y=v=>pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#42e9e344');grad.addColorStop(1,'#42e9e300');ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.lineTo(x(history.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.strokeStyle='#42e9e3';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();ctx.fillStyle='#8d93a6';ctx.fillText(new Date(history[0].t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),pad.l,h-5);ctx.textAlign='right';ctx.fillText(new Date(history.at(-1).t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),w-pad.r,h-5);ctx.textAlign='left'}
@@ -305,7 +320,7 @@ function start(url){
   stop();
   currentUrl=url;
   history=[];previous=null;initialViews=null;
-  titleViews=null;titleFollowers=null;titleOffset=0;
+  titleViews=null;titleFollowers=null;titleOffset=0;lastTitle='';
   counter.draw(0);counter.value=0;
   ['likes','comments','shares','favorites','engagement','perMinute','gain','lastUpdate','followers','following','profileLikes','videos'].forEach(id=>$(id).textContent='—');
   $('growth').textContent='↗ En attente des premières données';
