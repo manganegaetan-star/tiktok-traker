@@ -248,16 +248,73 @@ class RollingCounter {
   }
 }
 
-const normalPageTitle=document.title;
-const pausedPageTitle='🔴 Actualisation arrêtée';
-const isPageActive=()=>document.visibilityState==='visible'&&document.hasFocus();
-function syncPageTitle(){document.title=isPageActive()?normalPageTitle:pausedPageTitle}
+// Titre défilant : vues et abonnés mis à jour à chaque relevé.
+let titleViews = null;
+let titleFollowers = null;
+let titleOffset = 0;
+const titleNumber = value => value === null ? '—' : fmt(value);
+function syncPageTitle() {
+  const message = `👀| ${titleNumber(titleViews)}  👩‍👧‍👦| ${titleNumber(titleFollowers)}     •     `;
+  const characters = Array.from(message);
+  const offset = titleOffset % characters.length;
+  document.title = characters.slice(-offset).join('') + characters.slice(0, -offset).join('');
+  titleOffset = (titleOffset + 1) % characters.length;
+}
+// Le navigateur peut ralentir l'animation dans un onglet masqué.
+setInterval(syncPageTitle, 450);
 const counter=new RollingCounter($('views'));let currentUrl='',timer=null,controller=null,requestId=0,history=[],initialViews=null,previous=null,tracking=false;
 function status(active,label){$('headerDot').classList.toggle('on',active);$('headerStatus').textContent=label;$('liveBadge').textContent=active?'● SUIVI ACTIF':label;$('liveBadge').classList.toggle('off',!active)}function error(msg){$('error').textContent=msg||'';$('error').classList.toggle('show',!!msg)}function imageSet(id,url){const el=$(id);if(typeof url==='string'&&/^https:\/\//i.test(url)){el.src=url;el.style.opacity='1'}else{el.removeAttribute('src');el.style.opacity='.25'}}function show(id,val){$(id).textContent=fmt(val)}
 function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect();if(!rect.width)return;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:55,r:10,t:15,b:25};ctx.clearRect(0,0,w,h);ctx.font='11px DM Sans';ctx.fillStyle='#8990a6';ctx.strokeStyle='#ffffff13';ctx.lineWidth=1;if(history.length<2){$('chartEmpty').classList.remove('hidden');return}$('chartEmpty').classList.add('hidden');const values=history.map(p=>p.v),min=Math.min(...values),max=Math.max(...values),spread=Math.max(1,max-min),lo=min-spread*.12,hi=max+spread*.12;for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(nf.format(Math.round(hi-(hi-lo)*i/3)),3,y+4)}const x=i=>pad.l+(w-pad.l-pad.r)*i/(history.length-1),y=v=>pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#42e9e344');grad.addColorStop(1,'#42e9e300');ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.lineTo(x(history.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.strokeStyle='#42e9e3';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();ctx.fillStyle='#8d93a6';ctx.fillText(new Date(history[0].t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),pad.l,h-5);ctx.textAlign='right';ctx.fillText(new Date(history.at(-1).t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),w-pad.r,h-5);ctx.textAlign='left'}
-function update(data){if(!Number.isFinite(Number(data.views))||data.views===null)throw Error('Compteur de vues indisponible');const views=Number(data.views),now=Date.now();counter.set(views);show('likes',data.likes);show('comments',data.comments);show('shares',data.shares);show('favorites',data.favorites);$('title').textContent=data.title||'Vidéo TikTok';imageSet('cover',data.cover);const a=data.author||{},p=data.profile||{};imageSet('avatar',a.avatar||p.avatar);$('nickname').textContent=a.nickname||p.nickname||'Créateur TikTok';$('username').textContent=a.username?'@'+a.username:'Profil TikTok';show('followers',p.followers);show('following',p.following);show('profileLikes',p.likes);show('videos',p.videos);const likes=Number(data.likes||0),comments=Number(data.comments||0),shares=Number(data.shares||0);$('engagement').textContent=views>0?((likes+comments+shares)/views*100).toLocaleString('fr-FR',{maximumFractionDigits:2})+' %':'—';if(initialViews===null)initialViews=views;const gain=views-initialViews;$('gain').textContent=(gain>0?'+':'')+fmt(gain);if(previous){const delta=views-previous.v;$('growth').className='growth '+(delta>0?'':delta<0?'negative':'neutral');$('growth').textContent=(delta>0?'↗ +':delta<0?'↘ ':'↗ ')+fmt(delta)+' vue(s) depuis le dernier relevé'}else{$('growth').textContent='↗ Suivi démarré · en attente de progression'}previous={v:views,t:now};history.push({v:views,t:now});history=history.filter(p=>p.t>=now-3600000).slice(-750);if(history.length>=2){const first=history[0],last=history.at(-1),minutes=(last.t-first.t)/60000;$('perMinute').textContent=minutes>0?fmt(Math.round((last.v-first.v)/minutes)):'—'}else{$('perMinute').textContent='—'}$('lastUpdate').textContent=new Date(now).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});plot()}
-async function refresh(){if(!tracking||!isPageActive()||!currentUrl)return;const id=++requestId;controller=new AbortController();try{const response=await fetch('/stats?url='+encodeURIComponent(currentUrl),{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('Serveur HTTP '+response.status);const data=await response.json();if(id!==requestId||!isPageActive())return;if(data.error)throw Error(data.error);update(data);error('');status(true,'EN DIRECT')}catch(e){if(e.name!=='AbortError'&&id===requestId){error('Impossible de récupérer les données : '+e.message);status(false,'ERREUR API')}}finally{if(id===requestId){controller=null;if(tracking&&isPageActive())timer=setTimeout(refresh,5000)}}}
-function stop(){tracking=false;clearTimeout(timer);timer=null;controller?.abort();controller=null;requestId++}function start(url){stop();currentUrl=url;history=[];previous=null;initialViews=null;counter.draw(0);counter.value=0;['likes','comments','shares','favorites','engagement','perMinute','gain','lastUpdate','followers','following','profileLikes','videos'].forEach(id=>$(id).textContent='—');$('growth').textContent='↗ En attente des premières données';$('growth').className='growth neutral';plot();error('');tracking=true;status(false,isPageActive()?'CHARGEMENT':'EN PAUSE');syncPageTitle();if(isPageActive())refresh()}
+function update(data){if(!Number.isFinite(Number(data.views))||data.views===null)throw Error('Compteur de vues indisponible');const views=Number(data.views),now=Date.now();titleViews=views;if(data.profile?.followers!=null&&Number.isFinite(Number(data.profile.followers)))titleFollowers=Number(data.profile.followers);counter.set(views);show('likes',data.likes);show('comments',data.comments);show('shares',data.shares);show('favorites',data.favorites);$('title').textContent=data.title||'Vidéo TikTok';imageSet('cover',data.cover);const a=data.author||{},p=data.profile||{};imageSet('avatar',a.avatar||p.avatar);$('nickname').textContent=a.nickname||p.nickname||'Créateur TikTok';$('username').textContent=a.username?'@'+a.username:'Profil TikTok';show('followers',p.followers);show('following',p.following);show('profileLikes',p.likes);show('videos',p.videos);const likes=Number(data.likes||0),comments=Number(data.comments||0),shares=Number(data.shares||0);$('engagement').textContent=views>0?((likes+comments+shares)/views*100).toLocaleString('fr-FR',{maximumFractionDigits:2})+' %':'—';if(initialViews===null)initialViews=views;const gain=views-initialViews;$('gain').textContent=(gain>0?'+':'')+fmt(gain);if(previous){const delta=views-previous.v;$('growth').className='growth '+(delta>0?'':delta<0?'negative':'neutral');$('growth').textContent=(delta>0?'↗ +':delta<0?'↘ ':'↗ ')+fmt(delta)+' vue(s) depuis le dernier relevé'}else{$('growth').textContent='↗ Suivi démarré · en attente de progression'}previous={v:views,t:now};history.push({v:views,t:now});history=history.filter(p=>p.t>=now-3600000).slice(-750);if(history.length>=2){const first=history[0],last=history.at(-1),minutes=(last.t-first.t)/60000;$('perMinute').textContent=minutes>0?fmt(Math.round((last.v-first.v)/minutes)):'—'}else{$('perMinute').textContent='—'}$('lastUpdate').textContent=new Date(now).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});plot()}
+async function refresh(){
+  if(!tracking||!currentUrl||controller)return;
+  clearTimeout(timer);timer=null;
+  const id=++requestId;
+  const currentController=new AbortController();
+  controller=currentController;
+  try{
+    const response=await fetch('/stats?url='+encodeURIComponent(currentUrl),{
+      signal:currentController.signal,cache:'no-store'
+    });
+    if(!response.ok)throw Error('Serveur HTTP '+response.status);
+    const data=await response.json();
+    if(id!==requestId)return;
+    if(data.error)throw Error(data.error);
+    update(data);
+    error('');
+    status(true,'EN DIRECT');
+  }catch(e){
+    if(e.name!=='AbortError'&&id===requestId){
+      error('Impossible de récupérer les données : '+e.message);
+      status(false,'ERREUR API');
+    }
+  }finally{
+    if(id===requestId){
+      controller=null;
+      if(tracking)timer=setTimeout(refresh,5000);
+    }
+  }
+}
+function stop(){
+  tracking=false;
+  clearTimeout(timer);timer=null;
+  controller?.abort();controller=null;
+  requestId++;
+}
+function start(url){
+  stop();
+  currentUrl=url;
+  history=[];previous=null;initialViews=null;
+  titleViews=null;titleFollowers=null;titleOffset=0;
+  counter.draw(0);counter.value=0;
+  ['likes','comments','shares','favorites','engagement','perMinute','gain','lastUpdate','followers','following','profileLikes','videos'].forEach(id=>$(id).textContent='—');
+  $('growth').textContent='↗ En attente des premières données';
+  $('growth').className='growth neutral';
+  plot();error('');tracking=true;
+  status(false,'CHARGEMENT');
+  syncPageTitle();
+  refresh();
+}
 $('searchForm').addEventListener('submit',e=>{
   e.preventDefault();
   const url=$('videoUrl').value.trim();
@@ -265,24 +322,16 @@ $('searchForm').addEventListener('submit',e=>{
   start(url);
 });
 function syncActivity(){
-  const active=isPageActive();
-  syncPageTitle();
-  if(!active){
+  // Ne jamais suspendre le suivi parce que l'onglet est masqué.
+  // Au retour, demander une mesure fraîche sans lancer deux requêtes.
+  if(!tracking||controller)return;
+  if(document.visibilityState==='visible'){
     clearTimeout(timer);timer=null;
-    controller?.abort();controller=null;
-    requestId++;
-    if(tracking)status(false,'EN PAUSE');
-    return;
-  }
-  if(tracking){
-    clearTimeout(timer);timer=null;
-    // One request immediately on return, then the normal 5-second cycle.
-    if(!controller)refresh();
+    refresh();
   }
 }
 document.addEventListener('visibilitychange',syncActivity);
 window.addEventListener('focus',syncActivity);
-window.addEventListener('blur',syncActivity);
 window.addEventListener('pageshow',syncActivity);
 window.addEventListener('resize',plot);
 imageSet('cover',null);imageSet('avatar',null);plot();syncPageTitle();
