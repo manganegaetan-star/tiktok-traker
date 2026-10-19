@@ -264,26 +264,23 @@ $('searchForm').addEventListener('submit',e=>{
   if(!validTikTok(url)){error('Entre un lien TikTok valide.');return;}
   start(url);
 });
-   function syncActivity(){
-  const active=isPageActive();
+  
+function syncActivity(){
   syncPageTitle();
-  if(!active){
-    clearTimeout(timer);timer=null;
-    controller?.abort();controller=null;
-    requestId++;
-    if(tracking)status(false,'EN PAUSE');
-    return;
-  }
-  if(tracking){
-    clearTimeout(timer);timer=null;
-    // One request immediately on return, then the normal 5-second cycle.
-    if(!controller)refresh();
+
+  if(tracking && !controller && !timer){
+    refresh();
   }
 }
-document.addEventListener('visibilitychange',syncActivity);
-window.addEventListener('focus',syncActivity);
-window.addEventListener('blur',syncActivity);
-window.addEventListener('pageshow',syncActivity);
-window.addEventListener('resize',plot);
-imageSet('cover',null);imageSet('avatar',null);plot();syncPageTitle();
+
+document.addEventListener('visibilitychange', syncActivity);
+window.addEventListener('focus', syncActivity);
+window.addEventListener('pageshow', syncActivity);
+window.addEventListener('resize', plot);
+
+imageSet('cover',null);
+imageSet('avatar',null);
+plot();
+syncPageTitle();
+
 </script></body></html>
