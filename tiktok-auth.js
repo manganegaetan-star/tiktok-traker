@@ -1,0 +1,478 @@
+// =====================================================
+// CONNEXION TIKTOK (Login Kit) + DISPLAY API OFFICIELLE
+// -----------------------------------------------------
+// Un créateur se connecte avec son compte TikTok :
+// on obtient alors les chiffres EXACTS de ses vidéos
+// via l'API officielle, sans tikwm.
+//
+// Variables d'environnement nécessaires :
+//   TIKTOK_CLIENT_KEY      clé de l'app (developers.tiktok.com)
+//   TIKTOK_CLIENT_SECRET   secret de l'app
+//   TIKTOK_REDIRECT_URI    ex. https://ton-site.run.app/auth/tiktok/callback
+//                          (doit être identique à celle déclarée chez TikTok)
+//   SESSION_SECRET         32 caractères aléatoires ou plus
+//
+// Les jetons TikTok sont chiffrés (AES-256-GCM) dans un
+// cookie HttpOnly : aucune base de données nécessaire, et
+// ça fonctionne même avec plusieurs instances Cloud Run.
+// =====================================================
+
+const crypto = require("crypto");
+
+const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
+const API = "https://open.tiktokapis.com/v2";
+
+const SCOPES = [
+    "user.info.basic",
+    "user.info.profile",
+    "user.info.stats",
+    "video.list"
+].join(",");
+
+const USER_FIELDS = [
+    "open_id", "avatar_url", "avatar_large_url", "display_name",
+    "username", "bio_description", "is_verified",
+    "follower_count", "following_count", "likes_count", "video_count"
+].join(",");
+
+const VIDEO_FIELDS = [
+    "id", "title", "video_description", "cover_image_url", "share_url",
+    "create_time", "duration",
+    "view_count", "like_count", "comment_count", "share_count"
+].join(",");
+
+const SESSION_COOKIE = "tp_session";
+const STATE_COOKIE = "tp_oauth_state";
+const TIMEOUT_MS = 12000;
+
+const USER_CACHE_MS = 60000;
+const LIST_CACHE_MS = 30000;
+const VIDEO_CACHE_MS = 5000;
+
+const cache = new Map();
+
+function config() {
+    const c = {
+        clientKey: process.env.TIKTOK_CLIENT_KEY?.trim(),
+        clientSecret: process.env.TIKTOK_CLIENT_SECRET?.trim(),
+        redirectUri: process.env.TIKTOK_REDIRECT_URI?.trim(),
+        secret: process.env.SESSION_SECRET?.trim()
+    };
+
+    c.ready = Boolean(
+        c.clientKey && c.clientSecret && c.redirectUri &&
+        c.secret && c.secret.length >= 32
+    );
+
+    return c;
+}
+
+// -----------------------------------------------------
+// Cookies chiffrés
+// -----------------------------------------------------
+
+function key(secret) {
+    return crypto.createHash("sha256").update(secret).digest();
+}
+
+function seal(data, secret) {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key(secret), iv);
+    const body = Buffer.concat([
+        cipher.update(JSON.stringify(data), "utf8"),
+        cipher.final()
+    ]);
+
+    return Buffer.concat([iv, cipher.getAuthTag(), body]).toString("base64url");
+}
+
+function unseal(value, secret) {
+    try {
+        const raw = Buffer.from(value, "base64url");
+        const decipher = crypto.createDecipheriv(
+            "aes-256-gcm", key(secret), raw.subarray(0, 12)
+        );
+
+        decipher.setAuthTag(raw.subarray(12, 28));
+
+        return JSON.parse(Buffer.concat([
+            decipher.update(raw.subarray(28)),
+            decipher.final()
+        ]).toString("utf8"));
+    } catch {
+        return null;
+    }
+}
+
+function readCookie(req, name) {
+    const header = req.headers.cookie || "";
+
+    for (const part of header.split(";")) {
+        const i = part.indexOf("=");
+
+        if (i > 0 && part.slice(0, i).trim() === name) {
+            return decodeURIComponent(part.slice(i + 1).trim());
+        }
+    }
+
+    return null;
+}
+
+function setCookie(req, res, name, value, maxAgeSeconds) {
+    const secure = req.secure || req.headers["x-forwarded-proto"] === "https";
+
+    res.append("Set-Cookie", [
+        `${name}=${encodeURIComponent(value)}`,
+        "Path=/",
+        "HttpOnly",
+        "SameSite=Lax",
+        `Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`,
+        secure ? "Secure" : null
+    ].filter(Boolean).join("; "));
+}
+
+function clearCookie(req, res, name) {
+    setCookie(req, res, name, "", 0);
+}
+
+// -----------------------------------------------------
+// Appels TikTok
+// -----------------------------------------------------
+
+async function tokenRequest(params) {
+    const response = await fetch(`${API}/oauth/token/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cache-Control": "no-cache"
+        },
+        body: new URLSearchParams(params),
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+    });
+
+    const json = await response.json().catch(() => ({}));
+
+    if (!response.ok || json.error || !json.access_token) {
+        throw new Error(
+            json.error_description || json.error ||
+            `Jeton TikTok HTTP ${response.status}`
+        );
+    }
+
+    return {
+        openId: json.open_id,
+        accessToken: json.access_token,
+        refreshToken: json.refresh_token,
+        accessExpires: Date.now() + (json.expires_in - 60) * 1000,
+        refreshExpires: Date.now() + json.refresh_expires_in * 1000,
+        scope: json.scope
+    };
+}
+
+async function apiCall(session, path, { method = "GET", body } = {}) {
+    const response = await fetch(`${API}${path}`, {
+        method,
+        headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            ...(body ? { "Content-Type": "application/json" } : {})
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+    });
+
+    const json = await response.json().catch(() => ({}));
+    const code = json.error?.code;
+
+    if (!response.ok || (code && code !== "ok")) {
+        const error = new Error(
+            json.error?.message || `API TikTok HTTP ${response.status}`
+        );
+
+        error.code = code;
+        error.status = response.status;
+        throw error;
+    }
+
+    return json.data;
+}
+
+async function cached(cacheKey, ms, loader) {
+    const hit = cache.get(cacheKey);
+
+    if (hit && Date.now() - hit.time < ms) return hit.data;
+
+    const data = await loader();
+
+    if (cache.size > 2000) cache.delete(cache.keys().next().value);
+    cache.set(cacheKey, { data, time: Date.now() });
+
+    return data;
+}
+
+function cleanVideo(v) {
+    const num = x => (Number.isFinite(Number(x)) ? Number(x) : null);
+    const https = u => (typeof u === "string" && u.startsWith("https://") ? u : null);
+
+    return {
+        id: String(v.id),
+        title: v.title || v.video_description || "Vidéo TikTok",
+        cover: https(v.cover_image_url),
+        shareUrl: https(v.share_url),
+        createTime: num(v.create_time),
+        duration: num(v.duration),
+        views: num(v.view_count),
+        likes: num(v.like_count),
+        comments: num(v.comment_count),
+        shares: num(v.share_count)
+    };
+}
+
+// -----------------------------------------------------
+// Routes
+// -----------------------------------------------------
+
+module.exports = function mountTikTokAuth(app) {
+    // Session : lit le cookie, rafraîchit le jeton si besoin.
+    async function requireSession(req, res, next) {
+        const c = config();
+
+        if (!c.ready) {
+            return res.status(503).json({ error: "Connexion TikTok non configurée" });
+        }
+
+        const raw = readCookie(req, SESSION_COOKIE);
+        let session = raw ? unseal(raw, c.secret) : null;
+
+        if (!session || Date.now() >= session.refreshExpires) {
+            clearCookie(req, res, SESSION_COOKIE);
+            return res.status(401).json({ error: "Non connecté" });
+        }
+
+        if (Date.now() >= session.accessExpires) {
+            try {
+                session = await tokenRequest({
+                    client_key: c.clientKey,
+                    client_secret: c.clientSecret,
+                    grant_type: "refresh_token",
+                    refresh_token: session.refreshToken
+                });
+
+                setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
+                    (session.refreshExpires - Date.now()) / 1000);
+            } catch (error) {
+                console.warn("[AUTH] Rafraîchissement échoué :", error.message);
+                clearCookie(req, res, SESSION_COOKIE);
+                return res.status(401).json({ error: "Session expirée, reconnecte-toi" });
+            }
+        }
+
+        req.tiktok = session;
+        res.set("Cache-Control", "no-store");
+        next();
+    }
+
+    function apiError(res, error) {
+        console.warn("[DISPLAY API]", error.code || "", error.message);
+
+        if (error.code === "access_token_invalid" || error.status === 401) {
+            return res.status(401).json({ error: "Session expirée, reconnecte-toi" });
+        }
+
+        if (error.code === "scope_not_authorized") {
+            return res.status(403).json({ error: "Autorisation manquante : reconnecte-toi et accepte toutes les permissions" });
+        }
+
+        if (error.code === "rate_limit_exceeded") {
+            return res.status(429).json({ error: "Trop de requêtes, réessaie dans un instant" });
+        }
+
+        return res.status(502).json({ error: error.message });
+    }
+
+    // Indique au front si la connexion est disponible.
+    app.get("/auth/status", (req, res) => {
+        const c = config();
+        const raw = c.ready ? readCookie(req, SESSION_COOKIE) : null;
+        const session = raw ? unseal(raw, c.secret) : null;
+
+        res.set("Cache-Control", "no-store");
+        res.json({
+            enabled: c.ready,
+            connected: Boolean(session && Date.now() < session.refreshExpires)
+        });
+    });
+
+    // 1) Départ vers TikTok
+    app.get("/auth/tiktok", (req, res) => {
+        const c = config();
+
+        if (!c.ready) {
+            return res.redirect("/connexion.html?erreur=config");
+        }
+
+        // Protection CSRF : valeur aléatoire vérifiée au retour.
+        // (Pour une app web, TikTok n'exige pas de PKCE : le
+        // client_secret reste côté serveur.)
+        const state = crypto.randomBytes(24).toString("base64url");
+
+        setCookie(req, res, STATE_COOKIE,
+            seal({ state, t: Date.now() }, c.secret), 600);
+
+        const url = new URL(AUTHORIZE_URL);
+        url.searchParams.set("client_key", c.clientKey);
+        url.searchParams.set("scope", SCOPES);
+        url.searchParams.set("response_type", "code");
+        url.searchParams.set("redirect_uri", c.redirectUri);
+        url.searchParams.set("state", state);
+
+        res.redirect(url.href);
+    });
+
+    // 2) Retour de TikTok
+    app.get("/auth/tiktok/callback", async (req, res) => {
+        const c = config();
+        const fail = reason => res.redirect(`/connexion.html?erreur=${reason}`);
+
+        if (!c.ready) return fail("config");
+
+        const raw = readCookie(req, STATE_COOKIE);
+        const saved = raw ? unseal(raw, c.secret) : null;
+        clearCookie(req, res, STATE_COOKIE);
+
+        if (req.query.error) return fail("refus");
+
+        const code = typeof req.query.code === "string" ? req.query.code : null;
+        const state = typeof req.query.state === "string" ? req.query.state : "";
+
+        if (
+            !code || !saved || Date.now() - saved.t > 600000 ||
+            state.length !== saved.state.length ||
+            !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(saved.state))
+        ) {
+            return fail("state");
+        }
+
+        try {
+            const session = await tokenRequest({
+                client_key: c.clientKey,
+                client_secret: c.clientSecret,
+                code,
+                grant_type: "authorization_code",
+                redirect_uri: c.redirectUri
+            });
+
+            setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
+                (session.refreshExpires - Date.now()) / 1000);
+
+            console.log("[AUTH] Créateur connecté");
+            res.redirect("/compte.html");
+        } catch (error) {
+            console.warn("[AUTH] Échange du code échoué :", error.message);
+            fail("jeton");
+        }
+    });
+
+    // 3) Déconnexion (révoque aussi l'accès chez TikTok)
+    app.post("/auth/logout", async (req, res) => {
+        const c = config();
+        const raw = c.ready ? readCookie(req, SESSION_COOKIE) : null;
+        const session = raw ? unseal(raw, c.secret) : null;
+
+        clearCookie(req, res, SESSION_COOKIE);
+
+        if (session) {
+            fetch(`${API}/oauth/revoke/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    client_key: c.clientKey,
+                    client_secret: c.clientSecret,
+                    token: session.accessToken
+                }),
+                signal: AbortSignal.timeout(TIMEOUT_MS)
+            }).catch(() => {});
+        }
+
+        res.json({ success: true });
+    });
+
+    // Profil du créateur connecté
+    app.get("/api/me", requireSession, async (req, res) => {
+        try {
+            const data = await cached(`user:${req.tiktok.openId}`, USER_CACHE_MS, () =>
+                apiCall(req.tiktok, `/user/info/?fields=${USER_FIELDS}`));
+
+            const u = data.user || {};
+
+            res.json({
+                username: u.username || null,
+                nickname: u.display_name || null,
+                avatar: u.avatar_large_url || u.avatar_url || null,
+                bio: u.bio_description || null,
+                verified: Boolean(u.is_verified),
+                followers: u.follower_count ?? null,
+                following: u.following_count ?? null,
+                likes: u.likes_count ?? null,
+                videos: u.video_count ?? null
+            });
+        } catch (error) {
+            apiError(res, error);
+        }
+    });
+
+    // Liste de ses vidéos (paginée)
+    app.get("/api/me/videos", requireSession, async (req, res) => {
+        const cursor = /^\d{1,20}$/.test(req.query.cursor || "") ? Number(req.query.cursor) : undefined;
+
+        try {
+            const data = await cached(`list:${req.tiktok.openId}:${cursor ?? 0}`, LIST_CACHE_MS, () =>
+                apiCall(req.tiktok, `/video/list/?fields=${VIDEO_FIELDS}`, {
+                    method: "POST",
+                    body: { max_count: 20, ...(cursor ? { cursor } : {}) }
+                }));
+
+            res.json({
+                videos: (data.videos || []).map(cleanVideo),
+                cursor: data.cursor ?? null,
+                hasMore: Boolean(data.has_more)
+            });
+        } catch (error) {
+            apiError(res, error);
+        }
+    });
+
+    // Stats exactes d'une vidéo (suivi en direct)
+    app.get("/api/me/video/:id", requireSession, async (req, res) => {
+        const id = req.params.id;
+
+        if (!/^\d{5,25}$/.test(id)) {
+            return res.status(400).json({ error: "Identifiant invalide" });
+        }
+
+        try {
+            const data = await cached(`video:${req.tiktok.openId}:${id}`, VIDEO_CACHE_MS, () =>
+                apiCall(req.tiktok, `/video/query/?fields=${VIDEO_FIELDS}`, {
+                    method: "POST",
+                    body: { filters: { video_ids: [id] } }
+                }));
+
+            const video = data.videos?.[0];
+
+            if (!video) {
+                return res.status(404).json({ error: "Vidéo introuvable sur ce compte" });
+            }
+
+            res.json(cleanVideo(video));
+        } catch (error) {
+            apiError(res, error);
+        }
+    });
+
+    setInterval(() => {
+        const now = Date.now();
+
+        for (const [k, item] of cache) {
+            if (now - item.time > 5 * 60 * 1000) cache.delete(k);
+        }
+    }, 60000).unref();
+};

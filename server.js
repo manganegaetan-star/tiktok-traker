@@ -4,19 +4,61 @@ const cors = require("cors");
 
 const app = express();
 
+// Cloud Run est derrière un proxy HTTPS : nécessaire
+// pour que les cookies de connexion soient « Secure ».
+app.set("trust proxy", true);
+
 app.use(cors());
 app.use(express.json({ limit: "10kb" }));
-app.use(express.static(__dirname));
+// Ne servir que les fichiers du site (jamais server.js,
+// .env, package.json…).
+const PUBLIC_FILES = new Set([
+    "/", "/index.html", "/connexion.html", "/compte.html", "/premium.css",
+    "/confidentialite.html", "/conditions.html"
+]);
+
+app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    if (!PUBLIC_FILES.has(req.path)) return next();
+    express.static(__dirname, { index: "index.html" })(req, res, next);
+});
+
+// Connexion TikTok + API officielle (espace créateur)
+require("./tiktok-auth")(app);
 
 const PORT = process.env.PORT || 3000;
 
-const VIDEO_CACHE_MS = 4000;
+// Le site interroge /stats toutes les 5 s : un cache de 8 s
+// évite de solliciter TikTok à chaque rafraîchissement
+// (et donc de se faire bloquer).
+const VIDEO_CACHE_MS = 8000;
 const PROFILE_CACHE_MS = 60000;
 const PROFILE_ERROR_CACHE_MS = 5 * 60 * 1000;
 const SESSION_TTL_MS = 35000;
 const REQUEST_TIMEOUT_MS = 12000;
 
+// TikWM = source exacte prioritaire, la page TikTok
+// (arrondie) prend le relais quand il tombe.
+// Mettre TIKWM_ENABLED=0 pour ne jamais l'appeler.
+const TIKWM_ENABLED = process.env.TIKWM_ENABLED !== "0";
+const TIKWM_TIMEOUT_MS = 6000;
+const TIKWM_COOLDOWN_MS = 60000;
+let tikwmDownUntil = 0;
+
+const BROWSER_HEADERS = {
+    Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+    "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/130.0.0.0 Safari/537.36"
+};
+
 const videoCache = new Map();
+// Dernières stats connues par vidéo (gardées 24 h) :
+// affichées si TikTok ne répond pas momentanément.
+const lastKnownVideos = new Map();
 const profileCache = new Map();
 const profileErrors = new Map();
 const pending = new Map();
@@ -283,7 +325,7 @@ async function fetchTikWM(endpoint, parameters = {}) {
             "User-Agent": "TikTokPulse/1.0"
         },
         signal: AbortSignal.timeout(
-            REQUEST_TIMEOUT_MS
+            TIKWM_TIMEOUT_MS
         )
     });
 
@@ -695,25 +737,137 @@ app.get("/profile-test", async (req, res) => {
 // STATISTIQUES VIDÉO
 // =====================================================
 
-async function getVideo(input) {
-    const resolved = await resolveTikTokLink(input);
+// -----------------------------------------------------
+// SOURCE 1 : LECTURE DIRECTE DE LA PAGE VIDÉO TIKTOK
+// (aucune API tierce : on lit le JSON que TikTok
+// intègre lui-même dans sa page publique)
+// -----------------------------------------------------
 
-    const expectedId = extractVideoId(resolved);
+async function fetchTikTokHtml(url) {
+    const response = await fetch(url, {
+        redirect: "follow",
+        headers: BROWSER_HEADERS,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    });
 
-    const key = expectedId
-        ? `video:${expectedId}`
-        : `short:${resolved.href}`;
+    if (!response.ok) {
+        throw new Error(`Page TikTok HTTP ${response.status}`);
+    }
 
-    const cached = getCached(
-        videoCache,
-        key,
-        VIDEO_CACHE_MS
+    if (!parseTikTokUrl(response.url)) {
+        throw new Error("Redirection hors de TikTok refusée");
+    }
+
+    const html = await response.text();
+
+    if (html.length > 5 * 1024 * 1024) {
+        throw new Error("Page TikTok trop volumineuse");
+    }
+
+    return { html, finalUrl: new URL(response.url) };
+}
+
+function readUniversalData(html) {
+    const match = html.match(
+        /<script\b(?=[^>]*\bid=["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'])[^>]*>([\s\S]*?)<\/script\s*>/i
     );
 
-    if (cached) return cached;
+    if (!match) {
+        throw new Error(
+            "JSON TikTok absent (page de vérification ?)"
+        );
+    }
 
-    return once(key, async () => {
-        const video = await fetchTikWM(
+    return JSON.parse(match[1]);
+}
+
+async function fetchVideoDirect(resolved) {
+    const { html, finalUrl } = await fetchTikTokHtml(resolved.href);
+    const json = readUniversalData(html);
+
+    const detail =
+        json?.__DEFAULT_SCOPE__?.["webapp.video-detail"];
+
+    const item = detail?.itemInfo?.itemStruct;
+
+    if (!item?.id) {
+        throw new Error(
+            `Vidéo introuvable (statusCode ${detail?.statusCode ?? "?"})`
+        );
+    }
+
+    // statsV2 contient des chaînes plus précises ;
+    // stats est arrondi pour les gros nombres.
+    const s = { ...(item.stats || {}), ...(item.statsV2 || {}) };
+    const a = item.author || {};
+    const as = item.authorStats || {};
+
+    const username = validUsername(
+        a.uniqueId || extractUsername(finalUrl)
+    );
+
+    const video = {
+        platform: "tiktok",
+        id: String(item.id),
+        views: numberOrNull(s.playCount),
+        likes: numberOrNull(s.diggCount),
+        shares: numberOrNull(s.shareCount),
+        comments: numberOrNull(s.commentCount),
+        favorites: numberOrNull(s.collectCount),
+        title: item.desc || "Vidéo TikTok",
+        createTime: numberOrNull(item.createTime),
+        duration: numberOrNull(item.video?.duration),
+        cover: safeImageUrl(
+            item.video?.cover || item.video?.originCover
+        ),
+        author: {
+            id: a.id || null,
+            username,
+            nickname: a.nickname || username || null,
+            avatar: safeImageUrl(
+                a.avatarMedium || a.avatarThumb
+            )
+        },
+        source: "tiktok-direct"
+    };
+
+    if (video.views === null) {
+        throw new Error("Statistiques vidéo indisponibles");
+    }
+
+    // Bonus : la page vidéo contient déjà les stats
+    // du créateur → plus besoin d'une 2e requête.
+    const profile = username
+        ? parseProfile(
+            {
+                user: {
+                    uniqueId: username,
+                    nickname: a.nickname,
+                    avatarLarger: a.avatarLarger,
+                    avatarMedium: a.avatarMedium,
+                    signature: a.signature,
+                    verified: a.verified
+                },
+                stats: as
+            },
+            username
+        )
+        : null;
+
+    if (profile) {
+        putCached(profileCache, username.toLowerCase(), profile);
+        profileErrors.delete(username.toLowerCase());
+    }
+
+    return video;
+}
+
+// -----------------------------------------------------
+// SOURCE 2 (secours optionnel) : TIKWM
+// -----------------------------------------------------
+
+async function fetchVideoTikWM(resolved, expectedId) {
+    const video = await fetchTikWM(
             "/api/",
             {
                 url: resolved.href
@@ -807,11 +961,93 @@ async function getVideo(input) {
             source: "tikwm"
         };
 
-        putCached(
-            videoCache,
-            key,
-            data
-        );
+        return data;
+}
+
+// -----------------------------------------------------
+// ORCHESTRATION : TikWM (exact) → page TikTok
+// (arrondie) → dernière valeur connue
+// -----------------------------------------------------
+
+async function getVideo(input) {
+    const resolved = await resolveTikTokLink(input);
+
+    const expectedId = extractVideoId(resolved);
+
+    const key = expectedId
+        ? `video:${expectedId}`
+        : `short:${resolved.href}`;
+
+    const cached = getCached(
+        videoCache,
+        key,
+        VIDEO_CACHE_MS
+    );
+
+    if (cached) return cached;
+
+    return once(key, async () => {
+        const errors = [];
+        let data = null;
+
+        // 1) TikWM : chiffres EXACTS (API mobile).
+        //    Ignoré pendant 60 s après une panne
+        //    pour ne pas ralentir le site.
+        if (TIKWM_ENABLED && Date.now() >= tikwmDownUntil) {
+            try {
+                data = await fetchVideoTikWM(resolved, expectedId);
+                data.approx = false;
+            } catch (error) {
+                data = null;
+                tikwmDownUntil = Date.now() + TIKWM_COOLDOWN_MS;
+                errors.push("tikwm: " + error.message);
+                console.warn("[VIDEO] TikWM indisponible, page TikTok utilisée :", error.message);
+            }
+        }
+
+        // 2) Page TikTok : toujours dispo, mais arrondie
+        //    au-delà de 10 000 (ex. 160 278 → 160 200).
+        if (!data) {
+            try {
+                data = await fetchVideoDirect(resolved);
+
+                if (expectedId && data.id !== expectedId) {
+                    throw new Error("Identifiant vidéo incohérent");
+                }
+
+                data.approx = true;
+
+                // TikTok tronque (160 278 → 160 200). Si on a
+                // une valeur exacte plus haute de TikWM, on la
+                // garde : le compteur ne « recule » pas.
+                const prev = lastKnownVideos.get(key)?.data;
+
+                if (prev) {
+                    for (const f of ["views", "likes", "shares", "comments", "favorites"]) {
+                        if (prev[f] != null && (data[f] == null || prev[f] > data[f])) {
+                            data[f] = prev[f];
+                        }
+                    }
+                }
+            } catch (error) {
+                data = null;
+                errors.push("direct: " + error.message);
+                console.warn("[VIDEO] Lecture directe échouée :", error.message);
+            }
+        }
+
+        if (!data) {
+            const stale = lastKnownVideos.get(key);
+
+            if (stale) {
+                return { ...stale.data, stale: true };
+            }
+
+            throw new Error(errors.join(" | "));
+        }
+
+        putCached(videoCache, key, data);
+        lastKnownVideos.set(key, { data, time: Date.now() });
 
         return data;
     });
@@ -972,6 +1208,12 @@ setInterval(() => {
         }
     }
 
+    for (const [key, item] of lastKnownVideos) {
+        if (now - item.time > 24 * 60 * 60 * 1000) {
+            lastKnownVideos.delete(key);
+        }
+    }
+
     // On conserve les dernières statistiques
     // du profil pour pouvoir les afficher
     // lorsqu'une requête échoue.
@@ -1005,7 +1247,9 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("Port :", PORT);
     console.log("TikTok uniquement");
     console.log("Liens de partage : activés");
-    console.log("Cache vidéo : 4 secondes");
+    console.log("Source vidéo : page TikTok directe");
+    console.log("TikWM (chiffres exacts) :", TIKWM_ENABLED ? "prioritaire" : "désactivé");
+    console.log("Cache vidéo : 8 secondes");
     console.log("Cache profil : 60 secondes (fetch public)");
     console.log("Protection erreurs profil : activée");
     console.log("Sessions actives : activées");
