@@ -183,6 +183,14 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .vcard .tag{display:inline-block;margin-top:7px;font:700 9px 'Space Grotesk';letter-spacing:.14em;color:#f7c56a}
 .exact-tag{color:#f7c56a;margin-left:10px}
 .more-btn{display:block;margin:16px auto 0}
+.counter-area{position:relative}
+/* Sans le message de progression : compteur centré dans le bloc */
+.hero{display:flex;flex-direction:column}
+.hero .counter-area{margin:auto 0;padding:18px 0 8px}
+@media(max-width:1100px){.hero{min-height:0}.hero .counter-area{margin:34px 0 6px;padding:0}}
+.gain-float{position:absolute;pointer-events:none;white-space:nowrap;font:800 clamp(20px,2.4vw,32px)/1 'Space Grotesk';color:#73ffb8;text-shadow:0 0 18px #73ffb8aa,0 0 4px #73ffb8;animation:gainFly 2.2s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes gainFly{0%{opacity:0;transform:translate(0,14px) scale(.6)}12%{opacity:1;transform:translate(0,0) scale(1.15)}25%{transform:translate(0,-6px) scale(1)}100%{opacity:0;transform:translate(var(--drift,8px),-90px) scale(.9)}}
+@media(prefers-reduced-motion:reduce){.gain-float{animation:gainFade 1.6s ease forwards}@keyframes gainFade{0%,60%{opacity:1}100%{opacity:0}}}
 .bump-up{animation:bumpUp 1.2s ease}.bump-down{animation:bumpDown 1.2s ease}
 @keyframes bumpUp{0%,40%{color:#73ffb8;text-shadow:0 0 14px #73ffb8}100%{color:#e9fcff}}
 @keyframes bumpDown{0%,40%{color:#ff8aaa}100%{color:#e9fcff}}
@@ -445,7 +453,7 @@ function resetTracking() {
   history = []; previous = null; initialViews = null;
   counter.draw(0); counter.value = 0;
   ['likes', 'comments', 'shares', 'engagement', 'perMinute', 'gain', 'lastUpdate', 'published', 'duration', 'likeRate', 'commentRate', 'shareRate'].forEach(id => $(id).textContent = '—');
-  $('growth').textContent = '↗ En attente des premières données'; $('growth').className = 'growth neutral';
+  document.querySelectorAll('.gain-float').forEach(el => el.remove());
   titleViews = null; plot();
 }
 
@@ -478,13 +486,9 @@ function update(v) {
   if (initialViews === null) initialViews = views;
   const gain = views - initialViews;
   $('gain').textContent = (gain > 0 ? '+' : '') + fmt(gain);
-  if (previous) {
-    const delta = views - previous.v;
-    $('growth').className = 'growth ' + (delta > 0 ? '' : delta < 0 ? 'negative' : 'neutral');
-    $('growth').textContent = (delta > 0 ? '↗ +' : delta < 0 ? '↘ ' : '↗ ') + fmt(delta) + ' vue(s) depuis le dernier relevé';
-  } else {
-    $('growth').textContent = '↗ Suivi démarré · en attente de progression';
-  }
+  // « +X » qui s'envole à côté du compteur, seulement quand ça monte.
+  // (défini plus bas : floatGain)
+  if (previous && views > previous.v) floatGain(views - previous.v);
   previous = { v: views, t: now };
   history.push({ v: views, t: now });
   history = history.filter(p => p.t >= now - 3600000).slice(-750);
@@ -494,6 +498,23 @@ function update(v) {
   }
   $('lastUpdate').textContent = new Date(now).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   plot();
+}
+
+// Petit « +X » vert qui apparaît à droite du compteur, monte en
+// grossissant légèrement puis s'efface. Plusieurs peuvent se suivre.
+function floatGain(delta) {
+  const area = $('views').parentElement;
+  const el = document.createElement('span');
+  el.className = 'gain-float';
+  el.textContent = '+' + fmt(delta);
+  // Le compteur prend toute la largeur : on se cale sur son dernier chiffre.
+  const lastDigit = $('views').lastElementChild || $('views');
+  const nb = lastDigit.getBoundingClientRect(), box = area.getBoundingClientRect();
+  el.style.left = Math.round(nb.right - box.left + 14) + 'px';
+  el.style.top = Math.round(nb.top - box.top + nb.height * 0.15) + 'px';
+  el.style.setProperty('--drift', (Math.random() * 24 - 6).toFixed(0) + 'px');
+  area.append(el);
+  el.addEventListener('animationend', () => el.remove());
 }
 
 async function refresh() {
