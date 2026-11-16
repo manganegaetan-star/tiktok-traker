@@ -416,7 +416,7 @@ module.exports = function mountTikTokAuth(app) {
                 (session.refreshExpires - Date.now()) / 1000);
 
             console.log("[AUTH] Créateur connecté");
-            res.redirect("/compte.html");
+            res.redirect("/");
         } catch (error) {
             console.warn("[AUTH] Échange du code échoué :", error.message);
             fail("jeton");

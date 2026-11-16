@@ -79,7 +79,7 @@ const box = document.getElementById('error');
 if (err && messages[err]) { box.textContent = messages[err]; box.classList.add('show'); }
 
 fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(s => {
-  if (s.connected) { location.replace('/compte.html'); return; }
+  if (s.connected) { location.replace('/'); return; }
   if (!s.enabled) {
     document.getElementById('loginBtn').setAttribute('aria-disabled', 'true');
     if (!err) { box.textContent = messages.config; box.classList.add('show'); }

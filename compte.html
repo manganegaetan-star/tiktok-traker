@@ -1,241 +1,508 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813">
-<title>TikTok Pulse — Mon espace</title>
-<link rel="stylesheet" href="premium.css">
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813"><title>TikTok Pulse — Mon espace</title>
 <style>
-.main{padding-block:42px 20px}
-.me{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-.me img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid #3bf7ef88;box-shadow:0 0 30px #3bf7ef22;background:#0b2233}
-.me h1{font:700 clamp(26px,3.4vw,40px) 'Space Grotesk';letter-spacing:-.05em;margin:6px 0 4px}
-.me .handle{color:#80a1b6;font-size:13px}
-.me .bio{color:#8eafc2;font-size:13px;margin-top:6px;max-width:620px;line-height:1.55}
-.me-right{margin-left:auto;display:flex;gap:10px;align-items:center}
-.pstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:30px 0}
-.pstat{padding:20px 22px}
-.pstat strong{display:block;font:700 clamp(22px,2.4vw,32px) 'Space Grotesk';letter-spacing:-.03em;margin-top:12px;font-variant-numeric:tabular-nums}
-.live-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.9fr);gap:17px}
-.hero{padding:clamp(22px,3vw,36px);min-height:330px;overflow:hidden;border-color:#3c8392a3;background:radial-gradient(ellipse 70% 100% at 95% 100%,#1b537d32,transparent),linear-gradient(125deg,#102437,#091625 65%)}
-.hero:after{content:"";position:absolute;left:0;top:0;width:150px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);box-shadow:0 0 20px var(--gold)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.badge{border:1px solid #73ffb84b;background:#73ffb80b;color:var(--green);font:700 10px 'Space Grotesk';letter-spacing:.14em;padding:7px 10px;border-radius:4px}
-.badge.off{color:#8ea5b7;border-color:#48657a6b;background:#ffffff05}
-.big{font:700 clamp(44px,6.2vw,92px)/1 'Space Grotesk';color:#f3ffff;text-shadow:0 0 25px #3bf7ef35,0 0 55px #3bf7ef15;font-variant-numeric:tabular-nums;margin:44px 0 12px;letter-spacing:-.03em;transition:color .4s}
-.big.bump{color:var(--green)}
-.big-label{color:#72a5bc;font:700 10px 'Space Grotesk';letter-spacing:.24em}
-.exact{display:inline-flex;align-items:center;gap:7px;margin-left:10px;color:var(--gold);font:700 10px 'Space Grotesk';letter-spacing:.16em}
-.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:30px}
-.mini div{border:1px solid #2c587050;background:#07172799;border-radius:5px;padding:13px 14px;min-width:0}
-.mini strong{display:block;font:700 20px 'Space Grotesk';margin-top:6px;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.side{padding:20px;display:flex;flex-direction:column;gap:14px}
-.side img{width:100%;aspect-ratio:9/12;object-fit:cover;border-radius:5px;border:1px solid #4b7d965e;background:linear-gradient(140deg,#142b3d,#070e19)}
-.side .t{font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.chart{margin-top:17px;padding:24px}
-.chart-wrap{height:220px;position:relative;margin-top:16px}
-canvas{width:100%;height:100%;display:block}
-.empty{position:absolute;inset:0;display:grid;place-items:center;color:#5f8399;font-size:13px;text-align:center}
-.section{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:44px 0 16px}
-.section h2{font:700 22px 'Space Grotesk';letter-spacing:-.03em;margin:6px 0 0}
-.videos{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
-.vcard{padding:0;overflow:hidden;text-align:left;color:inherit;border:1px solid var(--line);transition:transform .2s,border-color .2s}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{color-scheme:dark;--bg:#08090e;--panel:#11131b;--panel2:#161924;--line:#292d3b;--muted:#8e93a7;--text:#f5f6fc;--cyan:#42e9e3;--pink:#ff477e;--green:#5ff0b1;--violet:#a78bfa}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 650px 400px at 80% -15%,#38203970,transparent),radial-gradient(ellipse 500px 300px at 0 40%,#0c3d4550,transparent),var(--bg);font:15px 'DM Sans',sans-serif;color:var(--text);min-height:100vh}button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.shell{max-width:1330px;margin:auto;padding:0 36px}.topbar{height:88px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff10}.brand{display:flex;align-items:center;gap:12px;font:700 21px 'Space Grotesk'}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(140deg,#3cebe2,#fe487f);color:#08090e;font-size:25px;box-shadow:0 0 35px #43e9e325}.brand span span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:13px}.pill{border:1px solid var(--line);background:#141620;border-radius:50px;padding:9px 14px;font-size:12px;color:#b7baca;font-weight:700;letter-spacing:.04em}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7b8191;margin-right:7px}.dot.on{background:var(--green);box-shadow:0 0 0 4px #5ff0b119;animation:breathe 2s infinite}@keyframes breathe{50%{opacity:.5}}.main{padding:50px 0 70px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.headline{font:700 clamp(34px,4.3vw,59px)/1.07 'Space Grotesk';letter-spacing:-.05em;margin:14px 0}.headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#c0a5ff,var(--pink));background-clip:text;color:transparent}.lead{color:#a1a5b6;max-width:650px;line-height:1.65;margin:0 0 30px}.search{display:flex;gap:12px;background:#151720;border:1px solid #343747;border-radius:19px;padding:9px;box-shadow:0 18px 60px #0004;max-width:930px}.input-wrap{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:0 14px}.input-wrap svg{flex-shrink:0;color:var(--cyan)}.search input{width:100%;border:0;outline:0;background:transparent;color:white;padding:12px 0;font-size:14px}.search input::placeholder{color:#6e7388}.primary{border:0;border-radius:12px;background:linear-gradient(110deg,var(--cyan),#85f5e4);color:#071216;padding:14px 24px;font-weight:800;white-space:nowrap;box-shadow:0 5px 25px #40e9e322;transition:transform .2s,filter .2s}.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}.primary:disabled{opacity:.5;cursor:wait}.hint{font-size:12px;color:#777e91;margin:12px 4px 0}.dashboard{margin-top:36px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.95fr);gap:20px}.surface{background:linear-gradient(155deg,#191b27,#11131b 62%);border:1px solid #303241;border-radius:23px;box-shadow:0 12px 40px #0002}.hero{padding:30px;position:relative;overflow:hidden;min-height:335px}.hero:before{content:"";position:absolute;right:-140px;top:-160px;width:370px;height:370px;border-radius:50%;background:#40e9e30b;filter:blur(25px);pointer-events:none}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.micro{color:#8b91a4;text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:800}.live{border:1px solid #5ff0b12d;color:var(--green);background:#5ff0b10c;padding:8px 11px;border-radius:30px;font-size:11px;font-weight:800;letter-spacing:.1em}.live:before{content:"";display:inline-block;background:var(--green);width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:2px}.live.off{color:#a6a9b8;border-color:#ffffff1b;background:#ffffff06}.live.off:before{background:#777e91}.counter-area{margin:42px 0 31px}.number{display:flex;align-items:center;flex-wrap:nowrap;font:700 clamp(42px,5.4vw,82px)/1 'Space Grotesk';letter-spacing:-.055em;font-variant-numeric:tabular-nums;white-space:nowrap;min-height:1.15em}.digit{display:inline-block;position:relative;overflow:hidden;height:1.16em;width:.66em;flex:0 0 .66em}.digit>span{position:absolute;inset:0 auto auto 0;width:100%;height:100%;display:block;will-change:transform}.digit b{height:1.16em;display:flex;align-items:center;justify-content:center;font-weight:700}.comma{display:inline-block;width:.28em;text-align:center;color:#72768a}.number-label{margin-top:9px;color:#9a9fb1;font-weight:700;font-size:12px;letter-spacing:.13em}.growth{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:13px;background:#5ff0b10b;padding:9px 12px;border-radius:10px}.growth.neutral{color:#a5aabd;background:#ffffff09}.growth.negative{color:var(--pink);background:#ff477e0c}.video{padding:23px;display:flex;gap:16px;min-height:170px}.thumb{width:110px;height:145px;flex:0 0 110px;border-radius:13px;background:linear-gradient(135deg,#2e3140,#151720);object-fit:cover;border:1px solid #ffffff15}.video-info{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}.video-title{font-size:15px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.creator{display:flex;align-items:center;gap:9px;margin-top:18px}.avatar{width:33px;height:33px;border-radius:50%;object-fit:cover;background:#292b37;border:1px solid #ffffff22}.creator-name{font-size:13px;font-weight:800}.handle{font-size:11px;color:#9298a8}.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.metric{padding:22px;min-width:0}.metric-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.metric-icon{font-size:21px}.metric-value{font:700 clamp(23px,2.4vw,35px) 'Space Grotesk';letter-spacing:-.045em;margin-top:18px;overflow:hidden;text-overflow:ellipsis}.metric-label{color:#9298aa;font-size:12px;margin-top:6px}.bottom{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:20px}.chart-panel,.profile-panel{padding:26px}.section-title{font:700 17px 'Space Grotesk';letter-spacing:-.02em}.sub{color:#84899e;font-size:12px;margin-top:5px}.chart-wrap{height:220px;position:relative;margin-top:23px}canvas{width:100%;height:100%;display:block}.empty-chart{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#777e91;font-size:13px;pointer-events:none}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:23px}.profile-stat{background:#ffffff06;border:1px solid #ffffff09;border-radius:13px;padding:17px}.profile-stat strong{display:block;font:700 22px 'Space Grotesk'}.profile-stat span{display:block;font-size:11px;color:#9196a9;margin-top:7px}.notice{margin-top:20px;font-size:12px;color:#808699;line-height:1.7}.error{margin:15px 0 0;padding:13px 16px;border:1px solid #ff477e55;background:#ff477e12;color:#ff99b4;border-radius:12px;display:none}.error.show{display:block}.footer{border-top:1px solid #ffffff12;color:#73798c;font-size:12px;padding:24px 0 38px;display:flex;justify-content:space-between;gap:12px}.hidden{display:none!important}@media(max-width:950px){.dashboard{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}.number{font-size:clamp(42px,8vw,80px)}}@media(max-width:560px){.shell{padding:0 17px}.topbar{height:72px}.brand{font-size:18px}.top-right .pill:last-child{display:none}.main{padding-top:36px}.headline{font-size:38px}.search{flex-direction:column}.primary{width:100%}.hero{padding:23px;min-height:300px}.number{font-size:clamp(35px,9vw,55px)}.counter-area{margin-top:39px}.video{padding:18px}.thumb{width:90px;height:120px;flex-basis:90px}.stats{gap:10px}.metric{padding:17px}.metric-value{font-size:25px}.footer{flex-direction:column}}
+
+/* ═══════════════════════════════════════════════════════════
+   TIKTOK PULSE // FUTURE OPS — visual skin
+   ═══════════════════════════════════════════════════════════ */
+:root{color-scheme:dark;--bg:#040813;--panel:#0a1323;--panel2:#101d30;--line:#21405a;--muted:#7f9caf;--text:#eafaff;--cyan:#3bf7ef;--pink:#ff4c9a;--green:#73ffb8;--violet:#b597ff}
+html{background:#040813}
+body{
+ color:var(--text);
+ background:
+ radial-gradient(ellipse 700px 450px at 86% 4%,rgba(49,91,198,.21),transparent 72%),
+ radial-gradient(ellipse 600px 480px at -5% 48%,rgba(0,211,224,.075),transparent 75%),
+ #040813;
+ position:relative;isolation:isolate;min-height:100vh;
+}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+ background-image:linear-gradient(#57d8ff0a 1px,transparent 1px),linear-gradient(90deg,#57d8ff0a 1px,transparent 1px);
+ background-size:46px 46px;mask-image:linear-gradient(to bottom,#0008,transparent 85%);
+}
+body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
+ background:linear-gradient(90deg,transparent,#3bf7ef 28%,#ff4c9a 72%,transparent);
+ box-shadow:0 0 26px #3bf7ef55;pointer-events:none}
+.shell{max-width:1380px;padding-inline:clamp(18px,4vw,60px)}
+.topbar{height:94px;border-bottom:1px solid #4fbbdf2b}
+.brand{font:700 23px 'Space Grotesk',sans-serif;letter-spacing:-.06em}
+.brand-mark{width:43px;height:43px;border-radius:8px;
+ background:#071927;border:1px solid #3bf7ef88;color:#3bf7ef;
+ box-shadow:inset 0 0 18px #3bf7ef15,0 0 24px #3bf7ef17;font-size:25px}
+.brand span span{color:#3bf7ef}
+.pill{background:#09192a;border:1px solid #3c6c8955;color:#9dd5e6;
+ font:700 10px 'Space Grotesk';letter-spacing:.16em;border-radius:4px}
+.dot.on{background:#73ffb8;box-shadow:0 0 0 3px #73ffb81b,0 0 14px #73ffb8}
+.main{padding-top:68px}
+.eyebrow{color:#3bf7ef;font:700 11px 'Space Grotesk';letter-spacing:.27em}
+.eyebrow:before{content:"◈";margin-right:11px;color:#ff4c9a}
+.headline{font:700 clamp(47px,6.5vw,94px)/.98 'Space Grotesk';letter-spacing:-.075em;
+ max-width:1000px;margin:23px 0 22px}
+.headline em{font-style:normal;color:#3bf7ef;
+ background:linear-gradient(95deg,#3bf7ef,#8efbf4 52%,#ff73b2);
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lead{color:#8eafc2;font-size:15px;line-height:1.8;max-width:640px;margin-bottom:34px}
+.search{background:#091626;border:1px solid #3b7b977d;border-radius:8px;max-width:1000px;
+ box-shadow:0 0 0 1px #1f5d7426,0 18px 55px #0007,inset 0 1px #ffffff08;
+ padding:8px;position:relative}
+.search:before{content:"";position:absolute;left:0;top:0;width:35px;height:2px;background:#3bf7ef;box-shadow:0 0 13px #3bf7ef}
+.search:focus-within{border-color:#3bf7ef;box-shadow:0 0 0 3px #3bf7ef12,0 0 35px #3bf7ef10}
+.input-wrap svg{color:#3bf7ef}
+.search input{color:#eafaff;font-size:14px;padding-block:15px}
+.search input::placeholder{color:#617e92}
+.primary{background:linear-gradient(110deg,#3bf7ef,#68d8ff);color:#061421;border:0;border-radius:5px;
+ box-shadow:0 0 25px #3bf7ef25;font:800 12px 'Space Grotesk';letter-spacing:.04em;padding:17px 25px}
+.primary:hover{background:#8afff8;box-shadow:0 0 30px #3bf7ef55;transform:translateY(-1px)}
+.hint{color:#5f8399;font-size:11px}
+.dashboard{margin-top:48px;gap:17px;grid-template-columns:minmax(0,1.65fr) minmax(310px,.9fr)}
+.surface{background:linear-gradient(155deg,#0d1b2e,#08111e 85%);
+ border:1px solid #2d536c9e;border-radius:9px;box-shadow:0 16px 50px #00000045,inset 0 1px #d1faff08;
+ position:relative}
+.surface:after{content:"";position:absolute;right:-1px;bottom:-1px;width:24px;height:24px;
+ pointer-events:none;background:linear-gradient(135deg,transparent 47%,#3bf7ef66 50%,#3bf7ef66 53%,transparent 56%);
+ opacity:.55}
+.hero{min-height:348px;padding:36px 38px;border-color:#3c8392a3;
+ background:radial-gradient(ellipse 70% 100% at 95% 100%,#1b537d32,transparent),linear-gradient(125deg,#102437,#091625 65%)}
+.hero:before{content:"";position:absolute;right:-80px;top:-100px;width:330px;height:330px;
+ background:radial-gradient(circle,#3bf7ef13,transparent 65%);filter:none;border-radius:50%;pointer-events:none}
+.hero:after{content:"";position:absolute;left:0;top:0;right:auto;bottom:auto;width:150px;height:2px;
+ background:linear-gradient(90deg,#3bf7ef,transparent);box-shadow:0 0 20px #3bf7ef}
+.micro{color:#8bb3c8;font:700 10px 'Space Grotesk';letter-spacing:.18em}
+.live{border-radius:4px;background:#73ffb80b;border:1px solid #73ffb84b;color:#73ffb8;
+ font:700 10px 'Space Grotesk';letter-spacing:.14em}
+.live.off{background:#ffffff05;color:#8ea5b7;border-color:#48657a6b}
+.counter-area{margin:50px 0 31px}
+.number{font:700 clamp(46px,6vw,88px)/1 'Space Grotesk';letter-spacing:0;
+ color:#f3ffff;text-shadow:0 0 25px #3bf7ef35,0 0 55px #3bf7ef15;
+ font-variant-numeric:tabular-nums;min-height:1.18em}
+.digit{height:1.18em;width:.64em;flex:0 0 .64em;overflow:hidden;position:relative}
+.digit-glyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+ width:100%;height:100%;line-height:1;font-weight:700;will-change:transform}
+.comma{width:.18em;flex:0 0 .18em;color:#4e8696}
+.number-label{color:#72a5bc;font:700 10px 'Space Grotesk';letter-spacing:.24em;margin-top:14px}
+.growth{border:1px solid #73ffb829;background:#73ffb80b;border-radius:5px;color:#73ffb8;font-size:12px}
+.growth.neutral{background:#ffffff05;color:#a1bac9;border-color:#45617b44}
+.growth.negative{color:#ff8aaa;border-color:#ff4c9a44}
+.video{padding:18px;gap:17px;min-height:348px;align-items:stretch}
+.thumb{width:44%;height:auto;min-height:300px;flex:0 0 44%;border-radius:5px;
+ border:1px solid #4b7d965e;background:linear-gradient(140deg,#142b3d,#070e19)}
+.video-info{padding:10px 0;justify-content:center}
+.video-title{font-size:15px;line-height:1.65;color:#e8f9ff}
+.creator{border-top:1px solid #2c53684d;padding-top:20px;margin-top:22px}
+.avatar{width:39px;height:39px;border:1px solid #3bf7ef77}
+.creator-name{font-size:13px;color:#eafaff}.handle{font-size:11px;color:#80a1b6}
+.stats{gap:14px}
+.metric{min-height:152px;padding:23px;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
+.metric:before{content:"";position:absolute;top:0;left:0;width:46px;height:2px;
+ background:linear-gradient(90deg,#3bf7efaa,transparent)}
+.metric:hover{transform:translateY(-3px);border-color:#3bf7ef9e;
+ box-shadow:0 14px 38px #0006,0 0 24px #3bf7ef0c}
+.metric-icon{font-size:23px;text-shadow:0 0 18px currentColor}
+.metric-value{font:700 clamp(24px,2.5vw,36px) 'Space Grotesk';color:#f0fdff;letter-spacing:-.035em;margin-top:20px}
+.metric-label{font-size:11px;color:#7895a9}
+.bottom{gap:17px}
+.chart-panel,.profile-panel{padding:29px}
+.section-title{font:700 19px 'Space Grotesk';color:#e8faff}
+.sub{color:#7296ac;line-height:1.6}
+.chart-wrap{height:255px}
+.profile-grid{gap:11px}
+.profile-stat{background:#071727;border:1px solid #2c587050;border-radius:5px;padding:18px}
+.profile-stat strong{font:700 25px 'Space Grotesk';color:#e9fcff}
+.profile-stat span{color:#7399b0}
+.notice{border-top:1px solid #31546a52;color:#7596a9}
+.footer{border-color:#31546a52;color:#6d91a6}
+.error{border-radius:5px;background:#ff4c9a0d;border-color:#ff4c9a66;color:#ff9bbd}
+@media(max-width:1100px){
+ .dashboard{grid-template-columns:1fr 1fr}
+ .hero{grid-column:1/-1}
+ .video{grid-column:1/-1;min-height:190px}
+ .thumb{width:132px;height:175px;min-height:0;flex:0 0 132px}
+ .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bottom{grid-template-columns:1fr}
+ .number{font-size:clamp(46px,8vw,85px)}
+}
+@media(max-width:560px){
+ .shell{padding-inline:17px}.topbar{height:75px}
+ .brand{font-size:19px}.main{padding-top:45px}
+ .headline{font-size:clamp(43px,11vw,62px)}
+ .lead{font-size:13px}
+ .search{flex-direction:column}
+ .primary{width:100%}
+ .dashboard{margin-top:34px;gap:12px}
+ .hero{padding:24px;min-height:290px}
+ .counter-area{margin:42px 0 28px}
+ .number{font-size:clamp(32px,8.5vw,60px)}
+ .video{padding:14px;min-height:160px}
+ .thumb{width:103px;height:146px;flex:0 0 103px}
+ .video-title{font-size:13px}
+ .metric{padding:18px;min-height:137px}
+ .metric-value{font-size:25px}
+ .chart-panel,.profile-panel{padding:22px}
+ .chart-wrap{height:215px}
+}
+@media(prefers-reduced-motion:reduce){.metric,.primary{transition:none}}
+
+/* Session indicator — display only, data hookup will come later */
+.online-pill{display:inline-flex;align-items:center;gap:7px;border-color:#73ffb84a;color:#a9ffdc;white-space:nowrap}
+.online-led{display:inline-block;width:7px;height:7px;border-radius:50%;background:#73ffb8;box-shadow:0 0 10px #73ffb8aa;flex-shrink:0}
+#onlineCount{font-variant-numeric:tabular-nums;font-weight:800;color:#eafff3}
+
+/* ═══ ESPACE CRÉATEUR ═══ */
+.account{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center;padding:26px 30px}
+.account:before{content:"";position:absolute;left:0;top:0;width:150px;height:2px;background:linear-gradient(90deg,#f7c56a,transparent);box-shadow:0 0 20px #f7c56a}
+.account-avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:2px solid #3bf7ef88;box-shadow:0 0 30px #3bf7ef22;background:#0b2233}
+.account-name{font:700 clamp(24px,3vw,36px) 'Space Grotesk';letter-spacing:-.05em;margin:6px 0 2px;color:#f0fdff}
+.account-handle{color:#80a1b6;font-size:13px}
+.account-bio{color:#8eafc2;font-size:13px;margin-top:6px;line-height:1.55;max-width:620px}
+.verified{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#20d5ec;color:#04131c;font-size:12px;font-weight:900;margin-left:8px;vertical-align:4px}
+.account-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:4px}
+.account-stats div{background:#071727;border:1px solid #2c587050;border-radius:5px;padding:15px 17px}
+.account-stats strong{display:block;font:700 24px 'Space Grotesk';color:#e9fcff;font-variant-numeric:tabular-nums}
+.account-stats span{display:block;font-size:11px;color:#7399b0;margin-top:5px}
+.ghost-btn{background:transparent;border:1px solid #3c6c8988;color:#cfeef8;border-radius:5px;padding:11px 16px;font:700 11px 'Space Grotesk';letter-spacing:.1em;cursor:pointer;white-space:nowrap}
+.ghost-btn:hover{border-color:#3bf7ef;color:#fff}
+.toggle-videos{margin:16px 0 0;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border:1px dashed #3c6c89aa;background:#091626aa;border-radius:8px;color:#cfeef8;font:700 12px 'Space Grotesk';letter-spacing:.14em;cursor:pointer;transition:border-color .2s,background .2s}
+.toggle-videos:hover{border-color:#3bf7ef;background:#0b2033}
+.toggle-videos .chev{transition:transform .25s;color:#3bf7ef}
+.toggle-videos[aria-expanded=true] .chev{transform:rotate(180deg)}
+.library{margin-top:14px}
+.library-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}
+.videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.vcard{padding:0;overflow:hidden;text-align:left;color:inherit;cursor:pointer;transition:transform .2s,border-color .2s;font:inherit}
 .vcard:hover{transform:translateY(-3px);border-color:#3bf7ef9e}
-.vcard.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 30px #f7c56a22}
+.vcard.active{border-color:#f7c56a;box-shadow:0 0 0 1px #f7c56a,0 0 30px #f7c56a22}
 .vcard img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#0b2233}
-.vcard .b{padding:12px 13px}
+.vcard .b{padding:11px 12px}
 .vcard .t{font-size:12px;line-height:1.45;color:#cfe9f3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
-.vcard .v{font:700 19px 'Space Grotesk';margin-top:8px;font-variant-numeric:tabular-nums}
+.vcard .v{font:700 18px 'Space Grotesk';margin-top:7px;font-variant-numeric:tabular-nums;color:#f0fdff}
 .vcard .s{font-size:11px;color:#7895a9;margin-top:3px}
-.more{margin:20px auto 0;display:block}
-.skeleton{animation:pulse 1.4s infinite}@keyframes pulse{50%{opacity:.45}}
-@media(max-width:1000px){.live-grid{grid-template-columns:1fr}.side{flex-direction:row}.side img{width:120px;flex:0 0 120px}}
-@media(max-width:700px){.pstats,.mini{grid-template-columns:repeat(2,minmax(0,1fr))}.me-right{margin-left:0;width:100%}}
+.vcard .tag{display:inline-block;margin-top:7px;font:700 9px 'Space Grotesk';letter-spacing:.14em;color:#f7c56a}
+.exact-tag{color:#f7c56a;margin-left:10px}
+.more-btn{display:block;margin:16px auto 0}
+@media(max-width:700px){.account{grid-template-columns:auto 1fr;padding:22px}.account .ghost-btn{grid-column:1/-1}.account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.account-avatar{width:64px;height:64px}}
+
 </style></head><body>
-<header class="shell topbar">
- <a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a>
- <div style="display:flex;gap:10px;align-items:center"><span class="pill gold">★ PREMIUM</span><a class="ghost" href="/">Suivre une autre vidéo</a></div>
-</header>
-
+<header class="shell topbar"><a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a><div class="top-right"><span class="pill" style="color:#f7c56a;border-color:#f7c56a55;background:#f7c56a0d">★ PREMIUM</span><span class="pill"><span id="headerDot" class="dot"></span><span id="headerStatus">CHARGEMENT</span></span></div></header>
 <main class="shell main">
- <section class="me">
-  <img id="avatar" alt="Photo de profil" referrerpolicy="no-referrer">
-  <div>
-   <div class="eyebrow">Mon espace créateur</div>
-   <h1 id="nickname" class="skeleton">Chargement…</h1>
-   <div class="handle" id="username"></div>
-   <div class="bio" id="bio"></div>
-  </div>
-  <div class="me-right"><button class="ghost" id="logout">Se déconnecter</button></div>
- </section>
- <div id="error" class="error" role="alert"></div>
 
- <section class="pstats">
-  <article class="surface pstat"><div class="micro">Abonnés</div><strong id="followers">—</strong></article>
-  <article class="surface pstat"><div class="micro">Abonnements</div><strong id="following">—</strong></article>
-  <article class="surface pstat"><div class="micro">Likes reçus</div><strong id="plikes">—</strong></article>
-  <article class="surface pstat"><div class="micro">Vidéos</div><strong id="pvideos">—</strong></article>
- </section>
+<section class="surface account" aria-label="Mon compte TikTok">
+ <img id="meAvatar" class="account-avatar" alt="Photo de profil" referrerpolicy="no-referrer">
+ <div style="min-width:0">
+  <div class="eyebrow">Mon espace créateur</div>
+  <div class="account-name" id="meName">Chargement…</div>
+  <div class="account-handle" id="meHandle"></div>
+  <div class="account-bio" id="meBio"></div>
+ </div>
+ <button class="ghost-btn" id="logout" type="button">Se déconnecter</button>
+ <div class="account-stats">
+  <div><strong id="followers">—</strong><span>Abonnés</span></div>
+  <div><strong id="following">—</strong><span>Abonnements</span></div>
+  <div><strong id="profileLikes">—</strong><span>Likes reçus</span></div>
+  <div><strong id="videos">—</strong><span>Vidéos publiées</span></div>
+ </div>
+</section>
 
- <section class="live-grid">
-  <article class="surface hero">
-   <div class="row"><span class="micro">Vidéo suivie en direct</span><span class="badge off" id="badge">EN ATTENTE</span></div>
-   <div class="big" id="views">—</div>
-   <div class="big-label">VUES TOTALES <span class="exact">◆ CHIFFRE EXACT · API OFFICIELLE</span></div>
-   <div class="mini">
-    <div><span class="micro">Likes</span><strong id="likes">—</strong></div>
-    <div><span class="micro">Commentaires</span><strong id="comments">—</strong></div>
-    <div><span class="micro">Partages</span><strong id="shares">—</strong></div>
-    <div><span class="micro">Vues / min</span><strong id="perMin">—</strong></div>
-   </div>
-  </article>
-  <article class="surface side">
-   <img id="cover" alt="Miniature" referrerpolicy="no-referrer">
-   <div><div class="micro">Engagement</div><div style="font:700 26px 'Space Grotesk';margin:6px 0 12px" id="engagement">—</div><div class="t" id="title">Choisis une vidéo ci-dessous.</div><a id="open" class="ghost hidden" style="display:inline-block;margin-top:14px" target="_blank" rel="noopener">Ouvrir sur TikTok ↗</a></div>
-  </article>
- </section>
+<button class="toggle-videos" id="toggleVideos" type="button" aria-expanded="false" aria-controls="library"><span id="toggleLabel">VOIR LES AUTRES VIDÉOS</span><span class="chev" aria-hidden="true">▾</span></button>
 
- <section class="surface chart">
-  <div class="row"><div><div style="font:700 18px 'Space Grotesk'">Évolution des vues</div><div class="muted" style="font-size:12px;margin-top:4px">Depuis l'ouverture de cette page · actualisé toutes les 10 s</div></div><span class="pill">LIVE</span></div>
-  <div class="chart-wrap"><canvas id="chart"></canvas><div class="empty" id="chartEmpty">Les mesures apparaîtront ici.</div></div>
- </section>
+<section class="library hidden" id="library" aria-label="Mes vidéos">
+ <div class="library-head"><div><div class="micro">Catalogue</div><div class="section-title" style="margin-top:6px">Mes vidéos</div></div><span class="sub">Clique sur une vidéo pour la suivre en direct</span></div>
+ <div class="videos-grid" id="videosGrid"></div>
+ <button class="ghost-btn more-btn hidden" id="more" type="button">Charger plus de vidéos</button>
+</section>
 
- <div class="section"><div><div class="eyebrow">Catalogue</div><h2>Mes vidéos</h2></div><span class="muted" style="font-size:12px">Clique sur une vidéo pour la suivre</span></div>
- <section class="videos" id="videos"></section>
- <button class="ghost more hidden" id="more">Charger plus de vidéos</button>
-</main>
+<div id="error" class="error" role="alert"></div>
 
-<footer class="shell footer"><span>© TikTok Pulse · Espace créateur</span><span>Données : API officielle TikTok (Display API) · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
-
+<section class="dashboard" id="dashboard" aria-label="Statistiques de la vidéo suivie"><article class="surface hero"><div class="row"><span class="micro">Performance de la vidéo</span><span class="live off" id="liveBadge">EN ATTENTE</span></div><div class="counter-area"><div class="number" id="views" aria-label="Nombre de vues">0</div><div class="number-label">VUES TOTALES <span class="exact-tag">◆ CHIFFRE EXACT · API OFFICIELLE</span></div></div><div class="growth neutral" id="growth">↗ En attente des premières données</div></article>
+<article class="surface video"><img id="cover" class="thumb" alt="Miniature de la vidéo" referrerpolicy="no-referrer"><div class="video-info"><div class="micro" id="videoTag">DERNIÈRE VIDÉO PUBLIÉE</div><div id="title" class="video-title" style="margin-top:11px">Chargement de ta dernière vidéo…</div><div class="creator"><img id="avatar" class="avatar" alt="Avatar du créateur" referrerpolicy="no-referrer"><div><div id="nickname" class="creator-name">Créateur TikTok</div><div id="username" class="handle"></div></div></div></div></article>
+<div class="stats"><article class="surface metric"><div class="metric-head"><span class="micro">J'AIME</span><span class="metric-icon" style="color:var(--pink)">♥</span></div><div class="metric-value" id="likes">—</div><div class="metric-label">Likes reçus</div></article><article class="surface metric"><div class="metric-head"><span class="micro">COMMENTAIRES</span><span class="metric-icon" style="color:var(--violet)">◉</span></div><div class="metric-value" id="comments">—</div><div class="metric-label">Réactions écrites</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PARTAGES</span><span class="metric-icon" style="color:var(--cyan)">↗</span></div><div class="metric-value" id="shares">—</div><div class="metric-label">Viralité</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PUBLIÉE</span><span class="metric-icon" style="color:#f7c56a">★</span></div><div class="metric-value" id="published" style="font-size:25px">—</div><div class="metric-label" id="publishedDate">Date de publication</div></article><article class="surface metric"><div class="metric-head"><span class="micro">ENGAGEMENT</span><span class="metric-icon" style="color:var(--green)">%</span></div><div class="metric-value" id="engagement">—</div><div class="metric-label">Likes + commentaires + partages / vues</div></article><article class="surface metric"><div class="metric-head"><span class="micro">VUES / MIN</span><span class="metric-icon" style="color:var(--cyan)">⚡</span></div><div class="metric-value" id="perMinute">—</div><div class="metric-label">Évolution observée</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PROGRESSION</span><span class="metric-icon" style="color:var(--green)">↑</span></div><div class="metric-value" id="gain">—</div><div class="metric-label">Depuis le début du suivi</div></article><article class="surface metric"><div class="metric-head"><span class="micro">DERNIER RELEVÉ</span><span class="metric-icon" style="color:#adb2c5">◷</span></div><div class="metric-value" id="lastUpdate" style="font-size:25px">—</div><div class="metric-label">Heure locale</div></article></div>
+<div class="bottom"><article class="surface chart-panel"><div class="row"><div><div class="section-title">Évolution des vues</div><div class="sub">Historique de cette session · dernières 60 minutes</div></div><span class="pill">LIVE</span></div><div class="chart-wrap"><canvas id="chart" aria-label="Graphique des vues" role="img"></canvas><div class="empty-chart" id="chartEmpty">Les premières mesures apparaîtront ici.</div></div></article><article class="surface profile-panel"><div class="section-title">Détails de la vidéo</div><div class="sub">Données officielles TikTok (Display API)</div><div class="profile-grid"><div class="profile-stat"><strong id="duration">—</strong><span>Durée</span></div><div class="profile-stat"><strong id="likeRate">—</strong><span>Likes / vues</span></div><div class="profile-stat"><strong id="commentRate">—</strong><span>Commentaires / vues</span></div><div class="profile-stat"><strong id="shareRate">—</strong><span>Partages / vues</span></div></div><a id="openTikTok" class="ghost-btn hidden" style="display:inline-block;margin-top:18px" target="_blank" rel="noopener">Ouvrir sur TikTok ↗</a><div class="notice">Chiffres exacts fournis par l'API officielle de TikTok, actualisés toutes les 5 secondes.</div></article></div></section></main><footer class="shell footer"><span>© TikTok Pulse · Espace créateur</span><span>Projet indépendant · Non affilié à TikTok · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 <script>
 'use strict';
-const $ = id => document.getElementById(id);
-const nf = new Intl.NumberFormat('fr-FR');
-const fmt = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? '—' : nf.format(Number(v));
-const POLL_MS = 10000;
-let selected = null, timer = null, history = [], cursor = null, busy = false;
+const $=id=>document.getElementById(id);const nf=new Intl.NumberFormat('fr-FR');const fmt=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?nf.format(Number(v)):'—';
+class RollingCounter {
+  constructor(el) {
+    this.el = el;
+    this.value = 0;
+    this.columns = [];
+    this.generation = 0;
+    this.draw(0);
+  }
 
-function showError(msg) { $('error').textContent = msg || ''; $('error').classList.toggle('show', !!msg); }
-function img(el, url) { if (typeof url === 'string' && url.startsWith('https://')) el.src = url; else el.removeAttribute('src'); }
+  draw(value, width = String(value).length) {
+    this.generation++;
+    this.el.replaceChildren();
+    this.columns = [];
+    const digits = String(value).padStart(width, '0');
+    for (let i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 === 0) {
+        const comma = document.createElement('span');
+        comma.className = 'comma';
+        comma.textContent = '·';
+        this.el.append(comma);
+      }
+      const column = document.createElement('span');
+      column.className = 'digit';
+      const strip = document.createElement('span');
+      for (let n = 0; n < 30; n++) {
+        const digit = document.createElement('b');
+        digit.textContent = n % 10;
+        strip.append(digit);
+      }
+      column.append(strip);
+      this.el.append(column);
+      const digit = Number(digits[i]);
+      strip.style.transition = 'none';
+      strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + digit}), 0)`;
+      this.columns.push({ strip, digit });
+    }
+  }
+
+  set(next) {
+    next = Math.max(0, Math.floor(Number(next) || 0));
+    if (next === this.value) return;
+    const old = this.value;
+    this.value = next;
+    const width = Math.max(String(old).length, String(next).length);
+    if (this.columns.length !== width) this.draw(old, width);
+    const token = ++this.generation;
+    const oldText = String(old).padStart(width, '0');
+    const newText = String(next).padStart(width, '0');
+    const changed = [];
+
+    this.columns.forEach((column, i) => {
+      const before = Number(oldText[i]);
+      const after = Number(newText[i]);
+      const strip = column.strip;
+      strip.getAnimations().forEach(animation => animation.cancel());
+      strip.style.transition = 'none';
+      strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + before}), 0)`;
+      column.digit = after;
+      if (before !== after) {
+        // Le chiffre suivant arrive du bas. Les colonnes inchangées restent fixes.
+        const distance = next >= old
+          ? (after - before + 10) % 10
+          : -((before - after + 10) % 10);
+        changed.push({ strip, after, distance, before });
+      }
+    });
+
+    // On force la pose initiale avant de lancer la transition CSS.
+    void this.el.offsetHeight;
+    requestAnimationFrame(() => {
+      if (token !== this.generation) return;
+      changed.forEach(({ strip, before, distance }) => {
+        strip.style.transition = 'transform 850ms cubic-bezier(.22,.61,.36,1)';
+        strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + before + distance}), 0)`;
+      });
+      setTimeout(() => {
+        if (token !== this.generation) return;
+        changed.forEach(({ strip, after }) => {
+          strip.style.transition = 'none';
+          strip.style.transform = `translate3d(0, calc(-1.16em * ${10 + after}), 0)`;
+        });
+      }, 900);
+    });
+  }
+}
+
+// Titre de l’onglet : fixe si court, sinon défile vers la fin puis repart au début.
+let titleViews = null;
+let titleFollowers = null;
+let titleOffset = 0;
+let lastTitle = '';
+const TITLE_VISIBLE_CHARS = 22;
+const TITLE_SPEED = 400;
+const titleNumber = value => value === null ? '—' : fmt(value);
+const titleSegmenter = new Intl.Segmenter('fr', { granularity: 'grapheme' });
+function syncPageTitle() {
+  const fullTitle = `👀| ${titleNumber(titleViews)} 👩‍👧‍👦| ${titleNumber(titleFollowers)}`;
+  const chars = Array.from(titleSegmenter.segment(fullTitle), part => part.segment);
+
+  if (fullTitle !== lastTitle) {
+    lastTitle = fullTitle;
+    titleOffset = 0;
+  }
+
+  if (chars.length <= TITLE_VISIBLE_CHARS) {
+    document.title = fullTitle;
+    return;
+  }
+
+  const maxOffset = chars.length - TITLE_VISIBLE_CHARS;
+  document.title = chars.slice(titleOffset, titleOffset + TITLE_VISIBLE_CHARS).join('');
+  titleOffset = titleOffset >= maxOffset ? 0 : titleOffset + 1;
+}
+// Le navigateur peut ralentir l’animation dans un onglet masqué.
+setInterval(syncPageTitle, TITLE_SPEED);
+function status(active,label){$('headerDot').classList.toggle('on',active);$('headerStatus').textContent=label;$('liveBadge').textContent=active?'● SUIVI ACTIF':label;$('liveBadge').classList.toggle('off',!active)}function error(msg){$('error').textContent=msg||'';$('error').classList.toggle('show',!!msg)}function imageSet(id,url){const el=$(id);if(typeof url==='string'&&/^https:\/\//i.test(url)){el.src=url;el.style.opacity='1'}else{el.removeAttribute('src');el.style.opacity='.25'}}function show(id,val){$(id).textContent=fmt(val)}
+function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect();if(!rect.width)return;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:55,r:10,t:15,b:25};ctx.clearRect(0,0,w,h);ctx.font='11px DM Sans';ctx.fillStyle='#8990a6';ctx.strokeStyle='#ffffff13';ctx.lineWidth=1;if(history.length<2){$('chartEmpty').classList.remove('hidden');return}$('chartEmpty').classList.add('hidden');const values=history.map(p=>p.v),min=Math.min(...values),max=Math.max(...values),spread=Math.max(1,max-min),lo=min-spread*.12,hi=max+spread*.12;for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(nf.format(Math.round(hi-(hi-lo)*i/3)),3,y+4)}const x=i=>pad.l+(w-pad.l-pad.r)*i/(history.length-1),y=v=>pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#42e9e344');grad.addColorStop(1,'#42e9e300');ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.lineTo(x(history.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.strokeStyle='#42e9e3';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();ctx.fillStyle='#8d93a6';ctx.fillText(new Date(history[0].t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),pad.l,h-5);ctx.textAlign='right';ctx.fillText(new Date(history.at(-1).t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),w-pad.r,h-5);ctx.textAlign='left'}
+
+// ═══ ESPACE CRÉATEUR : données officielles TikTok ═══
+const POLL_MS = 5000;
+const counter = new RollingCounter($('views'));
+let selected = null, timer = null, busy = false, requestId = 0;
+let history = [], initialViews = null, previous = null;
+let me = {}, cursor = null, loadingList = false, firstVideo = null;
+const pct = v => Number.isFinite(v) ? v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' %' : '—';
 
 async function api(path) {
   const r = await fetch(path, { cache: 'no-store', credentials: 'same-origin' });
-  if (r.status === 401) { location.replace('/connexion.html'); throw new Error('Non connecté'); }
+  if (r.status === 401) { location.replace('/connexion.html'); throw new Error('Session expirée'); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || 'Erreur ' + r.status);
   return data;
 }
 
+function ago(ts) {
+  if (!ts) return '—';
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min';
+  if (s < 86400) return Math.round(s / 3600) + ' h';
+  return Math.round(s / 86400) + ' j';
+}
+
 async function loadMe() {
-  const me = await api('/api/me');
-  $('nickname').classList.remove('skeleton');
-  $('nickname').textContent = me.nickname || me.username || 'Créateur';
-  if (me.verified) { const v = document.createElement('span'); v.className = 'verified'; v.textContent = '✓'; v.title = 'Compte vérifié'; $('nickname').append(v); }
+  me = await api('/api/me');
+  const name = $('meName');
+  name.textContent = me.nickname || me.username || 'Créateur';
+  if (me.verified) { const v = document.createElement('span'); v.className = 'verified'; v.textContent = '✓'; v.title = 'Compte vérifié'; name.append(v); }
+  $('meHandle').textContent = me.username ? '@' + me.username : '';
+  $('meBio').textContent = me.bio || '';
+  imageSet('meAvatar', me.avatar);
+  show('followers', me.followers); show('following', me.following);
+  show('profileLikes', me.likes); show('videos', me.videos);
+  titleFollowers = Number.isFinite(Number(me.followers)) ? Number(me.followers) : null;
+  imageSet('avatar', me.avatar);
+  $('nickname').textContent = me.nickname || 'Créateur TikTok';
   $('username').textContent = me.username ? '@' + me.username : '';
-  $('bio').textContent = me.bio || '';
-  img($('avatar'), me.avatar);
-  $('followers').textContent = fmt(me.followers);
-  $('following').textContent = fmt(me.following);
-  $('plikes').textContent = fmt(me.likes);
-  $('pvideos').textContent = fmt(me.videos);
 }
 
 function videoCard(v) {
   const b = document.createElement('button');
-  b.className = 'surface vcard'; b.type = 'button'; b.dataset.id = v.id;
-  const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; img(im, v.cover);
+  b.type = 'button'; b.className = 'surface vcard'; b.dataset.id = v.id;
+  const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer';
+  if (v.cover) im.src = v.cover;
   const body = document.createElement('div'); body.className = 'b';
   const t = document.createElement('div'); t.className = 't'; t.textContent = v.title;
   const views = document.createElement('div'); views.className = 'v'; views.textContent = fmt(v.views) + ' vues';
   const s = document.createElement('div'); s.className = 's'; s.textContent = `♥ ${fmt(v.likes)} · 💬 ${fmt(v.comments)} · ↗ ${fmt(v.shares)}`;
-  body.append(t, views, s); b.append(im, body);
-  b.addEventListener('click', () => select(v));
+  body.append(t, views, s);
+  if (v.id === firstVideo?.id) { const tag = document.createElement('div'); tag.className = 'tag'; tag.textContent = '◆ DERNIÈRE VIDÉO'; body.append(tag); }
+  b.append(im, body);
+  b.addEventListener('click', () => { select(v); setLibrary(false); $('dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   return b;
 }
 
 async function loadVideos() {
-  if (busy) return; busy = true; $('more').disabled = true;
+  if (loadingList) return; loadingList = true; $('more').disabled = true;
   try {
     const data = await api('/api/me/videos' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''));
-    data.videos.forEach(v => $('videos').append(videoCard(v)));
+    if (!firstVideo && data.videos[0]) firstVideo = data.videos[0];
+    data.videos.forEach(v => $('videosGrid').append(videoCard(v)));
     cursor = data.cursor; $('more').classList.toggle('hidden', !data.hasMore);
-    if (!selected && data.videos[0]) select(data.videos[0]);
-    if (!$('videos').children.length) $('videos').textContent = 'Aucune vidéo publique trouvée sur ce compte.';
-  } catch (e) { showError('Impossible de charger tes vidéos : ' + e.message); }
-  finally { busy = false; $('more').disabled = false; }
+    if (!selected && firstVideo) select(firstVideo);
+    if (!firstVideo) { $('title').textContent = 'Aucune vidéo publique sur ce compte pour le moment.'; status(false, 'AUCUNE VIDÉO'); }
+    markActive();
+  } catch (e) { error('Impossible de charger tes vidéos : ' + e.message); }
+  finally { loadingList = false; $('more').disabled = false; }
 }
 
-function render(v) {
-  const el = $('views'), prev = history.at(-1)?.v;
-  el.textContent = fmt(v.views);
-  if (prev !== undefined && v.views > prev) { el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 900); }
-  $('likes').textContent = fmt(v.likes); $('comments').textContent = fmt(v.comments); $('shares').textContent = fmt(v.shares);
-  $('title').textContent = v.title; img($('cover'), v.cover);
-  const open = $('open'); if (v.shareUrl) { open.href = v.shareUrl; open.classList.remove('hidden'); } else open.classList.add('hidden');
-  const eng = v.views > 0 ? ((v.likes || 0) + (v.comments || 0) + (v.shares || 0)) / v.views * 100 : null;
-  $('engagement').textContent = eng === null ? '—' : eng.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' %';
-  document.title = `👀 ${fmt(v.views)} · TikTok Pulse`;
-  const now = Date.now();
-  history.push({ v: v.views, t: now }); history = history.filter(p => p.t >= now - 3600000);
-  if (history.length >= 2) {
-    const a = history[0], b = history.at(-1), min = (b.t - a.t) / 60000;
-    $('perMin').textContent = min > 0 ? fmt(Math.round((b.v - a.v) / min)) : '—';
-  }
-  plot();
+function setLibrary(open) {
+  $('library').classList.toggle('hidden', !open);
+  $('toggleVideos').setAttribute('aria-expanded', String(open));
+  $('toggleLabel').textContent = open ? 'MASQUER LES VIDÉOS' : 'VOIR LES AUTRES VIDÉOS';
 }
 
-async function poll() {
-  clearTimeout(timer);
-  if (!selected) return;
-  const id = selected.id;
-  try {
-    const v = await api('/api/me/video/' + encodeURIComponent(id));
-    if (selected?.id !== id) return;
-    render(v); showError('');
-    $('badge').textContent = '● SUIVI ACTIF'; $('badge').classList.remove('off');
-  } catch (e) {
-    if (selected?.id !== id) return;
-    showError('Actualisation impossible : ' + e.message);
-    $('badge').textContent = 'ERREUR'; $('badge').classList.add('off');
-  }
-  timer = setTimeout(poll, POLL_MS);
+function markActive() {
+  document.querySelectorAll('.vcard').forEach(c => c.classList.toggle('active', c.dataset.id === selected?.id));
+}
+
+function resetTracking() {
+  history = []; previous = null; initialViews = null;
+  counter.draw(0); counter.value = 0;
+  ['likes', 'comments', 'shares', 'engagement', 'perMinute', 'gain', 'lastUpdate', 'published', 'duration', 'likeRate', 'commentRate', 'shareRate'].forEach(id => $(id).textContent = '—');
+  $('growth').textContent = '↗ En attente des premières données'; $('growth').className = 'growth neutral';
+  titleViews = null; plot();
 }
 
 function select(v) {
-  selected = v; history = [];
-  document.querySelectorAll('.vcard').forEach(c => c.classList.toggle('active', c.dataset.id === v.id));
-  $('perMin').textContent = '—';
-  render(v);
-  poll();
+  selected = v; requestId++; clearTimeout(timer); busy = false;
+  resetTracking(); markActive();
+  $('videoTag').textContent = v.id === firstVideo?.id ? 'DERNIÈRE VIDÉO PUBLIÉE' : 'VIDÉO SUIVIE';
+  status(false, 'CHARGEMENT');
+  update(v);
+  refresh();
 }
 
-function plot() {
-  const c = $('chart'), ctx = c.getContext('2d'), r = c.getBoundingClientRect();
-  if (!r.width) return;
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); ctx.scale(dpr, dpr);
-  const w = r.width, h = r.height, pad = { l: 64, r: 10, t: 12, b: 24 };
-  ctx.clearRect(0, 0, w, h);
-  $('chartEmpty').classList.toggle('hidden', history.length >= 2);
-  if (history.length < 2) return;
-  const vals = history.map(p => p.v), min = Math.min(...vals), max = Math.max(...vals), sp = Math.max(1, max - min), lo = min - sp * .12, hi = max + sp * .12;
-  ctx.font = '11px DM Sans'; ctx.fillStyle = '#7f9caf'; ctx.strokeStyle = '#ffffff12'; ctx.lineWidth = 1;
-  for (let i = 0; i < 4; i++) { const y = pad.t + (h - pad.t - pad.b) * i / 3; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); ctx.fillText(nf.format(Math.round(hi - (hi - lo) * i / 3)), 4, y + 4); }
-  const x = i => pad.l + (w - pad.l - pad.r) * i / (history.length - 1), y = v => pad.t + (hi - v) / (hi - lo) * (h - pad.t - pad.b);
-  const g = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); g.addColorStop(0, '#f7c56a40'); g.addColorStop(1, '#f7c56a00');
-  ctx.beginPath(); history.forEach((p, i) => i ? ctx.lineTo(x(i), y(p.v)) : ctx.moveTo(x(i), y(p.v)));
-  ctx.lineTo(x(history.length - 1), h - pad.b); ctx.lineTo(x(0), h - pad.b); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
-  ctx.beginPath(); history.forEach((p, i) => i ? ctx.lineTo(x(i), y(p.v)) : ctx.moveTo(x(i), y(p.v)));
-  ctx.strokeStyle = '#f7c56a'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+function update(v) {
+  const views = Number(v.views), now = Date.now();
+  if (!Number.isFinite(views)) return;
+  titleViews = views;
+  counter.set(views);
+  show('likes', v.likes); show('comments', v.comments); show('shares', v.shares);
+  $('title').textContent = v.title || 'Vidéo TikTok';
+  imageSet('cover', v.cover);
+  $('published').textContent = 'il y a ' + ago(v.createTime);
+  $('publishedDate').textContent = v.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date de publication';
+  $('duration').textContent = v.duration ? v.duration + ' s' : '—';
+  const L = Number(v.likes || 0), C = Number(v.comments || 0), S = Number(v.shares || 0);
+  $('engagement').textContent = views > 0 ? pct((L + C + S) / views * 100) : '—';
+  $('likeRate').textContent = views > 0 ? pct(L / views * 100) : '—';
+  $('commentRate').textContent = views > 0 ? pct(C / views * 100) : '—';
+  $('shareRate').textContent = views > 0 ? pct(S / views * 100) : '—';
+  const open = $('openTikTok'); if (v.shareUrl) { open.href = v.shareUrl; open.classList.remove('hidden'); } else open.classList.add('hidden');
+  if (initialViews === null) initialViews = views;
+  const gain = views - initialViews;
+  $('gain').textContent = (gain > 0 ? '+' : '') + fmt(gain);
+  if (previous) {
+    const delta = views - previous.v;
+    $('growth').className = 'growth ' + (delta > 0 ? '' : delta < 0 ? 'negative' : 'neutral');
+    $('growth').textContent = (delta > 0 ? '↗ +' : delta < 0 ? '↘ ' : '↗ ') + fmt(delta) + ' vue(s) depuis le dernier relevé';
+  } else {
+    $('growth').textContent = '↗ Suivi démarré · en attente de progression';
+  }
+  previous = { v: views, t: now };
+  history.push({ v: views, t: now });
+  history = history.filter(p => p.t >= now - 3600000).slice(-750);
+  if (history.length >= 2) {
+    const a = history[0], b = history.at(-1), min = (b.t - a.t) / 60000;
+    $('perMinute').textContent = min > 0 ? fmt(Math.round((b.v - a.v) / min)) : '—';
+  }
+  $('lastUpdate').textContent = new Date(now).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  plot();
 }
 
+async function refresh() {
+  if (!selected || busy) return;
+  clearTimeout(timer); busy = true;
+  const id = ++requestId, videoId = selected.id;
+  try {
+    const v = await api('/api/me/video/' + encodeURIComponent(videoId));
+    if (id !== requestId) return;
+    update(v); error(''); status(true, 'EN DIRECT');
+  } catch (e) {
+    if (id !== requestId) return;
+    error('Actualisation impossible : ' + e.message); status(false, 'ERREUR');
+  } finally {
+    if (id === requestId) { busy = false; timer = setTimeout(refresh, POLL_MS); }
+  }
+}
+
+$('toggleVideos').addEventListener('click', () => setLibrary($('library').classList.contains('hidden')));
 $('more').addEventListener('click', loadVideos);
 $('logout').addEventListener('click', async () => {
   $('logout').disabled = true;
   await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
   location.replace('/connexion.html');
 });
-addEventListener('resize', plot);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && selected) poll(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && selected) { busy = false; refresh(); } });
+window.addEventListener('resize', plot);
 
-loadMe().catch(e => showError('Impossible de charger ton profil : ' + e.message));
+imageSet('cover', null); imageSet('avatar', null); imageSet('meAvatar', null); plot(); syncPageTitle();
+loadMe().catch(e => error('Impossible de charger ton profil : ' + e.message));
 loadVideos();
-</script>
-</body></html>
+</script></body></html>

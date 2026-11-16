@@ -27,10 +27,7 @@ th{background:#0b2233;color:var(--text)}
 <h2>2. Données traitées</h2>
 <table>
 <tr><th>Situation</th><th>Données</th><th>Finalité</th></tr>
-<tr><td>Suivi d'une vidéo par lien</td><td>Le lien TikTok saisi ; statistiques publiques de la vidéo et du créateur</td><td>Afficher les statistiques demandées</td></tr>
-<tr><td>Connexion avec TikTok (espace créateur)</td><td>Identifiant TikTok anonyme (open_id), nom d'affichage, nom d'utilisateur, photo de profil, bio, badge vérifié, nombre d'abonnés / d'abonnements / de likes / de vidéos ; liste de tes vidéos publiques et leurs statistiques (vues, likes, commentaires, partages)</td><td>Afficher ton tableau de bord personnel</td></tr>
-<tr><td>Présence sur le site</td><td>Identifiant de session aléatoire, non lié à ton identité</td><td>Afficher le nombre de personnes en ligne</td></tr>
-</table>
+<tr><td>Connexion avec TikTok (espace créateur)</td><td>Identifiant TikTok anonyme (open_id), nom d'affichage, nom d'utilisateur, photo de profil, bio, badge vérifié, nombre d'abonnés / d'abonnements / de likes / de vidéos ; liste de tes vidéos publiques et leurs statistiques (vues, likes, commentaires, partages)</td><td>Afficher ton tableau de bord personnel</td></tr></table>
 <p>Ces données sont obtenues via l'API officielle de TikTok (Login Kit et Display API), uniquement avec ton autorisation explicite, et seulement pour les autorisations suivantes : <code>user.info.basic</code>, <code>user.info.profile</code>, <code>user.info.stats</code>, <code>video.list</code>.</p>
 <p>Nous n'avons <strong>jamais</strong> accès à ton mot de passe TikTok, à tes messages privés, à tes vidéos privées ou brouillons. Le Service ne publie rien et n'agit jamais en ton nom.</p>
 
@@ -38,12 +35,12 @@ th{background:#0b2233;color:var(--text)}
 <ul>
 <li>Nous n'utilisons <strong>aucune base de données</strong> et ne créons aucun compte utilisateur.</li>
 <li>Les jetons d'accès fournis par TikTok sont chiffrés (AES-256-GCM) et stockés uniquement dans un cookie sécurisé (HttpOnly) de ton navigateur. Ce cookie expire au plus tard après 365 jours, ou immédiatement quand tu te déconnectes.</li>
-<li>Les statistiques sont gardées quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacées. Les dernières statistiques publiques d'une vidéo peuvent être conservées au maximum 24 heures pour pallier une indisponibilité temporaire.</li>
+<li>Les statistiques sont gardées quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacées.</li>
 <li>Les journaux techniques de l'hébergeur (Google Cloud Run) peuvent contenir l'adresse IP et l'heure des requêtes, conservés selon la politique de Google Cloud.</li>
 </ul>
 
 <h2>4. Partage</h2>
-<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), Google Cloud (hébergement), et, pour le suivi d'une vidéo par lien, le service tiers TikWM qui reçoit uniquement le lien de la vidéo consultée.</p>
+<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), et Google Cloud (hébergement).</p>
 
 <h2>5. Cookies</h2>
 <p>Nous utilisons uniquement des cookies strictement nécessaires : <code>tp_session</code> (connexion à l'espace créateur) et <code>tp_oauth_state</code> (sécurité de la connexion, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>
