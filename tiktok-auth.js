@@ -480,12 +480,14 @@ module.exports = function mountTikTokAuth(app) {
     // Liste de ses vidéos (paginée)
     app.get("/api/me/videos", requireSession, async (req, res) => {
         const cursor = /^\d{1,20}$/.test(req.query.cursor || "") ? Number(req.query.cursor) : undefined;
+        // Nombre de vidéos demandées (1 à 20, 6 par défaut : les plus récentes).
+        const limit = Math.min(20, Math.max(1, Number.parseInt(req.query.limit, 10) || 6));
 
         try {
-            const data = await cached(`list:${req.tiktok.openId}:${cursor ?? 0}`, LIST_CACHE_MS, () =>
+            const data = await cached(`list:${req.tiktok.openId}:${cursor ?? 0}:${limit}`, LIST_CACHE_MS, () =>
                 apiCall(req.tiktok, `/video/list/?fields=${VIDEO_FIELDS}`, {
                     method: "POST",
-                    body: { max_count: 20, ...(cursor ? { cursor } : {}) }
+                    body: { max_count: limit, ...(cursor ? { cursor } : {}) }
                 }));
 
             res.json({

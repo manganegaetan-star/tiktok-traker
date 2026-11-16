@@ -209,12 +209,11 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
  </div>
 </section>
 
-<button class="toggle-videos" id="toggleVideos" type="button" aria-expanded="false" aria-controls="library"><span id="toggleLabel">VOIR LES AUTRES VIDÉOS</span><span class="chev" aria-hidden="true">▾</span></button>
+<button class="toggle-videos" id="toggleVideos" type="button" aria-expanded="false" aria-controls="library"><span id="toggleLabel">VOIR MES 6 DERNIÈRES VIDÉOS</span><span class="chev" aria-hidden="true">▾</span></button>
 
 <section class="library hidden" id="library" aria-label="Mes vidéos">
- <div class="library-head"><div><div class="micro">Catalogue</div><div class="section-title" style="margin-top:6px">Mes vidéos</div></div><span class="sub">Clique sur une vidéo pour la suivre en direct</span></div>
+ <div class="library-head"><div><div class="micro">Catalogue</div><div class="section-title" style="margin-top:6px">Mes 6 dernières vidéos</div></div><span class="sub">Clique sur une vidéo pour la suivre en direct</span></div>
  <div class="videos-grid" id="videosGrid"></div>
- <button class="ghost-btn more-btn hidden" id="more" type="button">Charger plus de vidéos</button>
 </section>
 
 <div id="error" class="error" role="alert"></div>
@@ -419,23 +418,23 @@ function videoCard(v) {
 }
 
 async function loadVideos() {
-  if (loadingList) return; loadingList = true; $('more').disabled = true;
+  if (loadingList) return; loadingList = true;
   try {
-    const data = await api('/api/me/videos' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''));
+    const data = await api('/api/me/videos?limit=6');
     if (!firstVideo && data.videos[0]) firstVideo = data.videos[0];
     data.videos.forEach(v => $('videosGrid').append(videoCard(v)));
-    cursor = data.cursor; $('more').classList.toggle('hidden', !data.hasMore);
+    
     if (!selected && firstVideo) select(firstVideo);
     if (!firstVideo) { $('title').textContent = 'Aucune vidéo publique sur ce compte pour le moment.'; status(false, 'AUCUNE VIDÉO'); }
     markActive();
   } catch (e) { error('Impossible de charger tes vidéos : ' + e.message); }
-  finally { loadingList = false; $('more').disabled = false; }
+  finally { loadingList = false; }
 }
 
 function setLibrary(open) {
   $('library').classList.toggle('hidden', !open);
   $('toggleVideos').setAttribute('aria-expanded', String(open));
-  $('toggleLabel').textContent = open ? 'MASQUER LES VIDÉOS' : 'VOIR LES AUTRES VIDÉOS';
+  $('toggleLabel').textContent = open ? 'MASQUER MES VIDÉOS' : 'VOIR MES 6 DERNIÈRES VIDÉOS';
 }
 
 function markActive() {
@@ -518,7 +517,6 @@ async function refresh() {
 }
 
 $('toggleVideos').addEventListener('click', () => setLibrary($('library').classList.contains('hidden')));
-$('more').addEventListener('click', loadVideos);
 $('logout').addEventListener('click', async () => {
   $('logout').disabled = true;
   await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
