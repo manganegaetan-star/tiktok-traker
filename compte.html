@@ -189,7 +189,10 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .hero .counter-area{margin:auto 0;padding:18px 0 8px}
 @media(max-width:1100px){.hero{min-height:0}.hero .counter-area{margin:34px 0 6px;padding:0}}
 .gain-float{position:absolute;pointer-events:none;white-space:nowrap;font:800 clamp(20px,2.4vw,32px)/1 'Space Grotesk';color:#73ffb8;text-shadow:0 0 18px #73ffb8aa,0 0 4px #73ffb8;animation:gainFly 2.2s cubic-bezier(.2,.7,.3,1) forwards}
-@keyframes gainFly{0%{opacity:0;transform:translate(0,14px) scale(.6)}12%{opacity:1;transform:translate(0,0) scale(1.15)}25%{transform:translate(0,-6px) scale(1)}100%{opacity:0;transform:translate(var(--drift,8px),-90px) scale(.9)}}
+.gain-float.small{font-size:clamp(15px,1.5vw,19px);text-shadow:0 0 12px #73ffb8aa;animation-duration:1.9s}
+.gain-float.small{--rise:-46px}
+.account-stats div{position:relative}
+@keyframes gainFly{0%{opacity:0;transform:translate(0,14px) scale(.6)}12%{opacity:1;transform:translate(0,0) scale(1.15)}25%{transform:translate(0,-6px) scale(1)}100%{opacity:0;transform:translate(var(--drift,8px),var(--rise,-90px)) scale(.9)}}
 @media(prefers-reduced-motion:reduce){.gain-float{animation:gainFade 1.6s ease forwards}@keyframes gainFade{0%,60%{opacity:1}100%{opacity:0}}}
 .bump-up{animation:bumpUp 1.2s ease}.bump-down{animation:bumpDown 1.2s ease}
 @keyframes bumpUp{0%,40%{color:#73ffb8;text-shadow:0 0 14px #73ffb8}100%{color:#e9fcff}}
@@ -354,7 +357,7 @@ function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.
 // ═══ ESPACE CRÉATEUR : données officielles TikTok ═══
 const POLL_MS = 10000; // 10 s : le moins de requêtes possible
 const counter = new RollingCounter($('views'));
-let selected = null, timer = null, busy = false, requestId = 0;
+let selected = null, timer = null, busy = false, requestId = 0, lastStats = null;
 let history = [], initialViews = null, previous = null;
 let me = {}, cursor = null, loadingList = false, firstVideo = null;
 const pct = v => Number.isFinite(v) ? v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' %' : '—';
@@ -402,6 +405,7 @@ async function refreshMe() {
       if (Number.isFinite(before) && Number.isFinite(after) && after !== before) {
         const el = $(id); el.classList.remove('bump-up', 'bump-down'); void el.offsetWidth;
         el.classList.add(after > before ? 'bump-up' : 'bump-down');
+        if (after > before) setTimeout(() => floatAt(el, after - before), 30);
       }
     });
     titleFollowers = Number.isFinite(Number(fresh.followers)) ? Number(fresh.followers) : titleFollowers;
@@ -453,7 +457,7 @@ function resetTracking() {
   history = []; previous = null; initialViews = null;
   counter.draw(0); counter.value = 0;
   ['likes', 'comments', 'shares', 'engagement', 'perMinute', 'gain', 'lastUpdate', 'published', 'duration', 'likeRate', 'commentRate', 'shareRate'].forEach(id => $(id).textContent = '—');
-  document.querySelectorAll('.gain-float').forEach(el => el.remove());
+  document.querySelectorAll('.gain-float').forEach(el => el.remove()); lastStats = null;
   titleViews = null; plot();
 }
 
@@ -462,15 +466,25 @@ function select(v) {
   resetTracking(); markActive();
   $('videoTag').textContent = v.id === firstVideo?.id ? 'DERNIÈRE VIDÉO PUBLIÉE' : 'VIDÉO SUIVIE';
   status(false, 'CHARGEMENT');
-  update(v);
+  update(v, true);
   refresh();
 }
 
-function update(v) {
+// fromList = données de la liste (en cache) : on les affiche tout de
+// suite, mais sans les compter dans l'historique, vues/min ni « +X ».
+function update(v, fromList = false) {
   const views = Number(v.views), now = Date.now();
   if (!Number.isFinite(views)) return;
   titleViews = views;
   counter.set(views);
+  // « +X » sur likes / commentaires / partages quand ils montent
+  if (!fromList && lastStats && lastStats.id === v.id) {
+    ['likes', 'comments', 'shares'].forEach(k => {
+      const d = Number(v[k]) - Number(lastStats[k]);
+      if (d > 0) setTimeout(() => floatAt($(k), d), 30);
+    });
+  }
+  if (!fromList) lastStats = { id: v.id, likes: v.likes, comments: v.comments, shares: v.shares };
   show('likes', v.likes); show('comments', v.comments); show('shares', v.shares);
   $('title').textContent = v.title || 'Vidéo TikTok';
   imageSet('cover', v.cover);
@@ -483,6 +497,7 @@ function update(v) {
   $('commentRate').textContent = views > 0 ? pct(C / views * 100) : '—';
   $('shareRate').textContent = views > 0 ? pct(S / views * 100) : '—';
   const open = $('openTikTok'); if (v.shareUrl) { open.href = v.shareUrl; open.classList.remove('hidden'); } else open.classList.add('hidden');
+  if (fromList) return;
   if (initialViews === null) initialViews = views;
   const gain = views - initialViews;
   $('gain').textContent = (gain > 0 ? '+' : '') + fmt(gain);
@@ -515,6 +530,22 @@ function floatGain(delta) {
   el.style.setProperty('--drift', (Math.random() * 24 - 6).toFixed(0) + 'px');
   area.append(el);
   el.addEventListener('animationend', () => el.remove());
+}
+
+// Même animation pour les autres chiffres (likes, abonnés…), en plus
+// petit, collée à droite du nombre affiché dans `el`.
+function floatAt(el, delta) {
+  const box = el.parentElement;
+  const range = document.createRange(); range.selectNodeContents(el);
+  const txt = range.getBoundingClientRect(), b = box.getBoundingClientRect();
+  const f = document.createElement('span');
+  f.className = 'gain-float small';
+  f.textContent = '+' + fmt(delta);
+  f.style.left = Math.round(Math.min(txt.right - b.left + 8, b.width - 40)) + 'px';
+  f.style.top = Math.round(txt.top - b.top - 2) + 'px';
+  f.style.setProperty('--drift', (Math.random() * 16 - 4).toFixed(0) + 'px');
+  box.append(f);
+  f.addEventListener('animationend', () => f.remove());
 }
 
 async function refresh() {
