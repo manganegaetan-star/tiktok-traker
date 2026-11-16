@@ -328,10 +328,14 @@ module.exports = function mountTikTokAuth(app) {
         next();
     }
 
-    function apiError(res, error) {
+    function apiError(req, res, error) {
         console.warn("[DISPLAY API]", error.code || "", error.message);
 
+        // Jeton refusé par TikTok (accès révoqué, expiré…) : on
+        // supprime le cookie, sinon la page de connexion croirait
+        // encore l'utilisateur connecté (boucle de redirections).
         if (error.code === "access_token_invalid" || error.status === 401) {
+            clearCookie(req, res, SESSION_COOKIE);
             return res.status(401).json({ error: "Session expirée, reconnecte-toi" });
         }
 
@@ -469,7 +473,7 @@ module.exports = function mountTikTokAuth(app) {
                 videos: u.video_count ?? null
             });
         } catch (error) {
-            apiError(res, error);
+            apiError(req, res, error);
         }
     });
 
@@ -490,7 +494,7 @@ module.exports = function mountTikTokAuth(app) {
                 hasMore: Boolean(data.has_more)
             });
         } catch (error) {
-            apiError(res, error);
+            apiError(req, res, error);
         }
     });
 
@@ -517,7 +521,7 @@ module.exports = function mountTikTokAuth(app) {
 
             res.json(cleanVideo(video));
         } catch (error) {
-            apiError(res, error);
+            apiError(req, res, error);
         }
     });
 

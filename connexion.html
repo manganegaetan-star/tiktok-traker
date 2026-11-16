@@ -72,14 +72,16 @@ const messages = {
   config: "La connexion TikTok n'est pas encore configurée sur ce serveur.",
   refus: "Connexion annulée : tu n'as pas autorisé TikTok Pulse.",
   state: "La connexion a expiré ou a été interrompue. Réessaie.",
-  jeton: "TikTok a refusé la connexion. Réessaie dans un instant."
+  jeton: "TikTok a refusé la connexion. Réessaie dans un instant.",
+  session: "Ta session TikTok a expiré ou a été révoquée. Reconnecte-toi."
 };
 const err = new URLSearchParams(location.search).get('erreur');
 const box = document.getElementById('error');
 if (err && messages[err]) { box.textContent = messages[err]; box.classList.add('show'); }
 
 fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(s => {
-  if (s.connected) { location.replace('/'); return; }
+  // Jamais de renvoi automatique après une erreur (évite toute boucle).
+  if (s.connected && !err) { location.replace('/'); return; }
   if (!s.enabled) {
     document.getElementById('loginBtn').setAttribute('aria-disabled', 'true');
     if (!err) { box.textContent = messages.config; box.classList.add('show'); }

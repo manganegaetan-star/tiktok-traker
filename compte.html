@@ -354,7 +354,7 @@ const pct = v => Number.isFinite(v) ? v.toLocaleString('fr-FR', { maximumFractio
 
 async function api(path) {
   const r = await fetch(path, { cache: 'no-store', credentials: 'same-origin' });
-  if (r.status === 401) { location.replace('/connexion.html'); throw new Error('Session expirée'); }
+  if (r.status === 401) { location.replace('/connexion.html?erreur=session'); throw new Error('Session expirée'); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || 'Erreur ' + r.status);
   return data;
