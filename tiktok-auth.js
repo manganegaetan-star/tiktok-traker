@@ -8,9 +8,9 @@
 // Variables d'environnement nécessaires :
 //   TIKTOK_CLIENT_KEY      clé de l'app (developers.tiktok.com)
 //   TIKTOK_CLIENT_SECRET   secret de l'app
-//   TIKTOK_REDIRECT_URI    ex. https://ton-site.run.app/auth/tiktok/callback
-//                          (doit être identique à celle déclarée chez TikTok)
-//   SESSION_SECRET         32 caractères aléatoires ou plus
+// Facultatives :
+//   TIKTOK_REDIRECT_URI    par défaut https://<domaine du site>/auth/tiktok/callback
+//   SESSION_SECRET         par défaut dérivé de TIKTOK_CLIENT_SECRET
 //
 // Les jetons TikTok sont chiffrés (AES-256-GCM) dans un
 // cookie HttpOnly : aucune base de données nécessaire, et
@@ -51,20 +51,42 @@ const VIDEO_CACHE_MS = 5000;
 
 const cache = new Map();
 
-function config() {
-    const c = {
-        clientKey: process.env.TIKTOK_CLIENT_KEY?.trim(),
-        clientSecret: process.env.TIKTOK_CLIENT_SECRET?.trim(),
-        redirectUri: process.env.TIKTOK_REDIRECT_URI?.trim(),
-        secret: process.env.SESSION_SECRET?.trim()
+function config(req) {
+    const clientKey = process.env.TIKTOK_CLIENT_KEY?.trim();
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET?.trim();
+
+    // Clé de chiffrement des cookies : SESSION_SECRET si fourni,
+    // sinon dérivée du client secret (changer le secret TikTok
+    // déconnecte donc tout le monde, ce qui est voulu).
+    const explicit = process.env.SESSION_SECRET?.trim();
+    const secret = explicit && explicit.length >= 32
+        ? explicit
+        : clientSecret
+            ? crypto.createHash("sha256").update("tp-session:" + clientSecret).digest("hex")
+            : null;
+
+    const redirectUri =
+        process.env.TIKTOK_REDIRECT_URI?.trim() ||
+        (req ? `${req.protocol}://${req.get("host")}/auth/tiktok/callback` : null);
+
+    return {
+        clientKey,
+        clientSecret,
+        redirectUri,
+        secret,
+        ready: Boolean(clientKey && clientSecret && secret && redirectUri)
     };
+}
 
-    c.ready = Boolean(
-        c.clientKey && c.clientSecret && c.redirectUri &&
-        c.secret && c.secret.length >= 32
-    );
+// Session valide (cookie déchiffrable, refresh token non expiré) ?
+function readSession(req) {
+    const c = config(req);
+    if (!c.ready) return null;
 
-    return c;
+    const raw = readCookie(req, SESSION_COOKIE);
+    const session = raw ? unseal(raw, c.secret) : null;
+
+    return session && Date.now() < session.refreshExpires ? session : null;
 }
 
 // -----------------------------------------------------
@@ -231,10 +253,43 @@ function cleanVideo(v) {
 // Routes
 // -----------------------------------------------------
 
+// Pages et routes accessibles SANS connexion. Tout le reste
+// du site exige d'être connecté avec TikTok.
+const PUBLIC_PATHS = new Set([
+    "/connexion.html", "/premium.css",
+    "/confidentialite.html", "/conditions.html",
+    "/test"
+]);
+
+function isPublicPath(path) {
+    return (
+        PUBLIC_PATHS.has(path) ||
+        path.startsWith("/auth/") ||
+        /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(path)
+    );
+}
+
 module.exports = function mountTikTokAuth(app) {
+    // Verrou global : à placer AVANT les autres routes.
+    app.use((req, res, next) => {
+        if (isPublicPath(req.path) || readSession(req)) return next();
+
+        res.set("Cache-Control", "no-store");
+
+        const wantsPage =
+            req.method === "GET" &&
+            (req.path === "/" || req.path.endsWith(".html"));
+
+        if (wantsPage) {
+            return res.redirect("/connexion.html");
+        }
+
+        return res.status(401).json({ error: "Connexion requise" });
+    });
+
     // Session : lit le cookie, rafraîchit le jeton si besoin.
     async function requireSession(req, res, next) {
-        const c = config();
+        const c = config(req);
 
         if (!c.ready) {
             return res.status(503).json({ error: "Connexion TikTok non configurée" });
@@ -291,20 +346,16 @@ module.exports = function mountTikTokAuth(app) {
 
     // Indique au front si la connexion est disponible.
     app.get("/auth/status", (req, res) => {
-        const c = config();
-        const raw = c.ready ? readCookie(req, SESSION_COOKIE) : null;
-        const session = raw ? unseal(raw, c.secret) : null;
-
         res.set("Cache-Control", "no-store");
         res.json({
-            enabled: c.ready,
-            connected: Boolean(session && Date.now() < session.refreshExpires)
+            enabled: config(req).ready,
+            connected: Boolean(readSession(req))
         });
     });
 
     // 1) Départ vers TikTok
     app.get("/auth/tiktok", (req, res) => {
-        const c = config();
+        const c = config(req);
 
         if (!c.ready) {
             return res.redirect("/connexion.html?erreur=config");
@@ -330,7 +381,7 @@ module.exports = function mountTikTokAuth(app) {
 
     // 2) Retour de TikTok
     app.get("/auth/tiktok/callback", async (req, res) => {
-        const c = config();
+        const c = config(req);
         const fail = reason => res.redirect(`/connexion.html?erreur=${reason}`);
 
         if (!c.ready) return fail("config");
@@ -374,7 +425,7 @@ module.exports = function mountTikTokAuth(app) {
 
     // 3) Déconnexion (révoque aussi l'accès chez TikTok)
     app.post("/auth/logout", async (req, res) => {
-        const c = config();
+        const c = config(req);
         const raw = c.ready ? readCookie(req, SESSION_COOKIE) : null;
         const session = raw ? unseal(raw, c.secret) : null;
 

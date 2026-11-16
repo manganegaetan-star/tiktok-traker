@@ -10,9 +10,15 @@ app.set("trust proxy", true);
 
 app.use(cors());
 app.use(express.json({ limit: "10kb" }));
+
+// Connexion TikTok + API officielle. Monté EN PREMIER :
+// il verrouille tout le site (sauf connexion et pages
+// légales) pour les visiteurs non connectés.
+require("./tiktok-auth")(app);
+
 // Ne servir que les fichiers du site (jamais server.js,
 // .env, package.json…).
-const PUBLIC_FILES = new Set([
+const SITE_FILES = new Set([
     "/", "/index.html", "/connexion.html", "/compte.html", "/premium.css",
     "/confidentialite.html", "/conditions.html"
 ]);
@@ -21,12 +27,9 @@ app.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
     // Fichiers de vérification TikTok (tiktokXXXX.txt)
     const isTikTokProof = /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(req.path);
-    if (!PUBLIC_FILES.has(req.path) && !isTikTokProof) return next();
+    if (!SITE_FILES.has(req.path) && !isTikTokProof) return next();
     express.static(__dirname, { index: "index.html" })(req, res, next);
 });
-
-// Connexion TikTok + API officielle (espace créateur)
-require("./tiktok-auth")(app);
 
 const PORT = process.env.PORT || 3000;
 
