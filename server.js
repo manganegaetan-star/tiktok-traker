@@ -19,7 +19,9 @@ const PUBLIC_FILES = new Set([
 
 app.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
-    if (!PUBLIC_FILES.has(req.path)) return next();
+    // Fichiers de vérification TikTok (tiktokXXXX.txt)
+    const isTikTokProof = /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(req.path);
+    if (!PUBLIC_FILES.has(req.path) && !isTikTokProof) return next();
     express.static(__dirname, { index: "index.html" })(req, res, next);
 });
 
