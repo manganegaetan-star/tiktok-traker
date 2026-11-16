@@ -183,6 +183,10 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .vcard .tag{display:inline-block;margin-top:7px;font:700 9px 'Space Grotesk';letter-spacing:.14em;color:#f7c56a}
 .exact-tag{color:#f7c56a;margin-left:10px}
 .more-btn{display:block;margin:16px auto 0}
+.account-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.analyse-btn{text-align:center;color:#f7c56a;border-color:#f7c56a77;background:#f7c56a0d}
+.analyse-btn:hover{border-color:#f7c56a;color:#ffe2a8}
+@media(max-width:700px){.account-actions{grid-column:1/-1;flex-direction:row}.account-actions>*{flex:1}}
 .counter-area{position:relative}
 /* Sans le message de progression : compteur centré dans le bloc */
 .hero{display:flex;flex-direction:column}
@@ -211,7 +215,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
   <div class="account-handle" id="meHandle"></div>
   <div class="account-bio" id="meBio"></div>
  </div>
- <button class="ghost-btn" id="logout" type="button">Se déconnecter</button>
+ <div class="account-actions"><a class="ghost-btn analyse-btn" href="/analyse.html">📊 Analyse du compte</a><button class="ghost-btn" id="logout" type="button">Se déconnecter</button></div>
  <div class="account-stats">
   <div><strong id="followers">—</strong><span>Abonnés</span></div>
   <div><strong id="following">—</strong><span>Abonnements</span></div>

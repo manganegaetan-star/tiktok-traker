@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813">
+<title>TikTok Pulse — Analyse du compte</title>
+<link rel="stylesheet" href="premium.css">
+<style>
+.main{padding-block:38px 10px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+.head h1{font:700 clamp(30px,4.2vw,54px)/1 'Space Grotesk';letter-spacing:-.06em;margin:14px 0 8px}
+.head h1 em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 50%,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.head p{color:#8eafc2;margin:0;font-size:14px;line-height:1.6;max-width:640px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kpi{padding:20px 22px}
+.kpi strong{display:block;font:700 clamp(22px,2.4vw,32px) 'Space Grotesk';margin-top:12px;font-variant-numeric:tabular-nums;color:#f0fdff}
+.kpi span{display:block;font-size:12px;color:#7895a9;margin-top:5px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.card{padding:24px 26px;margin-top:16px;overflow:hidden}
+.grid2 .card{margin-top:0}
+.card h2{font:700 19px 'Space Grotesk';letter-spacing:-.02em;margin:6px 0 4px;color:#e8faff}
+.card .sub{color:#7296ac;font-size:12px;line-height:1.55;margin-bottom:16px}
+.tips{display:grid;gap:10px}
+.tip{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid #2c587050;border-radius:6px;background:#07172799;font-size:14px;line-height:1.55;color:#cfe9f3}
+.tip b{color:#fff}
+.tip .ic{flex:0 0 28px;height:28px;border-radius:6px;display:grid;place-items:center;background:#0b2233;border:1px solid #3bf7ef44}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:12px;align-items:center;font-size:13px}
+.bar .lbl{color:#a9c7d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .track{height:14px;background:#0a1a2a;border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(90deg,#1c7fbf,var(--cyan));border-radius:3px;transition:width .9s cubic-bezier(.2,.7,.3,1)}
+.bar.best .fill{background:linear-gradient(90deg,#c48a2c,var(--gold))}
+.bar.best .lbl,.bar.best .val{color:var(--gold)}
+.bar .val{text-align:right;font-variant-numeric:tabular-nums;color:#e9fcff;font-weight:700}
+.bar .val small{display:block;font-weight:400;color:#6f8ea2;font-size:10px}
+.timeline{display:flex;align-items:flex-end;gap:4px;height:190px;padding-top:10px;border-bottom:1px solid #2c587070}
+.timeline .col{flex:1 1 0;min-width:4px;background:linear-gradient(180deg,var(--cyan),#1c5f8f);border-radius:3px 3px 0 0;position:relative;cursor:default;transition:filter .2s}
+.timeline .col:hover{filter:brightness(1.35)}
+.timeline .col.top{background:linear-gradient(180deg,var(--gold),#8a5f1e)}
+.tl-axis{display:flex;justify-content:space-between;color:#6f8ea2;font-size:11px;margin-top:6px}
+.tl-tip{position:fixed;pointer-events:none;z-index:20;background:#0b1d30;border:1px solid #3bf7ef66;border-radius:6px;padding:8px 10px;font-size:12px;color:#e9fcff;max-width:240px;display:none;box-shadow:0 10px 30px #0008}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:#7f9caf;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:0 8px 10px}
+td{padding:10px 8px;border-top:1px solid #2c587045;vertical-align:middle}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n{text-align:right}
+.vt{display:flex;align-items:center;gap:10px;min-width:0}
+.vt img{width:34px;height:46px;object-fit:cover;border-radius:3px;background:#0b2233;flex:0 0 34px}
+.vt span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;color:#d7eef7}
+.rank{color:#6f8ea2;font:700 12px 'Space Grotesk';width:22px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{background:transparent;border:1px solid #3c6c8966;color:#9fc3d4;border-radius:4px;padding:7px 12px;font:700 10px 'Space Grotesk';letter-spacing:.12em}
+.tabs button[aria-selected=true]{border-color:var(--cyan);color:#fff;background:#0b2033}
+.empty{color:#6f8ea2;font-size:13px}
+.loading{padding:60px 0;text-align:center;color:#7f9caf}
+.note{color:#5f8399;font-size:11px;margin-top:14px;line-height:1.6}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){.bar{grid-template-columns:118px minmax(0,1fr) 72px;font-size:12px}.card{padding:20px}.hide-sm{display:none}}
+</style></head><body>
+<header class="shell topbar">
+ <a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a>
+ <a class="ghost" href="/">← Suivi en direct</a>
+</header>
+
+<main class="shell main">
+ <section class="head">
+  <div>
+   <div class="eyebrow">Analyse du compte</div>
+   <h1 id="hTitle">Ton compte <em>à la loupe.</em></h1>
+   <p id="hSub">Analyse calculée à partir de toutes tes vidéos publiques.</p>
+  </div>
+  <button class="ghost" id="reload" type="button">↻ Actualiser l'analyse</button>
+ </section>
+
+ <div id="error" class="error" role="alert"></div>
+ <div id="loading" class="loading">Analyse de tes vidéos en cours…</div>
+
+ <div id="content" class="hidden">
+  <section class="kpis">
+   <article class="surface kpi"><div class="micro">Vues totales</div><strong id="kViews">—</strong><span id="kViewsSub">sur toutes tes vidéos</span></article>
+   <article class="surface kpi"><div class="micro">Vues par vidéo</div><strong id="kMedian">—</strong><span id="kMedianSub">médiane</span></article>
+   <article class="surface kpi"><div class="micro">Engagement moyen</div><strong id="kEng">—</strong><span>likes + commentaires + partages / vues</span></article>
+   <article class="surface kpi"><div class="micro">Rythme</div><strong id="kRate">—</strong><span id="kRateSub">vidéos par semaine (30 derniers jours)</span></article>
+  </section>
+
+  <section class="surface card">
+   <div class="micro">Conseils</div>
+   <h2>Ce que disent tes chiffres</h2>
+   <div class="sub">Repères calculés automatiquement à partir de tes vidéos. Plus tu publies, plus ils deviennent fiables.</div>
+   <div class="tips" id="tips"></div>
+  </section>
+
+  <section class="surface card">
+   <div class="micro">Historique</div>
+   <h2>Vues de chaque vidéo, de la plus ancienne à la plus récente</h2>
+   <div class="sub">Survole une barre pour voir la vidéo. En doré : tes 3 meilleures.</div>
+   <div class="timeline" id="timeline"></div>
+   <div class="tl-axis"><span id="tlStart"></span><span id="tlEnd"></span></div>
+  </section>
+
+  <section class="surface card">
+   <div class="micro">Classement</div>
+   <h2>Tes vidéos qui marchent le mieux… et le moins</h2>
+   <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="top">TOP 5</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="flop">FLOP 5</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="eng">MEILLEUR ENGAGEMENT</button>
+   </div>
+   <table><thead><tr><th></th><th>Vidéo</th><th class="n">Vues</th><th class="n hide-sm">Likes</th><th class="n hide-sm">Engagement</th><th class="n hide-sm">Publiée</th></tr></thead><tbody id="ranking"></tbody></table>
+  </section>
+
+  <div class="grid2">
+   <section class="surface card">
+    <div class="micro">Quand publier</div>
+    <h2>Par jour de la semaine</h2>
+    <div class="sub">Vues médianes des vidéos publiées ce jour-là. En doré : le meilleur parmi ceux avec au moins 3 vidéos.</div>
+    <div class="bars" id="byDay"></div>
+   </section>
+   <section class="surface card">
+    <div class="micro">Quand publier</div>
+    <h2>Par moment de la journée</h2>
+    <div class="sub">Vues médianes selon l'heure de publication (heure de ton appareil).</div>
+    <div class="bars" id="byHour"></div>
+   </section>
+   <section class="surface card">
+    <div class="micro">Format</div>
+    <h2>Selon la durée</h2>
+    <div class="sub">Vues médianes par durée de vidéo.</div>
+    <div class="bars" id="byDuration"></div>
+   </section>
+   <section class="surface card">
+    <div class="micro">Thèmes</div>
+    <h2>Hashtags les plus porteurs</h2>
+    <div class="sub">Vues médianes des vidéos qui contiennent le hashtag (utilisé au moins 2 fois).</div>
+    <div class="bars" id="byTag"></div>
+   </section>
+  </div>
+
+  <section class="surface card" id="seriesCard">
+   <div class="micro">Séries</div>
+   <h2>Est-ce que ton public suit tes séries ?</h2>
+   <div class="sub">Vidéos « Partie 1, Partie 2… » : vues de chaque partie par rapport à la Partie 1.</div>
+   <div class="bars" id="series"></div>
+  </section>
+
+  <p class="note" id="note"></p>
+ </div>
+</main>
+
+<div class="tl-tip" id="tlTip"></div>
+<footer class="shell footer"><span>© TikTok Pulse · Analyse du compte</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const nf = new Intl.NumberFormat('fr-FR');
+const fmt = v => Number.isFinite(Number(v)) ? nf.format(Math.round(Number(v))) : '—';
+const pct = v => Number.isFinite(v) ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' %' : '—';
+const DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const CACHE_KEY = 'tp_analyse_v1';
+const CACHE_MS = 60 * 60 * 1000; // 1 h : l'analyse ne refait pas de requêtes à chaque visite
+
+const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const eng = v => v.views > 0 ? (v.likes + v.comments + v.shares) / v.views * 100 : 0;
+const short = (s, n = 55) => { s = String(s).replace(/\s+#\S+/g, '').trim() || String(s); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+function error(msg) { $('error').textContent = msg || ''; $('error').classList.toggle('show', !!msg); }
+
+async function api(path) {
+  const r = await fetch(path, { cache: 'no-store', credentials: 'same-origin' });
+  if (r.status === 401) { location.replace('/connexion.html?erreur=session'); throw new Error('Session expirée'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erreur ' + r.status);
+  return d;
+}
+
+// Toutes les vidéos publiques (20 par page, 10 pages max = 200 vidéos).
+async function fetchAll(force) {
+  if (!force) {
+    try {
+      const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+      if (c && Date.now() - c.t < CACHE_MS) return c;
+    } catch { /* stockage indisponible */ }
+  }
+  const me = await api('/api/me');
+  let videos = [], cursor = null, more = true, pages = 0;
+  while (more && pages++ < 10) {
+    const d = await api('/api/me/videos?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+    videos.push(...d.videos); cursor = d.cursor; more = d.hasMore && d.videos.length > 0;
+  }
+  const data = { t: Date.now(), me, videos };
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  return data;
+}
+
+function bars(el, rows, { unit = 'vues', minCount = 1 } = {}) {
+  el.textContent = '';
+  const ok = rows.filter(r => r.count >= minCount && Number.isFinite(r.value));
+  if (!ok.length) { el.innerHTML = '<div class="empty">Pas encore assez de vidéos pour cette analyse.</div>'; return null; }
+  const max = Math.max(...ok.map(r => r.value)) || 1;
+  const solid = ok.filter(r => r.count >= 3);
+  const best = solid.length ? solid.reduce((a, b) => (b.value > a.value ? b : a)) : null;
+  ok.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'bar' + (r === best && ok.length > 1 ? ' best' : '');
+    row.innerHTML = `<span class="lbl" title="${esc(r.label)}">${esc(r.label)}</span><div class="track"><div class="fill" style="width:0"></div></div><span class="val">${unit === '%' ? pct(r.value) : fmt(r.value)}<small>${r.count} vidéo${r.count > 1 ? 's' : ''}</small></span>`;
+    el.append(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => { row.querySelector('.fill').style.width = Math.max(2, r.value / max * 100) + '%'; }));
+  });
+  return best;
+}
+
+function group(videos, keyFn, labels) {
+  const m = new Map();
+  videos.forEach(v => { const k = keyFn(v); if (k == null) return; if (!m.has(k)) m.set(k, []); m.get(k).push(v.views); });
+  return (labels || [...m.keys()]).map(k => ({ key: k, label: typeof k === 'string' ? k : String(k), value: median(m.get(k) || []), count: (m.get(k) || []).length }));
+}
+
+function render({ me, videos, t }) {
+  const vids = videos.filter(v => Number.isFinite(v.views)).map(v => ({ ...v, likes: v.likes || 0, comments: v.comments || 0, shares: v.shares || 0 }));
+  $('loading').classList.add('hidden');
+  if (!vids.length) { $('content').classList.add('hidden'); error('Aucune vidéo publique à analyser pour le moment.'); return; }
+  $('content').classList.remove('hidden');
+
+  const name = me.nickname || me.username || 'ton compte';
+  $('hTitle').innerHTML = `${esc(name)} <em>à la loupe.</em>`;
+  $('hSub').textContent = `${vids.length} vidéo${vids.length > 1 ? 's' : ''} analysée${vids.length > 1 ? 's' : ''} · données du ${new Date(t).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}.`;
+
+  // KPIs
+  const total = vids.reduce((s, v) => s + v.views, 0);
+  const med = median(vids.map(v => v.views));
+  const avg = total / vids.length;
+  const engAvg = vids.reduce((s, v) => s + eng(v), 0) / vids.length;
+  const now = Date.now() / 1000;
+  const last30 = vids.filter(v => v.createTime && now - v.createTime <= 30 * 86400).length;
+  $('kViews').textContent = fmt(total);
+  $('kViewsSub').textContent = `sur ${vids.length} vidéos · moyenne ${fmt(avg)}`;
+  $('kMedian').textContent = fmt(med);
+  $('kMedianSub').textContent = 'médiane (la moitié de tes vidéos fait plus)';
+  $('kEng').textContent = pct(engAvg);
+  $('kRate').textContent = (last30 / 30 * 7).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  $('kRateSub').textContent = `${last30} vidéo${last30 > 1 ? 's' : ''} sur les 30 derniers jours`;
+
+  // Timeline
+  const chrono = [...vids].sort((a, b) => (a.createTime || 0) - (b.createTime || 0));
+  const top3 = new Set([...vids].sort((a, b) => b.views - a.views).slice(0, 3).map(v => v.id));
+  const tl = $('timeline'); tl.textContent = '';
+  const maxV = Math.max(...chrono.map(v => v.views)) || 1;
+  const tip = $('tlTip');
+  chrono.forEach(v => {
+    const c = document.createElement('div');
+    c.className = 'col' + (top3.has(v.id) ? ' top' : '');
+    c.style.height = Math.max(2, v.views / maxV * 100) + '%';
+    c.addEventListener('mousemove', e => {
+      tip.innerHTML = `<b>${fmt(v.views)} vues</b><br>${esc(v.title).slice(0, 90)}<br><span style="color:#7f9caf">${v.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : ''}</span>`;
+      tip.style.display = 'block';
+      tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+    });
+    c.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    if (v.shareUrl) { c.style.cursor = 'pointer'; c.addEventListener('click', () => window.open(v.shareUrl, '_blank', 'noopener')); }
+    tl.append(c);
+  });
+  const dt = v => v?.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : '';
+  $('tlStart').textContent = dt(chrono[0]); $('tlEnd').textContent = dt(chrono.at(-1));
+
+  // Ranking
+  const lists = {
+    top: [...vids].sort((a, b) => b.views - a.views).slice(0, 5),
+    flop: [...vids].sort((a, b) => a.views - b.views).slice(0, 5),
+    eng: [...vids].filter(v => v.views >= 100).sort((a, b) => eng(b) - eng(a)).slice(0, 5)
+  };
+  const showRank = k => {
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === k)));
+    $('ranking').innerHTML = lists[k].map((v, i) => `<tr><td class="rank">${i + 1}</td><td><a class="vt" ${v.shareUrl ? `href="${esc(v.shareUrl)}" target="_blank" rel="noopener"` : ''}><img src="${esc(v.cover || '')}" alt="" loading="lazy" referrerpolicy="no-referrer"><span>${esc(v.title)}</span></a></td><td class="n"><b>${fmt(v.views)}</b></td><td class="n hide-sm">${fmt(v.likes)}</td><td class="n hide-sm">${pct(eng(v))}</td><td class="n hide-sm">${dt(v)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Pas assez de données.</td></tr>';
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showRank(b.dataset.tab));
+  showRank('top');
+
+  // Jour / heure / durée
+  const withDate = vids.filter(v => v.createTime);
+  const dayRows = group(withDate, v => new Date(v.createTime * 1000).getDay(), [1, 2, 3, 4, 5, 6, 0]).map(r => ({ ...r, label: DAYS[r.key] }));
+  const bestDay = bars($('byDay'), dayRows);
+  const slots = [['Nuit · 0h–6h', 0, 6], ['Matin · 6h–12h', 6, 12], ['Après-midi · 12h–17h', 12, 17], ['Soirée · 17h–21h', 17, 21], ['Tard · 21h–0h', 21, 24]];
+  const hourRows = group(withDate, v => { const h = new Date(v.createTime * 1000).getHours(); return slots.find(s => h >= s[1] && h < s[2])[0]; }, slots.map(s => s[0]));
+  const bestHour = bars($('byHour'), hourRows);
+  const dur = [['< 30 s', 0, 30], ['30–59 s', 30, 60], ['1–2 min', 60, 120], ['2–3 min', 120, 180], ['3 min +', 180, 1e9]];
+  const durRows = group(vids.filter(v => v.duration), v => dur.find(d => v.duration >= d[1] && v.duration < d[2])[0], dur.map(d => d[0]));
+  const bestDur = bars($('byDuration'), durRows);
+
+  // Hashtags
+  const tagMap = new Map();
+  vids.forEach(v => { new Set((v.title.match(/#[\p{L}\p{N}_]+/gu) || []).map(t => t.toLowerCase())).forEach(t => { if (!tagMap.has(t)) tagMap.set(t, []); tagMap.get(t).push(v.views); }); });
+  const tagRows = [...tagMap].map(([k, a]) => ({ label: k, value: median(a), count: a.length })).filter(r => r.count >= 2).sort((a, b) => b.value - a.value).slice(0, 8);
+  const bestTag = bars($('byTag'), tagRows);
+
+  // Séries « Partie N »
+  const partRe = /partie\s*(\d+)/i;
+  const serMap = new Map();
+  vids.forEach(v => { const m = v.title.match(partRe); if (!m) return; const n = +m[1]; if (!serMap.has(n)) serMap.set(n, []); serMap.get(n).push(v.views); });
+  const p1 = median(serMap.get(1) || []);
+  let seriesTip = null;
+  if (serMap.size >= 2 && Number.isFinite(p1) && p1 > 0) {
+    const sRows = [...serMap.keys()].sort((a, b) => a - b).slice(0, 10).map(n => ({ label: 'Partie ' + n, value: median(serMap.get(n)) / p1 * 100, count: serMap.get(n).length }));
+    bars($('series'), sRows, { unit: '%' });
+    const p2 = sRows.find(r => r.label === 'Partie 2');
+    if (p2) seriesTip = p2.value;
+  } else {
+    $('seriesCard').classList.add('hidden');
+  }
+
+  // Conseils automatiques
+  const tips = [];
+  const rel = (x, ref) => Math.round((x / ref - 1) * 100);
+  const add = (ic, html) => tips.push(`<div class="tip"><span class="ic">${ic}</span><span>${html}</span></div>`);
+  const enough = r => r && r.count >= 3 && Number.isFinite(med) && med > 0;
+  const best = lists.top[0];
+  if (best) add('🏆', `Ta meilleure vidéo, <b>« ${esc(short(best.title))} »</b>, a fait <b>${fmt(best.views)} vues</b>, soit <b>${(best.views / med).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}×</b> ta médiane. Inspire-toi de son sujet et de son accroche.`);
+  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('📅', `Tes vidéos du <b>${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane.`);
+  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('🕒', `Le créneau <b>${bestHour.label.toLowerCase()}</b> te réussit le mieux : <b>+${rel(bestHour.value, med)} %</b> de vues.`);
+  if (enough(bestDur) && rel(bestDur.value, med) >= 15) add('⏱️', `Les vidéos de <b>${bestDur.label}</b> performent le mieux chez toi (<b>+${rel(bestDur.value, med)} %</b>).`);
+  if (enough(bestTag) && rel(bestTag.value, med) >= 15) add('#️⃣', `Le hashtag <b>${esc(bestTag.label)}</b> accompagne tes vidéos les plus vues (<b>+${rel(bestTag.value, med)} %</b>).`);
+  if (seriesTip != null) add('🎬', seriesTip >= 70 ? `Ton public suit tes séries : la <b>Partie 2</b> garde <b>${Math.round(seriesTip)} %</b> des vues de la Partie 1. Continue les suites !` : `La <b>Partie 2</b> ne garde que <b>${Math.round(seriesTip)} %</b> des vues de la Partie 1. Un rappel rapide de l'épisode précédent au début peut aider.`);
+  if (engAvg >= 8) add('💬', `Ton engagement moyen (<b>${pct(engAvg)}</b>) est solide : ta communauté réagit bien. Les commentaires aident TikTok à pousser tes vidéos.`);
+  else if (engAvg > 0) add('💬', `Ton engagement moyen est de <b>${pct(engAvg)}</b>. Pose une question ou lance un débat en fin de vidéo pour faire réagir.`);
+  if (last30 < 4) add('📈', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
+  $('tips').innerHTML = tips.join('') || '<div class="empty">Publie encore quelques vidéos pour obtenir des conseils personnalisés.</div>';
+
+  $('note').textContent = 'Les vues médianes limitent l\'effet d\'une vidéo virale isolée. Les heures sont celles de ton appareil. Données : API officielle TikTok (vidéos publiques uniquement).';
+}
+
+async function load(force) {
+  $('reload').disabled = true; error('');
+  if (force) { $('loading').classList.remove('hidden'); $('content').classList.add('hidden'); }
+  try { render(await fetchAll(force)); }
+  catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
+  finally { $('reload').disabled = false; }
+}
+$('reload').addEventListener('click', () => load(true));
+load(false);
+</script>
+</body></html>
