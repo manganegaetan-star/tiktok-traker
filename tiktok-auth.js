@@ -45,9 +45,11 @@ const SESSION_COOKIE = "tp_session";
 const STATE_COOKIE = "tp_oauth_state";
 const TIMEOUT_MS = 12000;
 
-const USER_CACHE_MS = 60000;
+// Le site actualise toutes les 5 s : caches juste en dessous,
+// pour que chaque relevé soit frais sans appels en double.
+const USER_CACHE_MS = 4000;
 const LIST_CACHE_MS = 30000;
-const VIDEO_CACHE_MS = 5000;
+const VIDEO_CACHE_MS = 4000;
 
 const cache = new Map();
 

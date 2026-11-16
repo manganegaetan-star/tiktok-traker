@@ -183,6 +183,9 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .vcard .tag{display:inline-block;margin-top:7px;font:700 9px 'Space Grotesk';letter-spacing:.14em;color:#f7c56a}
 .exact-tag{color:#f7c56a;margin-left:10px}
 .more-btn{display:block;margin:16px auto 0}
+.bump-up{animation:bumpUp 1.2s ease}.bump-down{animation:bumpDown 1.2s ease}
+@keyframes bumpUp{0%,40%{color:#73ffb8;text-shadow:0 0 14px #73ffb8}100%{color:#e9fcff}}
+@keyframes bumpDown{0%,40%{color:#ff8aaa}100%{color:#e9fcff}}
 @media(max-width:700px){.account{grid-template-columns:auto 1fr;padding:22px}.account .ghost-btn{grid-column:1/-1}.account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.account-avatar{width:64px;height:64px}}
 
 </style></head><body>
@@ -381,6 +384,24 @@ async function loadMe() {
   $('username').textContent = me.username ? '@' + me.username : '';
 }
 
+// Actualise les compteurs du créateur (même rythme que la vidéo).
+// La photo n'est pas rechargée pour éviter un clignotement.
+async function refreshMe() {
+  try {
+    const fresh = await api('/api/me');
+    [['followers', 'followers'], ['following', 'following'], ['profileLikes', 'likes'], ['videos', 'videos']].forEach(([id, key]) => {
+      const before = Number(me[key]), after = Number(fresh[key]);
+      show(id, fresh[key]);
+      if (Number.isFinite(before) && Number.isFinite(after) && after !== before) {
+        const el = $(id); el.classList.remove('bump-up', 'bump-down'); void el.offsetWidth;
+        el.classList.add(after > before ? 'bump-up' : 'bump-down');
+      }
+    });
+    titleFollowers = Number.isFinite(Number(fresh.followers)) ? Number(fresh.followers) : titleFollowers;
+    me = { ...me, ...fresh };
+  } catch { /* le prochain relevé réessaiera */ }
+}
+
 function videoCard(v) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'surface vcard'; b.dataset.id = v.id;
@@ -481,7 +502,10 @@ async function refresh() {
   clearTimeout(timer); busy = true;
   const id = ++requestId, videoId = selected.id;
   try {
-    const v = await api('/api/me/video/' + encodeURIComponent(videoId));
+    const [v] = await Promise.all([
+      api('/api/me/video/' + encodeURIComponent(videoId)),
+      me.username !== undefined ? refreshMe() : null
+    ]);
     if (id !== requestId) return;
     update(v); error(''); status(true, 'EN DIRECT');
   } catch (e) {
@@ -499,7 +523,8 @@ $('logout').addEventListener('click', async () => {
   await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
   location.replace('/connexion.html');
 });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && selected) { busy = false; refresh(); } });
+// Un seul relevé toutes les 5 s, jamais deux boucles en parallèle.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && selected && !busy) refresh(); });
 window.addEventListener('resize', plot);
 
 imageSet('cover', null); imageSet('avatar', null); imageSet('meAvatar', null); plot(); syncPageTitle();
