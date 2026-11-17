@@ -252,6 +252,64 @@ function cleanVideo(v) {
 }
 
 // -----------------------------------------------------
+// Favoris : l'API officielle ne les fournit pas. On lit le
+// compteur affiché sur la page publique de la vidéo du
+// créateur connecté (sa propre vidéo), au plus une fois par
+// minute et par vidéo. En cas d'échec : null (« — »).
+// -----------------------------------------------------
+
+const FAV_CACHE_MS = 60 * 1000;
+const FAV_FAIL_MS = 5 * 60 * 1000;
+const favCache = new Map();
+
+async function fetchFavorites(videoId, username) {
+    const hit = favCache.get(videoId);
+    if (hit && Date.now() < hit.until) return hit.value;
+
+    let value = null;
+
+    try {
+        if (!username || !/^[a-zA-Z0-9._]{1,30}$/.test(username)) throw new Error("username");
+
+        const response = await fetch(
+            `https://www.tiktok.com/@${username}/video/${videoId}`,
+            {
+                headers: {
+                    Accept: "text/html,application/xhtml+xml",
+                    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+                    "User-Agent":
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                        "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+                },
+                signal: AbortSignal.timeout(6000)
+            }
+        );
+
+        if (!response.ok) throw new Error("HTTP " + response.status);
+
+        const html = await response.text();
+        const m = html.match(/<script\b(?=[^>]*\bid=["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'])[^>]*>([\s\S]*?)<\/script\s*>/i);
+        const item = m && JSON.parse(m[1])?.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct;
+
+        if (!item || String(item.id) !== String(videoId)) throw new Error("page");
+
+        const n = Number(item.statsV2?.collectCount ?? item.stats?.collectCount);
+        value = Number.isFinite(n) ? n : null;
+    } catch (error) {
+        console.warn("[FAVORIS]", videoId, error.message);
+    }
+
+    favCache.set(videoId, { value, until: Date.now() + (value === null ? FAV_FAIL_MS : FAV_CACHE_MS) });
+    if (favCache.size > 2000) favCache.delete(favCache.keys().next().value);
+
+    return value;
+}
+
+function usernameFromShareUrl(url) {
+    return typeof url === "string" ? url.match(/tiktok\.com\/@([a-zA-Z0-9._]{1,30})\//)?.[1] || null : null;
+}
+
+// -----------------------------------------------------
 // Routes
 // -----------------------------------------------------
 
@@ -521,7 +579,14 @@ module.exports = function mountTikTokAuth(app) {
                 return res.status(404).json({ error: "Vidéo introuvable sur ce compte" });
             }
 
-            res.json(cleanVideo(video));
+            const clean = cleanVideo(video);
+            const username =
+                usernameFromShareUrl(clean.shareUrl) ||
+                cache.get(`user:${req.tiktok.openId}`)?.data?.user?.username;
+
+            clean.favorites = await fetchFavorites(clean.id, username);
+
+            res.json(clean);
         } catch (error) {
             apiError(req, res, error);
         }
