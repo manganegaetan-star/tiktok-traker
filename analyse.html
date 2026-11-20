@@ -110,13 +110,13 @@ th.n{text-align:right}
    <section class="surface card">
     <div class="micro">Quand publier</div>
     <h2>Par jour de la semaine</h2>
-    <div class="sub">Vues médianes des vidéos publiées ce jour-là. En doré : le meilleur parmi ceux avec au moins 3 vidéos.</div>
+    <div class="sub">Vues médianes des vidéos publiées ce jour-là (pas le jour où les vues arrivent). En doré : le meilleur parmi ceux avec au moins 3 vidéos.</div>
     <div class="bars" id="byDay"></div>
    </section>
    <section class="surface card">
     <div class="micro">Quand publier</div>
     <h2>Par moment de la journée</h2>
-    <div class="sub">Vues médianes selon l'heure de publication (heure de ton appareil).</div>
+    <div class="sub">Vues médianes selon l'heure de publication (heure de ton appareil). Basé sur l'heure où tu publies, pas sur l'heure où les vues arrivent.</div>
     <div class="bars" id="byHour"></div>
    </section>
    <section class="surface card">
@@ -132,13 +132,6 @@ th.n{text-align:right}
     <div class="bars" id="byTag"></div>
    </section>
   </div>
-
-  <section class="surface card" id="seriesCard">
-   <div class="micro">Séries</div>
-   <h2>Est-ce que ton public suit tes séries ?</h2>
-   <div class="sub">Vidéos « Partie 1, Partie 2… » : vues de chaque partie par rapport à la Partie 1.</div>
-   <div class="bars" id="series"></div>
-  </section>
 
   <p class="note" id="note"></p>
  </div>
@@ -291,21 +284,6 @@ function render({ me, videos, t }) {
   const tagRows = [...tagMap].map(([k, a]) => ({ label: k, value: median(a), count: a.length })).filter(r => r.count >= 2).sort((a, b) => b.value - a.value).slice(0, 8);
   const bestTag = bars($('byTag'), tagRows);
 
-  // Séries « Partie N »
-  const partRe = /partie\s*(\d+)/i;
-  const serMap = new Map();
-  vids.forEach(v => { const m = v.title.match(partRe); if (!m) return; const n = +m[1]; if (!serMap.has(n)) serMap.set(n, []); serMap.get(n).push(v.views); });
-  const p1 = median(serMap.get(1) || []);
-  let seriesTip = null;
-  if (serMap.size >= 2 && Number.isFinite(p1) && p1 > 0) {
-    const sRows = [...serMap.keys()].sort((a, b) => a - b).slice(0, 10).map(n => ({ label: 'Partie ' + n, value: median(serMap.get(n)) / p1 * 100, count: serMap.get(n).length }));
-    bars($('series'), sRows, { unit: '%' });
-    const p2 = sRows.find(r => r.label === 'Partie 2');
-    if (p2) seriesTip = p2.value;
-  } else {
-    $('seriesCard').classList.add('hidden');
-  }
-
   // Conseils automatiques
   const tips = [];
   const rel = (x, ref) => Math.round((x / ref - 1) * 100);
@@ -313,11 +291,10 @@ function render({ me, videos, t }) {
   const enough = r => r && r.count >= 3 && Number.isFinite(med) && med > 0;
   const best = lists.top[0];
   if (best) add('🏆', `Ta meilleure vidéo, <b>« ${esc(short(best.title))} »</b>, a fait <b>${fmt(best.views)} vues</b>, soit <b>${(best.views / med).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}×</b> ta médiane. Inspire-toi de son sujet et de son accroche.`);
-  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('📅', `Tes vidéos du <b>${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane.`);
-  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('🕒', `Le créneau <b>${bestHour.label.toLowerCase()}</b> te réussit le mieux : <b>+${rel(bestHour.value, med)} %</b> de vues.`);
+  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('📅', `Tes vidéos <b>publiées le ${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane (sur ${bestDay.count} vidéos).`);
+  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('🕒', `Tes vidéos <b>publiées ${({ Nuit: 'la nuit', Matin: 'le matin', 'Après-midi': "l'après-midi", Soirée: 'en soirée', Tard: 'tard le soir' })[bestHour.label.split(' · ')[0]]} (${bestHour.label.split(' · ')[1]})</b> font en moyenne <b>+${rel(bestHour.value, med)} %</b> de vues (sur ${bestHour.count} vidéos).`);
   if (enough(bestDur) && rel(bestDur.value, med) >= 15) add('⏱️', `Les vidéos de <b>${bestDur.label}</b> performent le mieux chez toi (<b>+${rel(bestDur.value, med)} %</b>).`);
   if (enough(bestTag) && rel(bestTag.value, med) >= 15) add('#️⃣', `Le hashtag <b>${esc(bestTag.label)}</b> accompagne tes vidéos les plus vues (<b>+${rel(bestTag.value, med)} %</b>).`);
-  if (seriesTip != null) add('🎬', seriesTip >= 70 ? `Ton public suit tes séries : la <b>Partie 2</b> garde <b>${Math.round(seriesTip)} %</b> des vues de la Partie 1. Continue les suites !` : `La <b>Partie 2</b> ne garde que <b>${Math.round(seriesTip)} %</b> des vues de la Partie 1. Un rappel rapide de l'épisode précédent au début peut aider.`);
   if (engAvg >= 8) add('💬', `Ton engagement moyen (<b>${pct(engAvg)}</b>) est solide : ta communauté réagit bien. Les commentaires aident TikTok à pousser tes vidéos.`);
   else if (engAvg > 0) add('💬', `Ton engagement moyen est de <b>${pct(engAvg)}</b>. Pose une question ou lance un débat en fin de vidéo pour faire réagir.`);
   if (last30 < 4) add('📈', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
