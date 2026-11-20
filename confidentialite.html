@@ -17,7 +17,7 @@ th{background:#0b2233;color:var(--text)}
 <main class="shell doc">
 <div class="eyebrow">Légal</div>
 <h1>Politique de confidentialité</h1>
-<p class="date">Dernière mise à jour : 16 novembre 2026</p>
+<p class="date">Dernière mise à jour : 21 novembre 2026</p>
 
 <p>TikTok Pulse (« le Service ») est un tableau de bord indépendant qui affiche les statistiques de vidéos TikTok. Cette politique explique quelles données nous traitons, pourquoi, et comment tu gardes le contrôle. TikTok Pulse n'est ni affilié à TikTok ni approuvé par TikTok.</p>
 
@@ -34,14 +34,14 @@ th{background:#0b2233;color:var(--text)}
 
 <h2>3. Stockage et conservation</h2>
 <ul>
-<li>Nous n'utilisons <strong>aucune base de données</strong> et ne créons aucun compte utilisateur.</li>
+<li>Une base de données (Google Cloud Firestore, hébergée à Paris) conserve uniquement, pour chaque compte connecté : l'identifiant TikTok anonyme (open_id), le nom d'utilisateur, la date de première connexion et le statut premium. Aucune statistique ni aucun jeton n'y est enregistré. Tu peux demander la suppression de ces données à l'adresse ci-dessus.</li>
 <li>Les jetons d'accès fournis par TikTok sont chiffrés (AES-256-GCM) et stockés uniquement dans un cookie sécurisé (HttpOnly) de ton navigateur. Ce cookie expire au plus tard après 365 jours, ou immédiatement quand tu te déconnectes.</li>
 <li>Les statistiques sont gardées quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacées.</li>
 <li>Les journaux techniques de l'hébergeur (Google Cloud Run) peuvent contenir l'adresse IP et l'heure des requêtes, conservés selon la politique de Google Cloud.</li>
 </ul>
 
 <h2>4. Partage</h2>
-<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), et Google Cloud (hébergement).</p>
+<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), et Google Cloud (hébergement et base de données).</p>
 
 <h2>5. Cookies</h2>
 <p>Nous utilisons uniquement des cookies strictement nécessaires : <code>tp_session</code> (connexion à l'espace créateur) et <code>tp_oauth_state</code> (sécurité de la connexion, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>

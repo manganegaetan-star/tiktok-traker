@@ -193,6 +193,61 @@ async function tokenRequest(params) {
     };
 }
 
+// =====================================================
+// STATUT PREMIUM (Firestore)
+// -----------------------------------------------------
+// Collection « utilisateurs », un document par compte TikTok
+// (id = open_id) : { pseudo, creeLe, premium }.
+// Le document est créé à la première visite avec premium: false.
+// Pour passer quelqu'un en premium : console Firestore →
+// utilisateurs → son document → premium = true.
+// Lecture mise en cache 5 min pour rester dans le quota gratuit.
+// Sans Firestore (ex. en local), tout le monde est gratuit.
+// =====================================================
+
+const PREMIUM_CACHE_MS = 5 * 60 * 1000;
+const premiumCache = new Map();
+let firestore;
+
+function db() {
+    if (firestore === undefined) {
+        try {
+            const { Firestore } = require("@google-cloud/firestore");
+            firestore = new Firestore();
+        } catch (error) {
+            console.warn("Firestore indisponible :", error.message);
+            firestore = null;
+        }
+    }
+    return firestore;
+}
+
+async function premiumStatus(openId, username) {
+    const hit = premiumCache.get(openId);
+    if (hit && hit.expires > Date.now()) return hit.value;
+
+    let value = false;
+    const store = db();
+
+    if (store && openId) {
+        try {
+            const ref = store.collection("utilisateurs").doc(openId);
+            const snap = await ref.get();
+
+            if (snap.exists) {
+                value = snap.get("premium") === true;
+            } else {
+                await ref.set({ pseudo: username || null, creeLe: new Date(), premium: false });
+            }
+        } catch (error) {
+            console.warn("Lecture premium impossible :", error.message);
+        }
+    }
+
+    premiumCache.set(openId, { value, expires: Date.now() + PREMIUM_CACHE_MS });
+    return value;
+}
+
 async function apiCall(session, path, { method = "GET", body } = {}) {
     const response = await fetch(`${API}${path}`, {
         method,
@@ -518,8 +573,10 @@ module.exports = function mountTikTokAuth(app) {
                 apiCall(req.tiktok, `/user/info/?fields=${USER_FIELDS}`));
 
             const u = data.user || {};
+            const premium = await premiumStatus(req.tiktok.openId, u.username);
 
             res.json({
+                premium,
                 username: u.username || null,
                 nickname: u.display_name || null,
                 avatar: u.avatar_large_url || u.avatar_url || null,

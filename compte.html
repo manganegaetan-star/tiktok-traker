@@ -186,6 +186,8 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .account-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
 .analyse-btn{text-align:center;color:#f7c56a;border-color:#f7c56a77;background:#f7c56a0d}
 .analyse-btn:hover{border-color:#f7c56a;color:#ffe2a8}
+.lock-tag{display:inline-block;margin-left:8px;padding:2px 6px;border:1px solid #f7c56a77;border-radius:3px;font-size:9px;letter-spacing:.1em;vertical-align:middle}
+.lock-tag.hidden{display:none}
 @media(max-width:700px){.account-actions{grid-column:1/-1;flex-direction:row;min-width:0}.account-actions>*{flex:1 1 0;min-width:0;white-space:normal;padding-inline:10px}}
 .video-meta{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:8px 22px;margin-top:14px}
 .video-meta span{display:block;font:700 9px 'Space Grotesk';letter-spacing:.16em;text-transform:uppercase;color:#6f97ad}
@@ -228,7 +230,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
   <div class="account-handle" id="meHandle"></div>
   <div class="account-bio" id="meBio"></div>
  </div>
- <div class="account-actions"><a class="ghost-btn analyse-btn" href="/analyse.html">📊 Analyse des statistiques</a><button class="ghost-btn" id="logout" type="button">Se déconnecter</button></div>
+ <div class="account-actions"><a class="ghost-btn analyse-btn" id="analyseBtn" href="/analyse.html">📊 Analyse des statistiques<span class="lock-tag hidden" id="analyseLock">🔒 Premium</span></a><button class="ghost-btn" id="logout" type="button">Se déconnecter</button></div>
  <div class="account-stats">
   <div><strong id="followers">—</strong><span>Abonnés</span></div>
   <div><strong id="following">—</strong><span>Abonnements</span></div>
@@ -397,6 +399,7 @@ function ago(ts) {
 
 async function loadMe() {
   me = await api('/api/me');
+  $('analyseLock').classList.toggle('hidden', me.premium === true);
   const name = $('meName');
   name.textContent = me.nickname || me.username || 'Créateur';
   if (me.verified) { const v = document.createElement('span'); v.className = 'verified'; v.textContent = '✓'; v.title = 'Compte vérifié'; name.append(v); }
