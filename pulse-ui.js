@@ -226,7 +226,7 @@
     box.innerHTML = '<div class="pcookie-card">'
       + '<div class="pcookie-head">' + icon('cookie') + '<b>Cookies et stockage</b></div>'
       + '<p>TikTok Pulse utilise uniquement des cookies essentiels (connexion, sécurité) et, si tu l’acceptes, un stockage de tes préférences d’affichage. Aucun cookie publicitaire ni de mesure d’audience. <a href="/confidentialite.html#cookies">En savoir plus</a></p>'
-      + '<div class="pcookie-opts" hidden>'
+      + '<div class="pcookie-opts">'
       + '<div class="pcookie-opt ess"><span><b>Essentiels</b><small>Sans eux, le site ne peut pas fonctionner. Toujours actifs.</small>'
       + '<details><summary>Voir à quoi ils servent</summary><ul>'
       + '<li><b>Connexion TikTok</b> : garde ta session ouverte pour afficher tes statistiques sans te reconnecter à chaque page.</li>'
@@ -240,24 +240,21 @@
       + PREFS.map(p => '<label class="pcookie-sub"><span><b>' + p.label + '</b><small>' + p.desc + '</small></span><input type="checkbox" data-pref="' + p.id + '"></label>').join('')
       + '</div></details></span><input type="checkbox" id="pcPrefs" aria-label="Toutes les préférences"></div>'
       + '</div>'
-      + '<div class="pcookie-btns"><button type="button" class="btn" data-a="refuse">Continuer avec l’essentiel</button><button type="button" class="btn" data-a="custom">Personnaliser</button><button type="button" class="btn pcookie-ok" data-a="accept">Tout accepter</button></div>'
+      + '<div class="pcookie-btns"><button type="button" class="btn" data-a="refuse">Continuer avec l’essentiel</button><button type="button" class="btn" data-a="save">Enregistrer mon choix</button><button type="button" class="btn pcookie-ok" data-a="accept">Tout accepter</button></div>'
       + '</div>';
     document.body.append(box);
-    const opts = box.querySelector('.pcookie-opts');
     const all = box.querySelector('#pcPrefs');
     const subs = [...box.querySelectorAll('[data-pref]')];
-    subs.forEach(c => { c.checked = allowed(c.dataset.pref); });
+    // Première fois : rien n'est coché d'avance (le consentement doit être un vrai choix).
+    const first = !readConsent();
+    subs.forEach(c => { c.checked = !first && allowed(c.dataset.pref); });
     const sync = () => { const n = subs.filter(c => c.checked).length; all.checked = n === subs.length; all.indeterminate = n > 0 && n < subs.length; };
     sync();
     all.addEventListener('change', () => { subs.forEach(c => { c.checked = all.checked; }); sync(); });
     subs.forEach(c => c.addEventListener('change', sync));
-    const custom = box.querySelector('[data-a=custom]');
-    const open = () => { opts.hidden = false; custom.textContent = 'Enregistrer mon choix'; custom.dataset.a = 'save'; };
-    if (manage) open();
     box.addEventListener('click', async e => {
       const b = e.target.closest('button[data-a]'); if (!b) return;
       const a = b.dataset.a;
-      if (a === 'custom') return open();
       const detail = {};
       PREFS.forEach(p => { detail[p.id] = a === 'accept' ? true : a === 'refuse' ? false : subs.find(c => c.dataset.pref === p.id).checked; });
       box.remove();
