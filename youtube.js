@@ -220,6 +220,15 @@ module.exports = function createYouTube(d) {
         return true;
     }
 
+    // Adresse de retour : même domaine que la connexion TikTok (déjà validé),
+    // ou YOUTUBE_REDIRECT_URI si défini.
+    function redirectUri(req) {
+        const env = process.env.YOUTUBE_REDIRECT_URI?.trim();
+        if (env) return env;
+        try { return new URL(d.config(req).redirectUri).origin + "/auth/youtube/callback"; }
+        catch { return `https://${req.get("host")}/auth/youtube/callback`; }
+    }
+
     // ---------- Routes OAuth ----------
     function mountRoutes(app, { maxFor, countAll }) {
         // Départ vers Google (consentement YouTube, lecture seule).
@@ -235,7 +244,7 @@ module.exports = function createYouTube(d) {
 
             const url = new URL(AUTH_URL);
             url.searchParams.set("client_id", d.GOOGLE_CLIENT_ID);
-            url.searchParams.set("redirect_uri", `${req.protocol}://${req.get("host")}/auth/youtube/callback`);
+            url.searchParams.set("redirect_uri", redirectUri(req));
             url.searchParams.set("response_type", "code");
             url.searchParams.set("scope", SCOPE);
             url.searchParams.set("access_type", "offline");
@@ -271,7 +280,7 @@ module.exports = function createYouTube(d) {
                 const t = await googleToken({
                     grant_type: "authorization_code",
                     code,
-                    redirect_uri: `${req.protocol}://${req.get("host")}/auth/youtube/callback`
+                    redirect_uri: redirectUri(req)
                 });
 
                 const j = await ytCall(t.access_token, "/channels?part=snippet&mine=true");
