@@ -17,9 +17,9 @@ th{background:#0b2233;color:var(--text)}
 <main class="shell doc">
 <div class="eyebrow">Légal</div>
 <h1>Politique de confidentialité</h1>
-<p class="date">Dernière mise à jour : 22 novembre 2026</p>
+<p class="date">Dernière mise à jour : 21 novembre 2026</p>
 
-<p>TikTok Pulse (« le Service ») est un tableau de bord indépendant qui affiche les statistiques de vidéos TikTok. Cette politique explique quelles données nous traitons, pourquoi, et comment tu gardes le contrôle. TikTok Pulse n'est ni affilié à TikTok ni approuvé par TikTok.</p>
+<p>TikTok Pulse (« le Service ») est un tableau de bord indépendant qui affiche les statistiques de tes propres comptes de création de contenu (TikTok, YouTube et, prochainement, Facebook Reels). Cette politique explique quelles données nous traitons, pourquoi, et comment tu gardes le contrôle. TikTok Pulse n'est ni affilié à, ni approuvé par TikTok, Google / YouTube ou Meta / Facebook.</p>
 
 <h2>1. Responsable du traitement</h2>
 <p>Le Service est édité par <strong>Mangane Gaétan</strong>. Pour toute question : <a href="mailto:manganegaetan@gmail.com">manganegaetan@gmail.com</a>.</p>
@@ -27,44 +27,57 @@ th{background:#0b2233;color:var(--text)}
 <h2>2. Données traitées</h2>
 <table>
 <tr><th>Situation</th><th>Données</th><th>Finalité</th></tr>
-<tr><td>Connexion avec TikTok (espace créateur)</td><td>Identifiant TikTok anonyme (open_id), nom d'affichage, nom d'utilisateur, photo de profil, bio, badge vérifié, nombre d'abonnés / d'abonnements / de likes / de vidéos ; liste de tes vidéos publiques et leurs statistiques (vues, likes, commentaires, partages)</td><td>Afficher ton tableau de bord personnel</td></tr></table>
-<p>Ces données sont obtenues via l'API officielle de TikTok (Login Kit et Display API), uniquement avec ton autorisation explicite, et seulement pour les autorisations suivantes : <code>user.info.basic</code>, <code>user.info.profile</code>, <code>user.info.stats</code>, <code>video.list</code>.</p>
-<h2>2 bis. Comptes YouTube (services d'API YouTube)</h2>
-<p>Si tu relies une chaîne YouTube, TikTok Pulse utilise les <strong>services d'API YouTube</strong> avec la seule autorisation de lecture <code>youtube.readonly</code>, pour afficher les informations de ta chaîne (nom, photo, description, nombre d'abonnés, de vues et de vidéos) et les statistiques de tes vidéos (vues, likes, commentaires). Le Service ne publie, ne modifie et ne supprime jamais rien sur ta chaîne.</p>
-<p>En reliant une chaîne, tu acceptes les <a href="https://www.youtube.com/t/terms" rel="noopener" target="_blank">Conditions d'utilisation de YouTube</a>. Les données sont aussi soumises aux <a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Règles de confidentialité de Google</a>.</p>
-<p>Le jeton d'accès fourni par Google est stocké <strong>chiffré</strong> (AES-256-GCM) dans notre base de données pour actualiser tes statistiques ; les statistiques elles-mêmes ne sont gardées que quelques minutes en mémoire (cache). Tu peux retirer l'accès à tout moment avec le bouton « Délier » de l'onglet Compte, ou depuis la page <a href="https://security.google.com/settings/security/permissions" rel="noopener" target="_blank">autorisations de ton compte Google</a> ; les données correspondantes sont alors supprimées.</p>
+<tr><td>Connexion avec TikTok</td><td>Identifiant TikTok anonyme (open_id), nom d'affichage, nom d'utilisateur, photo de profil, bio, badge vérifié, nombre d'abonnés / d'abonnements / de likes / de vidéos ; liste de tes vidéos publiques et leurs statistiques (vues, likes, commentaires, partages)</td><td>Afficher ton tableau de bord et l'analyse de tes vidéos</td></tr>
+<tr><td>Connexion avec Google (compte TikTok Pulse)</td><td>Identifiant Google, adresse e-mail, nom et photo de profil Google</td><td>Créer ton compte TikTok Pulse, relier plusieurs comptes, gérer ton abonnement premium</td></tr>
+<tr><td>Chaîne YouTube reliée</td><td>Nom, photo, description et identifiant de la chaîne ; nombre d'abonnés, de vues et de vidéos ; liste de tes vidéos et leurs statistiques (vues, likes, commentaires, durée, date)</td><td>Afficher ton tableau de bord YouTube et l'analyse de tes vidéos</td></tr>
+<tr><td>Page Facebook reliée <em>(à venir)</em></td><td>Nom et identifiant de la Page, nombre d'abonnés ; liste de tes Reels et leurs statistiques (lectures, réactions, commentaires, partages)</td><td>Afficher les statistiques de tes Reels Facebook</td></tr>
+</table>
+<p>Nous n'avons <strong>jamais</strong> accès à tes mots de passe, à tes messages privés, à tes vidéos privées ou brouillons. Le Service ne publie, ne modifie et ne supprime jamais rien sur tes comptes et n'agit jamais en ton nom.</p>
 
+<h2>3. TikTok</h2>
+<p>Les données TikTok sont obtenues via l'API officielle de TikTok (Login Kit et Display API), uniquement avec ton autorisation explicite et pour les autorisations suivantes : <code>user.info.basic</code>, <code>user.info.profile</code>, <code>user.info.stats</code>, <code>video.list</code>. Tu restes soumis aux <a href="https://www.tiktok.com/legal/terms-of-service" rel="noopener" target="_blank">conditions d'utilisation de TikTok</a>.</p>
 <p>Le nombre de <strong>mises en favori</strong> n'étant pas fourni par l'API officielle, il est lu sur la page publique TikTok de la vidéo que tu suis (au plus une fois par minute), sans autre donnée.</p>
-<p>Nous n'avons <strong>jamais</strong> accès à ton mot de passe TikTok, à tes messages privés, à tes vidéos privées ou brouillons. Le Service ne publie rien et n'agit jamais en ton nom.</p>
 
-<h2>3. Stockage et conservation</h2>
+<h2>4. YouTube (services d'API YouTube)</h2>
+<p>Si tu relies une chaîne YouTube, TikTok Pulse utilise les <strong>services d'API YouTube</strong> avec la seule autorisation de lecture <code>youtube.readonly</code>. Elle n'est demandée qu'au moment où tu cliques sur « Connecter YouTube ».</p>
+<p>En reliant une chaîne, tu acceptes les <a href="https://www.youtube.com/t/terms" rel="noopener" target="_blank">Conditions d'utilisation de YouTube</a>. Les données sont aussi soumises aux <a href="https://policies.google.com/privacy" rel="noopener" target="_blank">Règles de confidentialité de Google</a>.</p>
+<p>Tu peux retirer l'accès à tout moment avec le bouton « Délier » de l'onglet Compte, ou depuis la page <a href="https://security.google.com/settings/security/permissions" rel="noopener" target="_blank">autorisations de ton compte Google</a>. L'accès est alors révoqué et les données correspondantes sont supprimées.</p>
+
+<h2>5. Facebook Reels (à venir)</h2>
+<p>La liaison d'une Page Facebook n'est pas encore disponible. Lorsqu'elle le sera, elle passera par l'API officielle de Meta (Graph API), uniquement avec ton autorisation explicite et en lecture seule (par exemple <code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>read_insights</code>), pour afficher les statistiques de tes Reels. Tu resteras soumis aux <a href="https://www.facebook.com/terms" rel="noopener" target="_blank">conditions de Facebook</a> et à la <a href="https://www.facebook.com/privacy/policy" rel="noopener" target="_blank">politique de confidentialité de Meta</a>, et tu pourras délier ta Page à tout moment, ce qui supprimera les données correspondantes. Cette politique sera complétée à ce moment-là.</p>
+
+<h2>6. Stockage et conservation</h2>
 <ul>
-<li>Une base de données (Google Cloud Firestore, hébergée à Paris) conserve, pour chaque compte TikTok connecté : l'identifiant TikTok anonyme (open_id), le nom d'utilisateur, la date de première connexion et le statut premium.</li>
-<li><strong>Compte premium (facultatif) :</strong> si tu connectes ton compte Google pour passer premium, nous conservons ton identifiant Google, ton adresse e-mail, ton nom et ta photo de profil Google, ainsi que la liste des comptes TikTok que tu y relies. Pour te permettre de passer d'un compte TikTok à l'autre sans te reconnecter, les jetons d'accès TikTok de ces comptes sont stockés <strong>chiffrés</strong> (AES-256-GCM) dans cette base. Aucune statistique n'y est enregistrée.</li>
-<li>Le bouton « Supprimer mon compte TikTok Pulse » de ton espace efface immédiatement ces données et révoque les accès TikTok stockés. Tu peux aussi délier un compte TikTok à tout moment.</li>
-<li>Les jetons d'accès fournis par TikTok sont chiffrés (AES-256-GCM) et stockés uniquement dans un cookie sécurisé (HttpOnly) de ton navigateur. Ce cookie expire au plus tard après 365 jours, ou immédiatement quand tu te déconnectes.</li>
-<li>Les statistiques sont gardées quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacées.</li>
+<li>Une base de données (Google Cloud Firestore, hébergée à Paris) conserve : la fiche de ton compte TikTok Pulse (identifiant, e-mail, nom et photo Google, date de création, statut premium), la liste de tes comptes reliés (identifiant, nom d'utilisateur, nom, photo) et, pour chaque compte relié, son <strong>jeton d'accès chiffré</strong> (AES-256-GCM), qui permet d'actualiser tes statistiques et de passer d'un compte à l'autre sans te reconnecter.</li>
+<li>Sans compte Google, seule une fiche minimale est conservée pour ton compte TikTok : identifiant anonyme (open_id), nom d'utilisateur, date de première connexion et statut premium.</li>
+<li><strong>Aucune statistique n'est enregistrée</strong> dans la base : les chiffres sont gardés quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacés.</li>
+<li>Les jetons de ta session en cours sont aussi chiffrés dans un cookie sécurisé (HttpOnly) de ton navigateur, qui expire au plus tard après 365 jours ou quand tu te déconnectes.</li>
 <li>Les journaux techniques de l'hébergeur (Google Cloud Run) peuvent contenir l'adresse IP et l'heure des requêtes, conservés selon la politique de Google Cloud.</li>
+<li>Tes données sont conservées tant que ton compte existe, et effacées dès que tu supprimes ton compte ou délies le compte concerné.</li>
 </ul>
 
-<h2>4. Partage</h2>
-<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), Google Cloud (hébergement et base de données) et Google (connexion du compte premium).</p>
+<h2>7. Partage</h2>
+<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont les plateformes d'où proviennent tes données (TikTok, Google / YouTube et, à venir, Meta / Facebook) et Google Cloud (hébergement et base de données). Aucune donnée n'est utilisée à des fins publicitaires.</p>
 
-<h2>5. Cookies</h2>
-<p>Nous utilisons uniquement des cookies strictement nécessaires : <code>tp_session</code> (connexion à l'espace créateur), <code>tp_google</code> (connexion du compte Google premium, chiffré, 365 jours au plus) et <code>tp_oauth_state</code> (sécurité de la connexion, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>
+<h2>8. Cookies</h2>
+<p>Nous utilisons uniquement des cookies strictement nécessaires, tous chiffrés : <code>tp_session</code> (session TikTok), <code>tp_google</code> (compte TikTok Pulse, 365 jours au plus), <code>tp_active</code> (compte affiché), <code>tp_oauth_state</code> et <code>tp_yt_state</code> (sécurité des connexions, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>
 
-<h2>6. Tes droits</h2>
+<h2>9. Tes droits et ton contrôle</h2>
 <ul>
-<li><strong>Déconnexion :</strong> le bouton « Se déconnecter » supprime le cookie et révoque l'accès auprès de TikTok.</li>
-<li><strong>Révocation depuis TikTok :</strong> Paramètres et confidentialité → Sécurité → Applications et services autorisés.</li>
+<li><strong>Délier un compte :</strong> onglet Compte → « Délier ». L'accès est révoqué et les données de ce compte sont supprimées.</li>
+<li><strong>Supprimer ton compte TikTok Pulse :</strong> onglet Compte → « Supprimer mon compte TikTok Pulse ». Toutes tes données sont effacées, les accès sont révoqués et tu es déconnecté. Si un abonnement premium est actif, il doit d'abord être résilié ou arrivé à son terme.</li>
+<li><strong>Révocation depuis les plateformes :</strong> TikTok (Paramètres et confidentialité → Sécurité → Applications et services autorisés) et <a href="https://security.google.com/settings/security/permissions" rel="noopener" target="_blank">ton compte Google</a>.</li>
 <li>Conformément au RGPD, tu disposes d'un droit d'accès, de rectification, d'effacement, d'opposition et de portabilité. Contacte-nous à l'adresse ci-dessus. Tu peux aussi saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener" target="_blank">cnil.fr</a>).</li>
 </ul>
 
-<h2>7. Mineurs</h2>
-<p>Le Service s'adresse aux personnes autorisées à utiliser TikTok selon les conditions de TikTok. Nous ne collectons sciemment aucune donnée supplémentaire concernant des mineurs.</p>
+<h2>10. Sécurité</h2>
+<p>Les échanges sont chiffrés (HTTPS) ; les jetons d'accès sont chiffrés (AES-256-GCM) dans la base comme dans les cookies ; la base n'est accessible qu'au serveur du Service.</p>
 
-<h2>8. Modifications</h2>
-<p>Cette politique peut évoluer ; la date de mise à jour en haut de page sera alors modifiée.</p>
+<h2>11. Mineurs</h2>
+<p>Le Service s'adresse aux personnes autorisées à utiliser les plateformes reliées selon leurs propres conditions. Nous ne collectons sciemment aucune donnée supplémentaire concernant des mineurs.</p>
+
+<h2>12. Modifications</h2>
+<p>Cette politique peut évoluer, notamment à l'ouverture de nouvelles plateformes ; la date de mise à jour en haut de page sera alors modifiée.</p>
 </main>
 <footer class="shell footer"><span>© TikTok Pulse</span><span><a href="/conditions.html">Conditions d'utilisation</a> · <a href="/">Accueil</a></span></footer>
 </body></html>
