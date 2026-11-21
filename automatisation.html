@@ -38,50 +38,6 @@
 .lock .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .lock .soon{border:1px solid #f5c84c66;color:var(--gold);border-radius:4px;padding:11px 18px;font:700 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase}
 .headx p{color:var(--muted);margin:6px 0 0}
-.st-card{padding:22px 24px;margin-bottom:16px}
-.st-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
-.st-head > div{flex:1;min-width:0}
-.st-head h2{font:700 18px 'Space Grotesk';margin:4px 0 4px;letter-spacing:-.02em}
-.st-head p{color:var(--muted);font-size:13px;line-height:1.55;margin:0}
-.st-step{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:9px;border:1px solid #3bf7ef66;background:#0b2033;color:var(--cyan);font:700 15px 'Space Grotesk'}
-.st-main{background:var(--cyan);border-color:var(--cyan);color:#041018;min-height:44px;padding:0 20px}
-.st-main:hover{color:#041018;filter:brightness(1.08)}
-.st-main:disabled{opacity:.4;cursor:default;filter:none}
-.st-x{border-color:#ff4c9a55;color:#ff9bbd}
-.st-area{width:100%;margin-top:12px;padding:12px 14px;border:1px solid #2d536c;border-radius:10px;background:#050d19;color:#d7eef7;font:13px/1.5 ui-monospace,Consolas,monospace;resize:vertical}
-.st-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.st-help{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
-.st-help b{color:#e6f6fb}
-.st-count{color:var(--cyan);font:700 13px 'Space Grotesk';margin-bottom:10px}
-.st-scenes{display:grid;gap:10px}
-.st-scene{display:flex;gap:14px;padding:12px;border:1px solid #2c587055;border-radius:12px;background:#ffffff04}
-.st-scene.ok{border-color:#3bf7ef44}
-.st-drop{position:relative;flex:0 0 96px;height:170px;border:1px dashed #3c6c89;border-radius:10px;display:grid;place-items:center;overflow:hidden;cursor:pointer;background:#050d19;color:#8fb0c1;text-align:center}
-.st-drop:hover,.st-drop.over{border-color:var(--cyan);color:#fff}
-.st-drop span{display:grid;justify-items:center;gap:4px;font-size:12px}
-.st-drop small{color:#6f93a6}
-.st-drop video,.st-drop img{width:100%;height:100%;object-fit:cover}
-.st-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-.st-n{font:700 13px 'Space Grotesk';color:#9fc3d4}
-.st-n em{font-style:normal;color:var(--green)}
-.st-dia{margin:0;color:#e6f6fb;font-size:14px;line-height:1.5}
-.st-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
-.st-btns .btn{min-height:36px;font-size:12px}
-.st-opts{display:grid;gap:10px;margin-bottom:4px}
-.st-opt{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#d7eef7;font-size:14px}
-.st-opt input[type=checkbox]{width:18px;height:18px;accent-color:var(--cyan)}
-.st-opt .btn{min-height:34px}
-.st-vol{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
-.st-vol input{accent-color:var(--cyan)}
-.st-render{margin-top:16px;display:grid;gap:8px;justify-items:start}
-.st-render canvas,.st-out video{width:220px;height:auto;aspect-ratio:9/16;border-radius:12px;background:#000;border:1px solid #2d536c}
-.st-bar{width:100%;max-width:420px;height:8px;border-radius:99px;background:#0b2033;overflow:hidden}
-.st-bar i{display:block;height:100%;width:0;background:var(--cyan);transition:width .2s}
-.st-out{margin-top:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
-.st-out > div{flex:1;min-width:240px}
-.st-desc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
-.st-desc{white-space:pre-wrap;margin:8px 0 12px;padding:12px 14px;border:1px solid #2c587055;border-radius:10px;background:#050d19;color:#cfe9f3;font:13px/1.5 'DM Sans'}
-@media(max-width:560px){.st-scene{flex-direction:column}.st-drop{flex-basis:auto;width:100%;height:200px}}
 </style><script src="pulse-ui.js"></script><script src="studio.js"></script></head><body data-nav="automatisation">
 <main class="shell main">
 
@@ -114,49 +70,72 @@
  </section>
 
  <div id="content" class="hidden">
-  <section class="surface st-card">
-   <div class="st-head"><span class="st-step">1</span><div><h2>L’idée et le script</h2><p>Le prompt contient tes vraies statistiques. Colle-le dans ton IA (Claude, ChatGPT…), puis recolle sa réponse ici.</p></div></div>
-   <button type="button" class="btn st-main" id="stPrompt" data-icon="copy">Copier le prompt pour mon IA</button>
-   <textarea id="stAnswer" class="st-area" rows="5" placeholder="Colle ici la réponse de ton IA (le JSON)…"></textarea>
-   <div class="st-row"><button type="button" class="btn" id="stParse" data-icon="zap">Découper en scènes</button></div>
+
+  <section class="surface st-card st-invite hidden" id="stInvite">
+   <h2>Configure tes IA pour commencer</h2>
+   <p id="stInviteText"></p>
+   <a class="btn st-main" href="/parametres.html#studio" data-icon="gear">Configurer dans Paramètres</a>
   </section>
 
-  <div id="stProject" class="hidden">
-   <section class="surface st-card">
-    <div class="st-head"><span class="st-step">2</span><div><h2 id="stTitle"></h2><p id="stHook"></p></div><button type="button" class="btn st-x" id="stNew">Nouveau projet</button></div>
-    <p class="st-help">Pour chaque scène : copie le <b>prompt image</b> dans ChatGPT, puis anime l’image dans <b>Grok Imagine</b> avec le <b>prompt Grok</b> (Grok ajoute les voix). Dépose ensuite le clip dans la case de la scène.</p>
-    <div class="st-count" id="stCount"></div>
-    <div class="st-scenes" id="stScenes"></div>
+  <div id="stMain" class="hidden">
+   <!-- Tes IA (résumé ; réglages dans Paramètres) -->
+   <section class="surface st-card st-settings">
+    <div class="st-iarow">
+     <div class="st-iasum"><span id="stIaSummary"></span> · <a class="st-link" href="/parametres.html#studio">Modifier</a></div>
+     <div class="st-spend"><span class="st-lbl">Dépenses API ce mois-ci</span><b id="stSpent"></b> / <span id="stBudgetVal"></span><div class="st-bar small"><i id="stBudgetBar"></i></div></div>
+    </div>
    </section>
 
+   <!-- 1. Propositions -->
    <section class="surface st-card">
-    <div class="st-head"><span class="st-step">3</span><div><h2>Le montage</h2><p>Assemblé dans ton navigateur, au format vertical 9:16. Garde cet onglet ouvert pendant le montage.</p></div></div>
-    <div class="st-opts">
-     <label class="st-opt"><input type="checkbox" id="stSubs" checked> Sous-titres automatiques (dialogues)</label>
-     <div class="st-opt"><span>Musique de fond : <b id="stMusicName">Aucune</b></span>
-      <label class="btn"><input type="file" id="stMusic" accept="audio/*" hidden>Choisir</label>
-      <button type="button" class="btn st-x" id="stMusicX">Retirer</button>
-      <label class="st-vol">Volume <input type="range" id="stVol" min="0" max="60" value="15"></label>
-     </div>
-    </div>
-    <div class="st-row"><button type="button" class="btn st-main" id="stMake" data-icon="film" disabled>Créer la vidéo</button></div>
-    <div class="st-render hidden" id="stRender">
-     <canvas id="stCanvas" width="1080" height="1920"></canvas>
-     <div class="st-bar"><i id="stProg"></i></div><p class="st-help" id="stProgTxt"></p>
-    </div>
-    <div class="st-out hidden" id="stOut">
-     <video id="stVideo" controls playsinline></video>
-     <div>
-      <a class="btn st-main" id="stDl" data-icon="share">Télécharger la vidéo</a>
-      <p class="st-help">Format : <span id="stFormat"></span></p>
-      <div class="st-desc-head"><b>Description et hashtags</b><button type="button" class="btn" id="stCopyDesc" data-icon="copy">Copier</button></div>
-      <pre class="st-desc" id="stDesc"></pre>
-      <p class="st-help">Publie-la toi-même sur TikTok. L’envoi direct dans tes brouillons TikTok arrivera plus tard.</p>
-     </div>
-    </div>
+    <div class="st-head"><span class="st-step">1</span><div><h2>Tes prochains épisodes</h2><p>Proposés à partir de tes vraies statistiques. Choisis-en un, ou décris ta propre idée.</p></div><button type="button" class="btn" id="stMoreIdeas" data-icon="refresh"><span id="stIdeasAuto">Autres idées</span></button></div>
+    <div class="st-keyrow hidden" id="stIdeasSub"><button type="button" class="btn st-main" id="stSubIdeas" data-icon="copy">Obtenir des idées avec mon abonnement</button></div>
+    <div class="st-ideas" id="stIdeas"></div>
+    <div class="st-keyrow"><input type="text" id="stOwn" class="st-input" placeholder="Ou ton idée : « Partie 3 de Sarah & Amina, la vérité éclate au mariage »"><button type="button" class="btn" id="stOwnGo" data-icon="zap">Écrire le script</button></div>
+    <p class="st-help hidden" id="stScriptWait">Grok écrit le script…</p>
    </section>
+
+   <!-- 2. Scènes -->
+   <div id="stProject" class="hidden">
+    <section class="surface st-card">
+     <div class="st-head"><span class="st-step">2</span><div><h2 id="stTitle"></h2><p id="stHook"></p></div><button type="button" class="btn st-x" id="stNew">Nouveau projet</button></div>
+     <div class="st-quote"><p id="stQuote"></p><div class="st-real">Coût réel de cette vidéo : <b id="stReal"></b></div></div>
+     <div class="st-row"><button type="button" class="btn st-main" id="stGenAll"></button></div>
+     <div class="st-count" id="stCount"></div>
+     <div class="st-scenes" id="stScenes"></div>
+     <p class="st-help">Tu peux aussi déposer ton propre clip dans la case d’une scène.</p>
+    </section>
+
+    <!-- 3. Montage -->
+    <section class="surface st-card">
+     <div class="st-head"><span class="st-step">3</span><div><h2>Le montage</h2><p>Lancé tout seul quand toutes les scènes sont générées par l’API (sinon, clique sur « Refaire le montage »). Assemblé dans ton navigateur, au format 9:16 : garde cet onglet ouvert.</p></div></div>
+     <div class="st-opts">
+      <label class="st-opt"><input type="checkbox" id="stSubs" checked> Sous-titres automatiques (dialogues)</label>
+      <div class="st-opt"><span>Musique de fond : <b id="stMusicName">Aucune</b></span>
+       <label class="btn"><input type="file" id="stMusic" accept="audio/*" hidden>Choisir</label>
+       <button type="button" class="btn st-x" id="stMusicX">Retirer</button>
+       <label class="st-vol">Volume <input type="range" id="stVol" min="0" max="60" value="15"></label>
+      </div>
+     </div>
+     <div class="st-row"><button type="button" class="btn" id="stMake" data-icon="film" disabled>Refaire le montage</button></div>
+     <div class="st-render hidden" id="stRender">
+      <canvas id="stCanvas" width="1080" height="1920"></canvas>
+      <div class="st-bar"><i id="stProg"></i></div><p class="st-help" id="stProgTxt"></p>
+     </div>
+     <div class="st-out hidden" id="stOut">
+      <video id="stVideo" controls playsinline></video>
+      <div>
+       <a class="btn st-main" id="stDl" data-icon="share">Télécharger la vidéo</a>
+       <p class="st-help">Format : <span id="stFormat"></span></p>
+       <div class="st-desc-head"><b>Description et hashtags</b><button type="button" class="btn" id="stCopyDesc" data-icon="copy">Copier</button></div>
+       <pre class="st-desc" id="stDesc"></pre>
+       <p class="st-help">Publie-la toi-même sur TikTok. L’envoi direct dans tes brouillons TikTok arrivera plus tard.</p>
+      </div>
+     </div>
+    </section>
+   </div>
   </div>
-  <p class="fine">Tout reste sur ton appareil : ton projet et tes clips ne sont pas envoyés sur nos serveurs. L’automatisation utilise tes propres abonnements d’IA (Claude ou ChatGPT, Grok), qui ne sont pas inclus.</p>
+  <p class="fine">Tes images et tes clips restent sur ton appareil. Les générations par API sont payées directement aux fournisseurs avec tes clés ; TikTok Pulse n’enregistre que le coût, pour ton suivi et ton plafond.</p>
  </div>
  <div id="error" class="error" role="alert"></div>
 </main>

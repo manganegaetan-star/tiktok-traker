@@ -16,6 +16,8 @@ const PORT = process.env.PORT || 3000;
 // que les cookies de connexion soient « Secure » et que
 // l'adresse de retour TikTok soit en https.
 app.set("trust proxy", true);
+// Studio : l'image de départ d'un clip est envoyée en base64 (quelques Mo).
+app.use("/api/studio/video", express.json({ limit: "16mb" }));
 app.use(express.json({ limit: "10kb" }));
 
 // Connexion TikTok + API officielle. Monté EN PREMIER :

@@ -827,6 +827,7 @@ module.exports = function mountTikTokAuth(app) {
     }
 
     youtube.mountRoutes(app, { maxFor, limitMessage, countAll });
+    require("./studio-api")(app, { db, config, seal, unseal, readGoogle, formuleOfDoc });
 
     // Affiche un compte relié (TikTok le plus récent, sinon YouTube) ; sinon page « Relier un compte ».
     async function activateAny(req, res, store, uid, secret) {
