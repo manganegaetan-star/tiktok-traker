@@ -122,7 +122,7 @@ th.n{text-align:right}
    <h1 id="hTitle">Ton compte <em>à la loupe.</em></h1>
    <p id="hSub">Analyse calculée à partir de toutes tes vidéos publiques.</p>
   </div>
-  <div class="head-actions"><div id="pickerSlot"></div><button class="btn" id="reload" type="button"><span data-icon="refresh">Actualiser l'analyse</span></button></div>
+  <div class="head-actions"><div id="pickerSlot"></div></div>
  </section>
 
  
@@ -243,13 +243,12 @@ function group(videos, keyFn, labels) {
 }
 
 async function load(force) {
-  $('reload').disabled = true; error('');
+  error('');
   if (force) { $('loading').classList.remove('hidden'); $('content').classList.add('hidden'); }
   try {
     DATA = await fetchAll(force);
     const premium = DATA.me.premium === true;
     $('lock').classList.toggle('hidden', premium);
-    $('reload').classList.toggle('hidden', !premium);
     if (premium) {
       $('loading').classList.add('hidden');
       $('content').classList.remove('hidden');
@@ -260,9 +259,7 @@ async function load(force) {
     else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; setupGoogle(); }
   }
   catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
-  finally { $('reload').disabled = false; }
 }
-$('reload').addEventListener('click', () => load(true));
 
 // ---------- Suivi heure par heure (relevés enregistrés, premium) ----------
 const fmtDate = ms => new Date(ms).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

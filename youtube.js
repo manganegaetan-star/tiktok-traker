@@ -130,6 +130,8 @@ module.exports = function createYouTube(d) {
     const num = x => (x === undefined || x === null || x === "" || !Number.isFinite(Number(x)) ? null : Number(x));
     const thumb = t => t?.maxres?.url || t?.high?.url || t?.medium?.url || t?.default?.url || null;
 
+    const isPublic = v => v.status?.privacyStatus === "public";
+
     function cleanVideo(v) {
         return {
             id: v.id,
@@ -185,10 +187,11 @@ module.exports = function createYouTube(d) {
             const ids = (pl.items || []).map(i => i.contentDetails?.videoId).filter(Boolean);
             if (!ids.length) return { videos: [], cursor: null, hasMore: false };
 
-            const vs = await ytCall(yt.accessToken, `/videos?part=snippet,statistics,contentDetails&id=${ids.join(",")}`);
+            const vs = await ytCall(yt.accessToken, `/videos?part=snippet,statistics,contentDetails,status&id=${ids.join(",")}`);
             const byId = new Map((vs.items || []).map(v => [v.id, v]));
             return {
-                videos: ids.map(id => byId.get(id)).filter(Boolean).map(cleanVideo),
+                // Vidéos publiques uniquement (pas de privées, non répertoriées ni programmées).
+                videos: ids.map(id => byId.get(id)).filter(v => v && isPublic(v)).map(cleanVideo),
                 cursor: pl.nextPageToken || null,
                 hasMore: Boolean(pl.nextPageToken)
             };
@@ -197,9 +200,9 @@ module.exports = function createYouTube(d) {
 
     async function video(yt, id) {
         return d.cached(`yt:video:${yt.channelId}:${id}`, VIDEO_CACHE_MS, async () => {
-            const j = await ytCall(yt.accessToken, `/videos?part=snippet,statistics,contentDetails&id=${encodeURIComponent(id)}`);
+            const j = await ytCall(yt.accessToken, `/videos?part=snippet,statistics,contentDetails,status&id=${encodeURIComponent(id)}`);
             const v = j.items?.[0];
-            if (!v || v.snippet?.channelId !== yt.channelId) return null;
+            if (!v || v.snippet?.channelId !== yt.channelId || !isPublic(v)) return null;
             return cleanVideo(v);
         });
     }
