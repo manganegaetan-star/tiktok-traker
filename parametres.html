@@ -71,6 +71,7 @@
   <div class="micro">Préférences</div>
   <h2>Affichage</h2>
   <p class="sub">Enregistré sur cet appareil.</p>
+  <p class="prefs-off hidden" id="prefsOff">Tu as refusé certaines préférences : ces réglages ne sont pas tous mémorisés. Pour les garder, active les préférences dans <button type="button" onclick="PulseUI.cookies(true)">Gérer les cookies</button>.</p>
   <div class="pref">
    <div><b>Vidéo à l’ouverture de « En direct »</b><span>Celle que tu suivais la dernière fois, ou ta dernière vidéo publiée.</span></div>
    <div class="seg" data-pref="tp_open" data-def="last"><button type="button" data-v="last">Dernière suivie</button><button type="button" data-v="latest">Dernière publiée</button></div>
@@ -289,6 +290,8 @@ function openSub(g, max) {
 }
 $('subClose')?.addEventListener('click', () => $('subDlg').close());
 
+// Préférences refusées (cookies) : on le signale.
+if (!PulseUI.prefsAllowed('ouverture') || !PulseUI.prefsAllowed('periode')) $('prefsOff').classList.remove('hidden');
 // Préférences enregistrées dans le navigateur.
 document.querySelectorAll('.seg[data-pref]').forEach(seg => {
   let cur = seg.dataset.def;

@@ -132,6 +132,7 @@
   //   plan : vignette de la formule (gratuit, pro, createur) ;
   //   mobile: false : absent de la barre du bas ; mobileAt : position dans la barre du bas.
   const PLANS = { gratuit: 'Gratuit', pro: 'Statistiques', createur: 'Créateur' };
+  const SHORT = { pro: 'Stats' };
   const MENU = [
     { title: 'Mes stats', items: [
       { key: 'direct', href: '/', icon: 'live', label: 'En direct', short: 'Direct', live: true, plan: 'gratuit' },
@@ -162,57 +163,94 @@
     a.dataset.key = it.key;
     a.innerHTML = '<span class="pn-ic">' + icon(it.icon) + (it.live && compact ? '<i class="pn-live"></i>' : '') + '</span><span class="pn-label">' + (compact && it.short ? it.short : it.label) + (it.live && !compact ? '<i class="pn-live"></i>' : '') + '</span>'
       + (it.plan && !compact ? '<span class="pn-tag plan-' + it.plan + '">' + PLANS[it.plan] + '</span>' : '')
-      + (it.plan && it.plan !== 'gratuit' && compact ? '<span class="pn-tag pro plan-' + it.plan + '" hidden title="' + PLANS[it.plan] + '">★</span>' : '');
+      + (it.plan && compact ? '<span class="pn-tag plan-' + it.plan + '">' + (SHORT[it.plan] || PLANS[it.plan]) + '</span>' : '');
     return a;
   }
 
   // ---------- Cookies : choix enregistré une fois par compte ----------
   // Essentiels : toujours actifs (connexion, sécurité, mémorisation de ce choix).
-  // Préférences : mémorisation de la vidéo suivie, de la période de l'analyse, etc. (stockage local « tp_… »).
+  // Préférences : chaque réglage mémorisé dans le stockage local peut être accepté ou refusé séparément.
   const CONSENT_KEY = 'tp_consent';
+  const PREFS = [
+    { id: 'suivi', match: k => k.startsWith('tp_suivi:'), label: 'Vidéo suivie',
+      desc: 'En revenant sur « En direct », tu retrouves la vidéo que tu suivais, pour chacun de tes comptes.' },
+    { id: 'ouverture', match: k => k === 'tp_open', label: 'Vidéo à l’ouverture',
+      desc: 'Ton choix entre « dernière suivie » et « dernière publiée », réglé dans Paramètres.' },
+    { id: 'periode', match: k => k === 'tp_hperiod', label: 'Période de l’analyse',
+      desc: '« 24 heures » ou « 7 jours » par défaut quand tu ouvres l’Analyse complète.' }
+  ];
   function readConsent() { try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); } catch { return null; } }
-  function prefsAllowed() { const c = readConsent(); return !c || c.prefs !== false; }
+  function allowed(id) {
+    const c = readConsent();
+    if (!c) return true;
+    if (c.detail && typeof c.detail[id] === 'boolean') return c.detail[id];
+    return c.prefs !== false;
+  }
+  // Sans argument : vrai si toutes les préférences sont acceptées.
+  function prefsAllowed(id) { return id ? allowed(id) : PREFS.every(p => allowed(p.id)); }
+  function prefOf(k) { return PREFS.find(p => p.match(k)); }
 
-  // Préférences refusées : on n'enregistre plus rien en « tp_… » (sauf le choix lui-même).
+  // Préférence refusée : on ne l'enregistre pas.
   (function guardStorage() {
     try {
       const orig = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) {
-        if (this === window.localStorage && typeof k === 'string' && k.startsWith('tp_') && k !== CONSENT_KEY && !prefsAllowed()) return;
+        if (this === window.localStorage && typeof k === 'string' && k !== CONSENT_KEY) {
+          const p = prefOf(k);
+          if (p && !allowed(p.id)) return;
+        }
         return orig.call(this, k, v);
       };
     } catch { /* ignore */ }
   })();
-  function clearPrefs() {
-    try { Object.keys(localStorage).filter(k => k.startsWith('tp_') && k !== CONSENT_KEY).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+  function clearRefused() {
+    try { Object.keys(localStorage).forEach(k => { const p = prefOf(k); if (p && !allowed(p.id)) localStorage.removeItem(k); }); } catch { /* ignore */ }
   }
 
-  async function saveConsent(prefs) {
-    try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs, t: Date.now() })); } catch { /* ignore */ }
-    if (!prefs) clearPrefs();
-    try { await fetch('/auth/consentement', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefs }) }); } catch { /* ignore */ }
+  async function saveConsent(detail) {
+    const prefs = PREFS.some(p => detail[p.id]);
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs, detail, t: Date.now() })); } catch { /* ignore */ }
+    clearRefused();
+    try { await fetch('/auth/consentement', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefs, detail }) }); } catch { /* ignore */ }
   }
 
   function cookies(manage) {
     if (document.querySelector('.pcookie')) return;
-    const cur = readConsent();
     const box = document.createElement('div');
-    box.className = 'pcookie';
+    // Bloque le site tant qu'aucun choix n'est fait (sauf sur les pages légales, pour pouvoir les lire).
+    const wall = !manage && !['cgu', 'confidentialite'].includes(document.body.dataset.nav);
+    box.className = 'pcookie' + (wall ? ' pcookie-wall' : '');
+    if (wall) document.documentElement.classList.add('pcookie-lock');
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-label', 'Cookies');
     box.innerHTML = '<div class="pcookie-card">'
       + '<div class="pcookie-head">' + icon('cookie') + '<b>Cookies et stockage</b></div>'
       + '<p>TikTok Pulse utilise uniquement des cookies essentiels (connexion, sécurité) et, si tu l’acceptes, un stockage de tes préférences d’affichage. Aucun cookie publicitaire ni de mesure d’audience. <a href="/confidentialite.html#cookies">En savoir plus</a></p>'
       + '<div class="pcookie-opts" hidden>'
-      + '<label class="pcookie-opt"><span><b>Essentiels</b><small>Connexion, sécurité, mémorisation de ce choix. Toujours actifs.</small></span><input type="checkbox" checked disabled></label>'
-      + '<label class="pcookie-opt"><span><b>Préférences</b><small>Vidéo suivie, période de l’analyse et autres réglages, sur cet appareil.</small></span><input type="checkbox" id="pcPrefs"></label>'
+      + '<div class="pcookie-opt ess"><span><b>Essentiels</b><small>Sans eux, le site ne peut pas fonctionner. Toujours actifs.</small>'
+      + '<details><summary>Voir à quoi ils servent</summary><ul>'
+      + '<li><b>Connexion TikTok</b> : garde ta session ouverte pour afficher tes statistiques sans te reconnecter à chaque page.</li>'
+      + '<li><b>Compte TikTok Pulse</b> : te reconnaît avec ton compte Google, ton abonnement et tes comptes reliés.</li>'
+      + '<li><b>Compte affiché</b> : retient quel compte (TikTok ou YouTube) tu regardes quand tu en as plusieurs.</li>'
+      + '<li><b>Sécurité de connexion</b> : vérifie, pendant 10 minutes, que c’est bien toi qui reviens de TikTok, Google ou YouTube (protection contre le détournement de compte).</li>'
+      + '<li><b>Ton choix de cookies</b> : pour ne pas te le redemander.</li>'
+      + '</ul><p>Tout est chiffré, rien n’est publicitaire ni partagé.</p></details></span><input type="checkbox" checked disabled aria-label="Essentiels, toujours actifs"></div>'
+      + '<div class="pcookie-opt"><span><b>Préférences</b><small>Mémorise tes réglages d’affichage sur cet appareil. Si tu refuses, le site marche pareil : tu refais juste tes choix à chaque visite.</small>'
+      + '<details><summary>Voir à quoi elles servent et choisir</summary><div class="pcookie-subs">'
+      + PREFS.map(p => '<label class="pcookie-sub"><span><b>' + p.label + '</b><small>' + p.desc + '</small></span><input type="checkbox" data-pref="' + p.id + '"></label>').join('')
+      + '</div></details></span><input type="checkbox" id="pcPrefs" aria-label="Toutes les préférences"></div>'
       + '</div>'
-      + '<div class="pcookie-btns"><button type="button" class="btn" data-a="refuse">Tout refuser</button><button type="button" class="btn" data-a="custom">Personnaliser</button><button type="button" class="btn pcookie-ok" data-a="accept">Tout accepter</button></div>'
+      + '<div class="pcookie-btns"><button type="button" class="btn" data-a="refuse">Continuer avec l’essentiel</button><button type="button" class="btn" data-a="custom">Personnaliser</button><button type="button" class="btn pcookie-ok" data-a="accept">Tout accepter</button></div>'
       + '</div>';
     document.body.append(box);
     const opts = box.querySelector('.pcookie-opts');
-    const chk = box.querySelector('#pcPrefs');
-    chk.checked = cur ? cur.prefs !== false : true;
+    const all = box.querySelector('#pcPrefs');
+    const subs = [...box.querySelectorAll('[data-pref]')];
+    subs.forEach(c => { c.checked = allowed(c.dataset.pref); });
+    const sync = () => { const n = subs.filter(c => c.checked).length; all.checked = n === subs.length; all.indeterminate = n > 0 && n < subs.length; };
+    sync();
+    all.addEventListener('change', () => { subs.forEach(c => { c.checked = all.checked; }); sync(); });
+    subs.forEach(c => c.addEventListener('change', sync));
     const custom = box.querySelector('[data-a=custom]');
     const open = () => { opts.hidden = false; custom.textContent = 'Enregistrer mon choix'; custom.dataset.a = 'save'; };
     if (manage) open();
@@ -220,9 +258,12 @@
       const b = e.target.closest('button[data-a]'); if (!b) return;
       const a = b.dataset.a;
       if (a === 'custom') return open();
-      const prefs = a === 'accept' ? true : a === 'refuse' ? false : chk.checked;
+      const detail = {};
+      PREFS.forEach(p => { detail[p.id] = a === 'accept' ? true : a === 'refuse' ? false : subs.find(c => c.dataset.pref === p.id).checked; });
       box.remove();
-      await saveConsent(prefs);
+      document.documentElement.classList.remove('pcookie-lock');
+      await saveConsent(detail);
+      if (manage) location.reload();
     });
   }
 
@@ -231,14 +272,18 @@
     let d = null;
     try { const r = await fetch('/auth/consentement', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) d = await r.json(); } catch { /* ignore */ }
     if (d && d.choix) {
-      try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs: d.choix.prefs, t: d.choix.date || Date.now() })); } catch { /* ignore */ }
-      if (!d.choix.prefs) clearPrefs();
+      try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs: d.choix.prefs, detail: d.choix.detail || null, t: d.choix.date || Date.now() })); } catch { /* ignore */ }
+      clearRefused();
       return;
     }
     const local = readConsent();
     if (local) {
       // Choix fait avant la connexion : on le rattache au compte.
-      if (d && d.compte) saveConsent(local.prefs !== false);
+      if (d && d.compte) {
+        const detail = {};
+        PREFS.forEach(p => { detail[p.id] = allowed(p.id); });
+        saveConsent(detail);
+      }
       return;
     }
     cookies(false);

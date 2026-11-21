@@ -940,7 +940,7 @@ module.exports = function mountTikTokAuth(app) {
         try {
             const snap = await ref.get();
             const ch = snap.exists ? snap.get("consentement") : null;
-            res.json({ compte: true, choix: ch && ch.version === CONSENT_VERSION ? { prefs: ch.prefs === true, date: ch.date?.toMillis?.() || null } : null });
+            res.json({ compte: true, choix: ch && ch.version === CONSENT_VERSION ? { prefs: ch.prefs === true, detail: ch.detail || null, date: ch.date?.toMillis?.() || null } : null });
         } catch (error) {
             console.warn("[CONSENTEMENT] Lecture impossible :", error.message);
             res.json({ compte: true, choix: null });
@@ -949,10 +949,14 @@ module.exports = function mountTikTokAuth(app) {
 
     app.post("/auth/consentement", async (req, res) => {
         const prefs = req.body?.prefs === true;
+        // Détail par préférence (vidéo suivie, vidéo à l'ouverture, période de l'analyse).
+        const raw = req.body?.detail && typeof req.body.detail === "object" ? req.body.detail : {};
+        const detail = {};
+        ["suivi", "ouverture", "periode"].forEach(k => { if (typeof raw[k] === "boolean") detail[k] = raw[k]; });
         const ref = consentRef(req);
         if (!ref) return res.json({ ok: true, compte: false });
         try {
-            await ref.set({ consentement: { prefs, version: CONSENT_VERSION, date: new Date() } }, { merge: true });
+            await ref.set({ consentement: { prefs, detail, version: CONSENT_VERSION, date: new Date() } }, { merge: true });
             res.json({ ok: true, compte: true });
         } catch (error) {
             console.warn("[CONSENTEMENT] Enregistrement impossible :", error.message);
