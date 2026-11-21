@@ -5,14 +5,14 @@
 <style>
 .main{padding-block:38px 10px}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
-.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .head h1{font:700 clamp(30px,4.2vw,54px)/1 'Space Grotesk';letter-spacing:-.06em;margin:14px 0 8px}
 .head h1 em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 50%,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .head p{color:#8eafc2;margin:0;font-size:14px;line-height:1.6;max-width:640px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .kpi{padding:20px 22px}
 .kpi strong{display:block;font:700 clamp(22px,2.4vw,32px) 'Space Grotesk';margin-top:12px;font-variant-numeric:tabular-nums;color:#f0fdff}
-.kpi span{display:block;font-size:12px;color:#7895a9;margin-top:5px}
+.kpi span{display:block;font-size:12px;color:#8aa9bb;margin-top:5px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
 .card{padding:24px 26px;margin-top:16px;overflow:hidden}
 .grid2 .card{margin-top:0}
@@ -21,7 +21,7 @@
 .tips{display:grid;gap:10px}
 .tip{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid #2c587050;border-radius:6px;background:#07172799;font-size:14px;line-height:1.55;color:#cfe9f3}
 .tip b{color:#fff}
-.tip .ic{flex:0 0 28px;height:28px;border-radius:6px;display:grid;place-items:center;background:#0b2233;border:1px solid #3bf7ef44}
+.tip .ic{color:var(--cyan);flex:0 0 28px;height:28px;border-radius:6px;display:grid;place-items:center;background:#0b2233;border:1px solid #3bf7ef44}
 .bars{display:grid;gap:9px}
 .bar{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:12px;align-items:center;font-size:13px}
 .bar .lbl{color:#a9c7d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -30,39 +30,39 @@
 .bar.best .fill{background:linear-gradient(90deg,#c48a2c,var(--gold))}
 .bar.best .lbl,.bar.best .val{color:var(--gold)}
 .bar .val{text-align:right;font-variant-numeric:tabular-nums;color:#e9fcff;font-weight:700}
-.bar .val small{display:block;font-weight:400;color:#6f8ea2;font-size:10px}
+.bar .val small{display:block;font-weight:400;color:#8aa9bb;font-size:10px}
 .timeline{display:flex;align-items:flex-end;gap:4px;height:190px;padding-top:10px;border-bottom:1px solid #2c587070}
 .timeline .col{flex:1 1 0;min-width:4px;background:linear-gradient(180deg,var(--cyan),#1c5f8f);border-radius:3px 3px 0 0;position:relative;cursor:default;transition:filter .2s}
 .timeline .col:hover{filter:brightness(1.35)}
 .timeline .col.top{background:linear-gradient(180deg,var(--gold),#8a5f1e)}
-.tl-axis{display:flex;justify-content:space-between;color:#6f8ea2;font-size:11px;margin-top:6px}
+.tl-axis{display:flex;justify-content:space-between;color:#8aa9bb;font-size:12px;margin-top:6px}
 .tl-tip{position:fixed;pointer-events:none;z-index:20;background:#0b1d30;border:1px solid #3bf7ef66;border-radius:6px;padding:8px 10px;font-size:12px;color:#e9fcff;max-width:240px;display:none;box-shadow:0 10px 30px #0008}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{color:#7f9caf;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:0 8px 10px}
+th{color:#93b2c4;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:0 8px 10px}
 td{padding:10px 8px;border-top:1px solid #2c587045;vertical-align:middle}
 td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 th.n{text-align:right}
 .vt{display:flex;align-items:center;gap:10px;min-width:0}
 .vt img{width:34px;height:46px;object-fit:cover;border-radius:3px;background:#0b2233;flex:0 0 34px}
 .vt span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;color:#d7eef7}
-.rank{color:#6f8ea2;font:700 12px 'Space Grotesk';width:22px}
+.rank{color:#8aa9bb;font:700 12px 'Space Grotesk';width:22px}
 .tabs{display:flex;gap:6px;margin-bottom:14px}
 .tabs button{background:transparent;border:1px solid #3c6c8966;color:#9fc3d4;border-radius:4px;padding:7px 12px;font:700 10px 'Space Grotesk';letter-spacing:.12em}
 .tabs button[aria-selected=true]{border-color:var(--cyan);color:#fff;background:#0b2033}
-.empty{color:#6f8ea2;font-size:13px}
-.loading{padding:60px 0;text-align:center;color:#7f9caf}
-.note{color:#5f8399;font-size:11px;margin-top:14px;line-height:1.6}
+.empty{color:#8aa9bb;font-size:13px}
+.loading{padding:0 0 40px;text-align:center;color:#93b2c4}
+.note{color:#86a6b8;font-size:12px;margin-top:14px;line-height:1.6}
 .filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-8px 0 22px}
-.filters .lbl{color:#7f9caf;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
+.filters .lbl{color:#93b2c4;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
 .filters button{background:transparent;border:1px solid #3c6c8966;color:#9fc3d4;border-radius:4px;padding:8px 14px;font:700 11px 'Space Grotesk';letter-spacing:.08em;cursor:pointer}
 .filters button[aria-pressed=true]{border-color:var(--cyan);color:#fff;background:#0b2033}
 .lock{padding:44px 36px;text-align:center;max-width:720px;margin:10px auto 0}
-.lock .ic{font-size:40px}
+.lock .ic{font-size:34px;color:var(--gold);width:64px;height:64px;margin:auto;border-radius:50%;display:grid!important;place-items:center;background:#f7c56a12;border:1px solid #f7c56a55}
 .lock h2{font:700 clamp(24px,3vw,34px)/1.1 'Space Grotesk';letter-spacing:-.04em;margin:14px 0 10px}
 .lock p{color:#8eafc2;line-height:1.65;margin:0 auto 22px;max-width:520px}
 .lock ul{list-style:none;padding:0;margin:0 auto 26px;max-width:440px;text-align:left;display:grid;gap:10px}
 .lock li{color:#d7eef7;font-size:14px;padding-left:28px;position:relative}
-.lock li::before{content:'✦';position:absolute;left:4px;color:var(--gold)}
+.lock li::before{content:'';position:absolute;left:6px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--gold)}
 .lock .why{text-align:left;border-top:1px solid #2c587055;margin:4px auto 26px;padding-top:22px;max-width:560px}
 .lock .why p{margin:8px 0 14px;max-width:none;font-size:14px}
 .lock .why ul{max-width:none;margin:0}
@@ -70,14 +70,14 @@ th.n{text-align:right}
 .lock .why li b{color:#e6f6fb}
 .lock .gbox{display:grid;justify-items:center;gap:10px;margin:0 auto 22px}
 .lock .gbtn{min-height:44px}
-.lock .gnote{font-size:12px;color:#7f9caf;margin:0}
+.lock .gnote{font-size:12px;color:#93b2c4;margin:0}
 .lock .gdone{border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.6;margin:0 auto 22px;max-width:520px}
 .lock .gdone b{color:#fff}
 .lock .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .lock .soon{border:1px solid #f5c84c66;color:var(--gold);border-radius:4px;padding:11px 18px;font:700 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
 @media(max-width:560px){.bar{grid-template-columns:118px minmax(0,1fr) 72px;font-size:12px}.card{padding:20px}.hide-sm{display:none}}
-</style></head><body>
+</style><script src="pulse-ui.js"></script></head><body data-nav="analyse">
 
 <main class="shell main">
  <section class="head">
@@ -86,7 +86,7 @@ th.n{text-align:right}
    <h1 id="hTitle">Ton compte <em>à la loupe.</em></h1>
    <p id="hSub">Analyse calculée à partir de toutes tes vidéos publiques.</p>
   </div>
-  <div class="head-actions"><a class="ghost" href="/">← Suivi en direct</a><button class="ghost" id="reload" type="button">↻ Actualiser l'analyse</button></div>
+  <div class="head-actions"><div id="pickerSlot"></div><button class="btn" id="reload" type="button"><span data-icon="refresh">Actualiser l'analyse</span></button></div>
  </section>
 
  <div class="filters hidden" id="filters">
@@ -96,7 +96,7 @@ th.n{text-align:right}
  </div>
 
  <section class="surface lock hidden" id="lock">
-  <div class="ic">🔒</div>
+  <div class="ic" data-icon="lock"></div>
   <div class="micro">Premium</div>
   <h2>L'analyse détaillée est réservée au premium</h2>
   <p>Le suivi en direct de tes vidéos reste gratuit. Avec le premium, tu débloques l'analyse complète de ton compte.</p>
@@ -121,11 +121,10 @@ th.n{text-align:right}
    <p class="gnote" id="gNote">Étape 1 : connecte ton compte Google. Le paiement du premium arrive bientôt.</p>
   </div>
   <div class="gdone hidden" id="gDone"></div>
-  <div class="btns"><a class="ghost" href="/">← Suivi en direct</a></div>
  </section>
 
  <div id="error" class="error" role="alert"></div>
- <div id="loading" class="loading">Analyse de tes vidéos en cours…</div>
+ <div id="loading" class="loading"><div class="kpis"><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div></div><div class="surface skel" style="height:220px;margin-top:16px"></div><p style="margin-top:16px">Analyse de tes vidéos en cours…</p></div>
 
  <div id="content" class="hidden">
   <section class="kpis">
@@ -303,7 +302,7 @@ function render({ me, videos, t }) {
     c.className = 'col' + (top3.has(v.id) ? ' top' : '');
     c.style.height = Math.max(2, v.views / maxV * 100) + '%';
     c.addEventListener('mousemove', e => {
-      tip.innerHTML = `<b>${fmt(v.views)} vues</b><br>${esc(v.title).slice(0, 90)}<br><span style="color:#7f9caf">${v.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : ''}</span>`;
+      tip.innerHTML = `<b>${fmt(v.views)} vues</b><br>${esc(v.title).slice(0, 90)}<br><span style="color:#93b2c4">${v.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : ''}</span>`;
       tip.style.display = 'block';
       tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
     });
@@ -347,17 +346,17 @@ function render({ me, videos, t }) {
   // Conseils automatiques
   const tips = [];
   const rel = (x, ref) => Math.round((x / ref - 1) * 100);
-  const add = (ic, html) => tips.push(`<div class="tip"><span class="ic">${ic}</span><span>${html}</span></div>`);
+  const add = (ic, html) => tips.push(`<div class="tip"><span class="ic">${PulseUI.icon(ic)}</span><span>${html}</span></div>`);
   const enough = r => r && r.count >= 3 && Number.isFinite(med) && med > 0;
   const best = lists.top[0];
-  if (best) add('🏆', `Ta meilleure vidéo, <b>« ${esc(short(best.title))} »</b>, a fait <b>${fmt(best.views)} vues</b>, soit <b>${(best.views / med).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}×</b> ta médiane. Inspire-toi de son sujet et de son accroche.`);
-  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('📅', `Tes vidéos <b>publiées le ${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane (sur ${bestDay.count} vidéos).`);
-  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('🕒', `Tes vidéos <b>publiées ${({ Nuit: 'la nuit', Matin: 'le matin', 'Après-midi': "l'après-midi", Soirée: 'en soirée', Tard: 'tard le soir' })[bestHour.label.split(' · ')[0]]} (${bestHour.label.split(' · ')[1]})</b> font en moyenne <b>+${rel(bestHour.value, med)} %</b> de vues (sur ${bestHour.count} vidéos).`);
-  if (enough(bestDur) && rel(bestDur.value, med) >= 15) add('⏱️', `Les vidéos de <b>${bestDur.label}</b> performent le mieux chez toi (<b>+${rel(bestDur.value, med)} %</b>).`);
-  if (enough(bestTag) && rel(bestTag.value, med) >= 15) add('#️⃣', `Le hashtag <b>${esc(bestTag.label)}</b> accompagne tes vidéos les plus vues (<b>+${rel(bestTag.value, med)} %</b>).`);
-  if (engAvg >= 8) add('💬', `Ton engagement moyen (<b>${pct(engAvg)}</b>) est solide : ta communauté réagit bien. Les commentaires aident TikTok à pousser tes vidéos.`);
-  else if (engAvg > 0) add('💬', `Ton engagement moyen est de <b>${pct(engAvg)}</b>. Pose une question ou lance un débat en fin de vidéo pour faire réagir.`);
-  if (last30 < 4) add('📈', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
+  if (best) add('trophy', `Ta meilleure vidéo, <b>« ${esc(short(best.title))} »</b>, a fait <b>${fmt(best.views)} vues</b>, soit <b>${(best.views / med).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}×</b> ta médiane. Inspire-toi de son sujet et de son accroche.`);
+  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('calendar', `Tes vidéos <b>publiées le ${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane (sur ${bestDay.count} vidéos).`);
+  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('clock', `Tes vidéos <b>publiées ${({ Nuit: 'la nuit', Matin: 'le matin', 'Après-midi': "l'après-midi", Soirée: 'en soirée', Tard: 'tard le soir' })[bestHour.label.split(' · ')[0]]} (${bestHour.label.split(' · ')[1]})</b> font en moyenne <b>+${rel(bestHour.value, med)} %</b> de vues (sur ${bestHour.count} vidéos).`);
+  if (enough(bestDur) && rel(bestDur.value, med) >= 15) add('timer', `Les vidéos de <b>${bestDur.label}</b> performent le mieux chez toi (<b>+${rel(bestDur.value, med)} %</b>).`);
+  if (enough(bestTag) && rel(bestTag.value, med) >= 15) add('hash', `Le hashtag <b>${esc(bestTag.label)}</b> accompagne tes vidéos les plus vues (<b>+${rel(bestTag.value, med)} %</b>).`);
+  if (engAvg >= 8) add('message', `Ton engagement moyen (<b>${pct(engAvg)}</b>) est solide : ta communauté réagit bien. Les commentaires aident TikTok à pousser tes vidéos.`);
+  else if (engAvg > 0) add('message', `Ton engagement moyen est de <b>${pct(engAvg)}</b>. Pose une question ou lance un débat en fin de vidéo pour faire réagir.`);
+  if (last30 < 4) add('trend', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
   $('tips').innerHTML = tips.join('') || '<div class="empty">Publie encore quelques vidéos pour obtenir des conseils personnalisés.</div>';
 
   $('note').textContent = 'Les vues médianes limitent l\'effet d\'une vidéo virale isolée. Les heures sont celles de ton appareil. Données : API officielle TikTok (vidéos publiques uniquement).';
@@ -379,6 +378,7 @@ async function load(force) {
   finally { $('reload').disabled = false; }
 }
 $('reload').addEventListener('click', () => load(true));
+PulseUI.picker($('pickerSlot'));
 
 // ---------- Connexion Google (passage premium) ----------
 async function setupGoogle() {

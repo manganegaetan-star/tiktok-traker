@@ -531,7 +531,7 @@ function usernameFromShareUrl(url) {
 // Pages et routes accessibles SANS connexion. Tout le reste
 // du site exige d'être connecté avec TikTok.
 const PUBLIC_PATHS = new Set([
-    "/connexion.html", "/premium.css",
+    "/connexion.html", "/premium.css", "/pulse-ui.js", "/relier.html",
     "/confidentialite.html", "/conditions.html",
     "/test"
 ]);
@@ -809,10 +809,36 @@ module.exports = function mountTikTokAuth(app) {
                 return res.json({ next: "/" });
             }
 
-            res.json({ next: "/auth/tiktok", needTikTok: true });
+            res.json({ next: "/relier.html", needTikTok: true });
         } catch (error) {
             console.warn("[GOOGLE] Connexion impossible :", error.message);
             res.status(500).json({ error: "Connexion impossible, réessaie" });
+        }
+    });
+
+    // Compte Google connecté (cookie), sans exiger de session TikTok : page « Relier un compte ».
+    app.get("/auth/google/me", async (req, res) => {
+        const c = config(req);
+        const google = c.ready ? readGoogle(req, c.secret) : null;
+        const store = db();
+
+        res.set("Cache-Control", "no-store");
+        if (!google || !store) return res.json({ google: null });
+
+        try {
+            const accountRef = store.collection("comptes").doc(google.uid);
+            const [account, list] = await Promise.all([accountRef.get(), accountRef.collection("tiktok").get()]);
+            if (!account.exists) { clearCookie(req, res, GOOGLE_COOKIE); return res.json({ google: null }); }
+
+            const premium = account.get("premium") === true;
+            res.json({
+                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
+                count: list.size,
+                max: premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE
+            });
+        } catch (error) {
+            console.warn("[GOOGLE] Lecture du compte impossible :", error.message);
+            res.json({ google: null });
         }
     });
 
@@ -827,7 +853,7 @@ module.exports = function mountTikTokAuth(app) {
 
         try {
             const session = await pickStoredSession(store, google.uid, c.secret);
-            if (!session) return res.json({ next: "/auth/tiktok", needTikTok: true });
+            if (!session) return res.json({ next: "/relier.html", needTikTok: true });
 
             setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
                 (session.refreshExpires - Date.now()) / 1000);
@@ -922,6 +948,12 @@ module.exports = function mountTikTokAuth(app) {
         if (!google || !store || !openId) return res.status(400).json({ error: "Changement impossible" });
 
         try {
+            // Passer d'un compte à l'autre est réservé au premium.
+            const account = await store.collection("comptes").doc(google.uid).get();
+            if (!account.exists || account.get("premium") !== true) {
+                return res.status(403).json({ error: "Le premium permet de passer d'un compte à l'autre" });
+            }
+
             const doc = await store.collection("comptes").doc(google.uid).collection("tiktok").doc(openId).get();
             const session = doc.exists ? unseal(doc.get("jeton"), c.secret) : null;
 
@@ -976,6 +1008,13 @@ module.exports = function mountTikTokAuth(app) {
 
         try {
             const accountRef = store.collection("comptes").doc(google.uid);
+            const account = await accountRef.get();
+
+            // Abonnement premium en cours : il faut d'abord le résilier (ou attendre sa fin).
+            if (account.exists && account.get("premium") === true) {
+                return res.status(409).json({ error: "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." });
+            }
+
             const list = await accountRef.collection("tiktok").get();
             const batch = store.batch();
 

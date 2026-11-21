@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813"><title>TikTok Pulse — Mon espace</title>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813"><title>TikTok Pulse — Mon espace</title><link rel="stylesheet" href="premium.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-:root{color-scheme:dark;--bg:#08090e;--panel:#11131b;--panel2:#161924;--line:#292d3b;--muted:#8e93a7;--text:#f5f6fc;--cyan:#42e9e3;--pink:#ff477e;--green:#5ff0b1;--violet:#a78bfa}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 650px 400px at 80% -15%,#38203970,transparent),radial-gradient(ellipse 500px 300px at 0 40%,#0c3d4550,transparent),var(--bg);font:15px 'DM Sans',sans-serif;color:var(--text);min-height:100vh}button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.shell{max-width:1330px;margin:auto;padding:0 36px}.topbar{height:88px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff10}.brand{display:flex;align-items:center;gap:12px;font:700 21px 'Space Grotesk'}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(140deg,#3cebe2,#fe487f);color:#08090e;font-size:25px;box-shadow:0 0 35px #43e9e325}.brand span span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:13px}.pill{border:1px solid var(--line);background:#141620;border-radius:50px;padding:9px 14px;font-size:12px;color:#b7baca;font-weight:700;letter-spacing:.04em}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7b8191;margin-right:7px}.dot.on{background:var(--green);box-shadow:0 0 0 4px #5ff0b119;animation:breathe 2s infinite}@keyframes breathe{50%{opacity:.5}}.main{padding:50px 0 70px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.headline{font:700 clamp(34px,4.3vw,59px)/1.07 'Space Grotesk';letter-spacing:-.05em;margin:14px 0}.headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#c0a5ff,var(--pink));background-clip:text;color:transparent}.lead{color:#a1a5b6;max-width:650px;line-height:1.65;margin:0 0 30px}.search{display:flex;gap:12px;background:#151720;border:1px solid #343747;border-radius:19px;padding:9px;box-shadow:0 18px 60px #0004;max-width:930px}.input-wrap{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:0 14px}.input-wrap svg{flex-shrink:0;color:var(--cyan)}.search input{width:100%;border:0;outline:0;background:transparent;color:white;padding:12px 0;font-size:14px}.search input::placeholder{color:#6e7388}.primary{border:0;border-radius:12px;background:linear-gradient(110deg,var(--cyan),#85f5e4);color:#071216;padding:14px 24px;font-weight:800;white-space:nowrap;box-shadow:0 5px 25px #40e9e322;transition:transform .2s,filter .2s}.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}.primary:disabled{opacity:.5;cursor:wait}.hint{font-size:12px;color:#777e91;margin:12px 4px 0}.dashboard{margin-top:36px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.95fr);gap:20px}.surface{background:linear-gradient(155deg,#191b27,#11131b 62%);border:1px solid #303241;border-radius:23px;box-shadow:0 12px 40px #0002}.hero{padding:30px;position:relative;overflow:hidden;min-height:335px}.hero:before{content:"";position:absolute;right:-140px;top:-160px;width:370px;height:370px;border-radius:50%;background:#40e9e30b;filter:blur(25px);pointer-events:none}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.micro{color:#8b91a4;text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:800}.live{border:1px solid #5ff0b12d;color:var(--green);background:#5ff0b10c;padding:8px 11px;border-radius:30px;font-size:11px;font-weight:800;letter-spacing:.1em}.live:before{content:"";display:inline-block;background:var(--green);width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:2px}.live.off{color:#a6a9b8;border-color:#ffffff1b;background:#ffffff06}.live.off:before{background:#777e91}.counter-area{margin:42px 0 31px}.number{display:flex;align-items:center;flex-wrap:nowrap;font:700 clamp(42px,5.4vw,82px)/1 'Space Grotesk';letter-spacing:-.055em;font-variant-numeric:tabular-nums;white-space:nowrap;min-height:1.15em}.digit{display:inline-block;position:relative;overflow:hidden;height:1.16em;width:.66em;flex:0 0 .66em}.digit>span{position:absolute;inset:0 auto auto 0;width:100%;height:100%;display:block;will-change:transform}.digit b{height:1.16em;display:flex;align-items:center;justify-content:center;font-weight:700}.comma{display:inline-block;width:.28em;text-align:center;color:#72768a}.number-label{margin-top:9px;color:#9a9fb1;font-weight:700;font-size:12px;letter-spacing:.13em}.growth{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:13px;background:#5ff0b10b;padding:9px 12px;border-radius:10px}.growth.neutral{color:#a5aabd;background:#ffffff09}.growth.negative{color:var(--pink);background:#ff477e0c}.video{padding:23px;display:flex;gap:16px;min-height:170px}.thumb{width:110px;height:145px;flex:0 0 110px;border-radius:13px;background:linear-gradient(135deg,#2e3140,#151720);object-fit:cover;border:1px solid #ffffff15}.video-info{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}.video-title{font-size:15px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.creator{display:flex;align-items:center;gap:9px;margin-top:18px}.avatar{width:33px;height:33px;border-radius:50%;object-fit:cover;background:#292b37;border:1px solid #ffffff22}.creator-name{font-size:13px;font-weight:800}.handle{font-size:11px;color:#9298a8}.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.metric{padding:22px;min-width:0}.metric-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.metric-icon{font-size:21px}.metric-value{font:700 clamp(23px,2.4vw,35px) 'Space Grotesk';letter-spacing:-.045em;margin-top:18px;overflow:hidden;text-overflow:ellipsis}.metric-label{color:#9298aa;font-size:12px;margin-top:6px}.bottom{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:20px}.chart-panel,.profile-panel{padding:26px}.section-title{font:700 17px 'Space Grotesk';letter-spacing:-.02em}.sub{color:#84899e;font-size:12px;margin-top:5px}.chart-wrap{height:220px;position:relative;margin-top:23px}canvas{width:100%;height:100%;display:block}.empty-chart{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#777e91;font-size:13px;pointer-events:none}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:23px}.profile-stat{background:#ffffff06;border:1px solid #ffffff09;border-radius:13px;padding:17px}.profile-stat strong{display:block;font:700 22px 'Space Grotesk'}.profile-stat span{display:block;font-size:11px;color:#9196a9;margin-top:7px}.notice{margin-top:20px;font-size:12px;color:#808699;line-height:1.7}.error{margin:15px 0 0;padding:13px 16px;border:1px solid #ff477e55;background:#ff477e12;color:#ff99b4;border-radius:12px;display:none}.error.show{display:block}.footer{border-top:1px solid #ffffff12;color:#73798c;font-size:12px;padding:24px 0 38px;display:flex;justify-content:space-between;gap:12px}.hidden{display:none!important}@media(max-width:950px){.dashboard{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}.number{font-size:clamp(42px,8vw,80px)}}@media(max-width:560px){.shell{padding:0 17px}.topbar{height:72px}.brand{font-size:18px}.top-right .pill:last-child{display:none}.main{padding-top:36px}.headline{font-size:38px}.search{flex-direction:column}.primary{width:100%}.hero{padding:23px;min-height:300px}.number{font-size:clamp(35px,9vw,55px)}.counter-area{margin-top:39px}.video{padding:18px}.thumb{width:90px;height:120px;flex-basis:90px}.stats{gap:10px}.metric{padding:17px}.metric-value{font-size:25px}.footer{flex-direction:column}}
+:root{color-scheme:dark;--bg:#08090e;--panel:#11131b;--panel2:#161924;--line:#292d3b;--muted:#8e93a7;--text:#f5f6fc;--cyan:#42e9e3;--pink:#ff477e;--green:#5ff0b1;--violet:#a78bfa}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 650px 400px at 80% -15%,#38203970,transparent),radial-gradient(ellipse 500px 300px at 0 40%,#0c3d4550,transparent),var(--bg);font:15px 'DM Sans',sans-serif;color:var(--text);min-height:100vh}button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}.shell{max-width:1330px;margin:auto;padding:0 36px}.topbar{height:88px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff10}.brand{display:flex;align-items:center;gap:12px;font:700 21px 'Space Grotesk'}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(140deg,#3cebe2,#fe487f);color:#08090e;font-size:25px;box-shadow:0 0 35px #43e9e325}.brand span span{color:var(--cyan)}.top-right{display:flex;align-items:center;gap:13px}.pill{border:1px solid var(--line);background:#141620;border-radius:50px;padding:9px 14px;font-size:12px;color:#b7baca;font-weight:700;letter-spacing:.04em}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7b8191;margin-right:7px}.dot.on{background:var(--green);box-shadow:0 0 0 4px #5ff0b119;animation:breathe 2s infinite}@keyframes breathe{50%{opacity:.5}}.main{padding:50px 0 70px}.eyebrow{color:var(--cyan);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.headline{font:700 clamp(34px,4.3vw,59px)/1.07 'Space Grotesk';letter-spacing:-.05em;margin:14px 0}.headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#c0a5ff,var(--pink));background-clip:text;color:transparent}.lead{color:#a1a5b6;max-width:650px;line-height:1.65;margin:0 0 30px}.search{display:flex;gap:12px;background:#151720;border:1px solid #343747;border-radius:19px;padding:9px;box-shadow:0 18px 60px #0004;max-width:930px}.input-wrap{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:0 14px}.input-wrap svg{flex-shrink:0;color:var(--cyan)}.search input{width:100%;border:0;outline:0;background:transparent;color:white;padding:12px 0;font-size:14px}.search input::placeholder{color:#6e7388}.primary{border:0;border-radius:12px;background:linear-gradient(110deg,var(--cyan),#85f5e4);color:#071216;padding:14px 24px;font-weight:800;white-space:nowrap;box-shadow:0 5px 25px #40e9e322;transition:transform .2s,filter .2s}.primary:hover{transform:translateY(-2px);filter:brightness(1.08)}.primary:disabled{opacity:.5;cursor:wait}.hint{font-size:12px;color:#777e91;margin:12px 4px 0}.dashboard{margin-top:36px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.95fr);gap:20px}.surface{background:linear-gradient(155deg,#191b27,#11131b 62%);border:1px solid #303241;border-radius:23px;box-shadow:0 12px 40px #0002}.hero{padding:30px;position:relative;overflow:hidden;min-height:335px}.hero:before{content:"";position:absolute;right:-140px;top:-160px;width:370px;height:370px;border-radius:50%;background:#40e9e30b;filter:blur(25px);pointer-events:none}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.micro{color:#8b91a4;text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800}.live{border:1px solid #5ff0b12d;color:var(--green);background:#5ff0b10c;padding:8px 11px;border-radius:30px;font-size:12px;font-weight:800;letter-spacing:.1em}.live:before{content:"";display:inline-block;background:var(--green);width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:2px}.live.off{color:#a6a9b8;border-color:#ffffff1b;background:#ffffff06}.live.off:before{background:#777e91}.counter-area{margin:42px 0 31px}.number{display:flex;align-items:center;flex-wrap:nowrap;font:700 clamp(42px,5.4vw,82px)/1 'Space Grotesk';letter-spacing:-.055em;font-variant-numeric:tabular-nums;white-space:nowrap;min-height:1.15em}.digit{display:inline-block;position:relative;overflow:hidden;height:1.16em;width:.66em;flex:0 0 .66em}.digit>span{position:absolute;inset:0 auto auto 0;width:100%;height:100%;display:block;will-change:transform}.digit b{height:1.16em;display:flex;align-items:center;justify-content:center;font-weight:700}.comma{display:inline-block;width:.28em;text-align:center;color:#72768a}.number-label{margin-top:9px;color:#9a9fb1;font-weight:700;font-size:12px;letter-spacing:.13em}.growth{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:13px;background:#5ff0b10b;padding:9px 12px;border-radius:10px}.growth.neutral{color:#a5aabd;background:#ffffff09}.growth.negative{color:var(--pink);background:#ff477e0c}.video{padding:23px;display:flex;gap:16px;min-height:170px}.thumb{width:110px;height:145px;flex:0 0 110px;border-radius:13px;background:linear-gradient(135deg,#2e3140,#151720);object-fit:cover;border:1px solid #ffffff15}.video-info{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}.video-title{font-size:15px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.creator{display:flex;align-items:center;gap:9px;margin-top:18px}.avatar{width:33px;height:33px;border-radius:50%;object-fit:cover;background:#292b37;border:1px solid #ffffff22}.creator-name{font-size:13px;font-weight:800}.handle{font-size:12px;color:#9298a8}.stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.metric{padding:22px;min-width:0}.metric-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.metric-icon{font-size:21px}.metric-value{font:700 clamp(23px,2.4vw,35px) 'Space Grotesk';letter-spacing:-.045em;margin-top:18px;overflow:hidden;text-overflow:ellipsis}.metric-label{color:#9298aa;font-size:12px;margin-top:6px}.bottom{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:20px}.chart-panel,.profile-panel{padding:26px}.section-title{font:700 17px 'Space Grotesk';letter-spacing:-.02em}.sub{color:#84899e;font-size:12px;margin-top:5px}.chart-wrap{height:220px;position:relative;margin-top:23px}canvas{width:100%;height:100%;display:block}.empty-chart{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#777e91;font-size:13px;pointer-events:none}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:23px}.profile-stat{background:#ffffff06;border:1px solid #ffffff09;border-radius:13px;padding:17px}.profile-stat strong{display:block;font:700 22px 'Space Grotesk'}.profile-stat span{display:block;font-size:12px;color:#9196a9;margin-top:7px}.notice{margin-top:20px;font-size:12px;color:#808699;line-height:1.7}.error{margin:15px 0 0;padding:13px 16px;border:1px solid #ff477e55;background:#ff477e12;color:#ff99b4;border-radius:12px;display:none}.error.show{display:block}.footer{border-top:1px solid #ffffff12;color:#73798c;font-size:12px;padding:24px 0 38px;display:flex;justify-content:space-between;gap:12px}.hidden{display:none!important}@media(max-width:950px){.dashboard{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}.number{font-size:clamp(42px,8vw,80px)}}@media(max-width:560px){.shell{padding:0 17px}.topbar{height:72px}.brand{font-size:18px}.top-right .pill:last-child{display:none}.main{padding-top:36px}.headline{font-size:38px}.search{flex-direction:column}.primary{width:100%}.hero{padding:23px;min-height:300px}.number{font-size:clamp(35px,9vw,55px)}.counter-area{margin-top:39px}.video{padding:18px}.thumb{width:90px;height:120px;flex-basis:90px}.stats{gap:10px}.metric{padding:17px}.metric-value{font-size:25px}.footer{flex-direction:column}}
 
 /* ═══════════════════════════════════════════════════════════
    TIKTOK PULSE // FUTURE OPS — visual skin
    ═══════════════════════════════════════════════════════════ */
-:root{color-scheme:dark;--bg:#040813;--panel:#0a1323;--panel2:#101d30;--line:#21405a;--muted:#7f9caf;--text:#eafaff;--cyan:#3bf7ef;--pink:#ff4c9a;--green:#73ffb8;--violet:#b597ff}
+:root{color-scheme:dark;--bg:#040813;--panel:#0a1323;--panel2:#101d30;--line:#21405a;--muted:#93b2c4;--text:#eafaff;--cyan:#3bf7ef;--pink:#ff4c9a;--green:#73ffb8;--violet:#b597ff}
 html{background:#040813}
 body{
  color:var(--text);
@@ -22,7 +22,7 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
  background-size:46px 46px;mask-image:linear-gradient(to bottom,#0008,transparent 85%);
 }
 body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
- background:linear-gradient(90deg,transparent,#3bf7ef 28%,#ff4c9a 72%,transparent);
+ background:linear-gradient(90deg,transparent,#3bf7ef 30%,#5aa8ff 70%,transparent);
  box-shadow:0 0 26px #3bf7ef55;pointer-events:none}
 .shell{max-width:1380px;padding-inline:clamp(18px,4vw,60px)}
 .topbar{height:94px;border-bottom:1px solid #4fbbdf2b}
@@ -36,7 +36,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .dot.on{background:#73ffb8;box-shadow:0 0 0 3px #73ffb81b,0 0 14px #73ffb8}
 .main{padding-top:32px}
 .eyebrow{color:#3bf7ef;font:700 11px 'Space Grotesk';letter-spacing:.27em}
-.eyebrow:before{content:"◈";margin-right:11px;color:#ff4c9a}
+.eyebrow:before{content:"◈";margin-right:11px;color:#3bf7ef}
 .headline{font:700 clamp(47px,6.5vw,94px)/.98 'Space Grotesk';letter-spacing:-.075em;
  max-width:1000px;margin:23px 0 22px}
 .headline em{font-style:normal;color:#3bf7ef;
@@ -50,11 +50,11 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .search:focus-within{border-color:#3bf7ef;box-shadow:0 0 0 3px #3bf7ef12,0 0 35px #3bf7ef10}
 .input-wrap svg{color:#3bf7ef}
 .search input{color:#eafaff;font-size:14px;padding-block:15px}
-.search input::placeholder{color:#617e92}
+.search input::placeholder{color:#7d9db0}
 .primary{background:linear-gradient(110deg,#3bf7ef,#68d8ff);color:#061421;border:0;border-radius:5px;
  box-shadow:0 0 25px #3bf7ef25;font:800 12px 'Space Grotesk';letter-spacing:.04em;padding:17px 25px}
 .primary:hover{background:#8afff8;box-shadow:0 0 30px #3bf7ef55;transform:translateY(-1px)}
-.hint{color:#5f8399;font-size:11px}
+.hint{color:#86a6b8;font-size:12px}
 .dashboard{margin-top:48px;gap:17px;grid-template-columns:minmax(0,1.65fr) minmax(310px,.9fr)}
 .surface{background:linear-gradient(155deg,#0d1b2e,#08111e 85%);
  border:1px solid #2d536c9e;border-radius:9px;box-shadow:0 16px 50px #00000045,inset 0 1px #d1faff08;
@@ -91,16 +91,16 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .video-title{font-size:15px;line-height:1.65;color:#e8f9ff}
 .creator{border-top:1px solid #2c53684d;padding-top:20px;margin-top:22px}
 .avatar{width:39px;height:39px;border:1px solid #3bf7ef77}
-.creator-name{font-size:13px;color:#eafaff}.handle{font-size:11px;color:#80a1b6}
+.creator-name{font-size:13px;color:#eafaff}.handle{font-size:12px;color:#80a1b6}
 .stats{gap:14px}
 .metric{min-height:152px;padding:23px;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
 .metric:before{content:"";position:absolute;top:0;left:0;width:46px;height:2px;
  background:linear-gradient(90deg,#3bf7efaa,transparent)}
 .metric:hover{transform:translateY(-3px);border-color:#3bf7ef9e;
  box-shadow:0 14px 38px #0006,0 0 24px #3bf7ef0c}
-.metric-icon{font-size:23px;text-shadow:0 0 18px currentColor}
+.metric-icon{font-size:20px;color:#3bf7ef;opacity:.85}
 .metric-value{font:700 clamp(24px,2.5vw,36px) 'Space Grotesk';color:#f0fdff;letter-spacing:-.035em;margin-top:20px}
-.metric-label{font-size:11px;color:#7895a9}
+.metric-label{font-size:12px;color:#8aa9bb}
 .bottom{gap:17px}
 .chart-panel,.profile-panel{padding:29px}
 .section-title{font:700 19px 'Space Grotesk';color:#e8faff}
@@ -111,7 +111,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .profile-stat strong{font:700 25px 'Space Grotesk';color:#e9fcff}
 .profile-stat span{color:#7399b0}
 .notice{border-top:1px solid #31546a52;color:#7596a9}
-.footer{border-color:#31546a52;color:#6d91a6}
+.footer{border-color:#31546a52;color:#86a6b8}
 .error{border-radius:5px;background:#ff4c9a0d;border-color:#ff4c9a66;color:#ff9bbd}
 @media(max-width:1100px){
  .dashboard{grid-template-columns:1fr 1fr}
@@ -162,7 +162,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .account-stats{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:4px}
 .account-stats div{background:#071727;border:1px solid #2c587050;border-radius:5px;padding:15px 17px}
 .account-stats strong{display:block;font:700 24px 'Space Grotesk';color:#e9fcff;font-variant-numeric:tabular-nums}
-.account-stats span{display:block;font-size:11px;color:#7399b0;margin-top:5px}
+.account-stats span{display:block;font-size:12px;color:#7399b0;margin-top:5px}
 .ghost-btn{background:transparent;border:1px solid #3c6c8988;color:#cfeef8;border-radius:5px;padding:11px 16px;font:700 11px 'Space Grotesk';letter-spacing:.1em;cursor:pointer;white-space:nowrap}
 .ghost-btn:hover{border-color:#3bf7ef;color:#fff}
 .toggle-videos{margin:16px 0 0;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border:1px dashed #3c6c89aa;background:#091626aa;border-radius:8px;color:#cfeef8;font:700 12px 'Space Grotesk';letter-spacing:.14em;cursor:pointer;transition:border-color .2s,background .2s}
@@ -179,7 +179,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .vcard .b{padding:11px 12px}
 .vcard .t{font-size:12px;line-height:1.45;color:#cfe9f3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
 .vcard .v{font:700 18px 'Space Grotesk';margin-top:7px;font-variant-numeric:tabular-nums;color:#f0fdff}
-.vcard .s{font-size:11px;color:#7895a9;margin-top:3px}
+.vcard .s{font-size:12px;color:#8aa9bb;margin-top:3px}
 .vcard .tag{display:inline-block;margin-top:7px;font:700 9px 'Space Grotesk';letter-spacing:.14em;color:#f7c56a}
 .exact-tag{color:#f7c56a;margin-left:10px}
 .more-btn{display:block;margin:16px auto 0}
@@ -187,24 +187,24 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .switcher{grid-column:1/-1;border-top:1px solid #2c587055;padding-top:16px;display:grid;gap:12px}
 .switcher.hidden{display:none}
 .switcher .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.switcher .lbl{color:#7f9caf;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
+.switcher .lbl{color:#93b2c4;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
 .acc-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid #3c6c8966;background:transparent;color:#cfeef8;border-radius:999px;padding:5px 12px 5px 5px;font:600 12px 'Space Grotesk';cursor:pointer;text-decoration:none}
 .acc-chip img{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#0b2233}
 .acc-chip.on{border-color:var(--cyan);background:#0b2033;color:#fff;cursor:default}
 .acc-chip.add{padding:7px 14px;border-style:dashed;color:#9fc3d4}
 .acc-chip[aria-disabled=true]{opacity:.5;cursor:not-allowed}
-.acc-chip .x{margin-left:2px;color:#6f8ea2;font-size:14px;line-height:1}
+.acc-chip .x{margin-left:2px;color:#8aa9bb;font-size:14px;line-height:1}
 .acc-chip .x:hover{color:#ff8a8a}
-.gline{font-size:12px;color:#7f9caf;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
+.gline{font-size:12px;color:#93b2c4;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
 .gline b{color:#cfeef8;font-weight:600}
 .gline button{background:none;border:0;color:#7fb6cc;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 .gline button.danger{color:#e98b8b}
 .gline .prem{color:var(--gold);font:700 10px 'Space Grotesk';letter-spacing:.12em}
 .info-banner{margin:0 0 16px;padding:12px 16px;border:1px solid #f7c56a66;border-radius:6px;color:#f7dca0;background:#f7c56a0d;font-size:13px}
 .info-banner.hidden{display:none}
-.analyse-btn{text-align:center;color:#f7c56a;border-color:#f7c56a77;background:#f7c56a0d}
+.analyse-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;text-align:center;color:#f7c56a;border-color:#f7c56a77;background:#f7c56a0d}
 .analyse-btn:hover{border-color:#f7c56a;color:#ffe2a8}
-.lock-tag{display:inline-block;margin-left:8px;padding:2px 6px;border:1px solid #f7c56a77;border-radius:3px;font-size:9px;letter-spacing:.1em;vertical-align:middle}
+.lock-tag{display:inline-flex;gap:4px;margin-left:8px;padding:2px 6px;border:1px solid #f7c56a77;border-radius:3px;font-size:9px;letter-spacing:.1em;vertical-align:middle}
 .lock-tag.hidden{display:none}
 @media(max-width:700px){.account-actions{grid-column:1/-1;flex-direction:row;min-width:0}.account-actions>*{flex:1 1 0;min-width:0;white-space:normal;padding-inline:10px}}
 .video-meta{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:8px 22px;margin-top:14px}
@@ -236,29 +236,25 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 @keyframes bumpDown{0%,40%{color:#ff8aaa}100%{color:#e9fcff}}
 @media(max-width:700px){.account{grid-template-columns:auto 1fr;padding:22px}.account .ghost-btn{grid-column:1/-1}.account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.account-avatar{width:64px;height:64px}}
 
-</style></head><body>
+</style><script src="pulse-ui.js"></script></head><body data-nav="direct">
 <div class="hidden" aria-hidden="true"><span id="headerDot"></span><span id="headerStatus"></span></div>
 <main class="shell main">
 
 <div class="info-banner hidden" id="infoBanner" role="status"></div>
-<section class="surface account" aria-label="Mon compte TikTok">
+<section class="surface account" id="compte" aria-label="Mon compte TikTok">
  <img id="meAvatar" class="account-avatar" alt="Photo de profil" referrerpolicy="no-referrer">
  <div style="min-width:0">
   <div class="eyebrow">Mon espace créateur</div>
-  <div class="account-name" id="meName">Chargement…</div>
-  <div class="account-handle" id="meHandle"></div>
-  <div class="account-bio" id="meBio"></div>
+  <div class="account-name skel" id="meName">Chargement du compte</div>
+  <div class="account-handle skel" id="meHandle">@chargement</div>
+  <div class="account-bio skel" id="meBio">Chargement de la bio du compte</div>
  </div>
- <div class="account-actions"><a class="ghost-btn analyse-btn" id="analyseBtn" href="/analyse.html">📊 Analyse des statistiques<span class="lock-tag hidden" id="analyseLock">🔒 Premium</span></a><button class="ghost-btn" id="logout" type="button">Se déconnecter</button></div>
- <div class="switcher hidden" id="switcher">
-  <div class="row" id="accList"><span class="lbl">Mes comptes TikTok</span></div>
-  <div class="gline" id="gLine"></div>
- </div>
+ <div class="account-actions" id="pickerSlot"></div>
  <div class="account-stats">
-  <div><strong id="followers">—</strong><span>Abonnés</span></div>
-  <div><strong id="following">—</strong><span>Abonnements</span></div>
-  <div><strong id="profileLikes">—</strong><span>Likes reçus</span></div>
-  <div><strong id="videos">—</strong><span>Vidéos publiées</span></div>
+  <div><strong id="followers" class="skel">000</strong><span>Abonnés</span></div>
+  <div><strong id="following" class="skel">000</strong><span>Abonnements</span></div>
+  <div><strong id="profileLikes" class="skel">000</strong><span>Likes reçus</span></div>
+  <div><strong id="videos" class="skel">000</strong><span>Vidéos publiées</span></div>
  </div>
 </section>
 
@@ -272,8 +268,8 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 <div id="error" class="error" role="alert"></div>
 
 <section class="dashboard" id="dashboard" aria-label="Statistiques de la vidéo suivie"><article class="surface hero"><div class="row"><span class="micro">Performance de la vidéo</span><span class="live off" id="liveBadge">EN ATTENTE</span></div><div class="counter-area"><div class="number" id="views" aria-label="Nombre de vues">0</div><div class="number-label">VUES TOTALES</div></div><div class="growth neutral hidden" id="growth" aria-hidden="true">↗ En attente des premières données</div></article>
-<article class="surface video"><img id="cover" class="thumb" alt="Miniature de la vidéo" referrerpolicy="no-referrer"><div class="video-info"><div class="micro" id="videoTag">DERNIÈRE VIDÉO PUBLIÉE</div><div id="title" class="video-title" style="margin-top:11px">Chargement de ta dernière vidéo…</div><div class="video-meta"><div><span>Publiée</span><strong id="videoDate">—</strong></div><div><span>Heure</span><strong id="pubHour">—</strong></div><div><span>Durée</span><strong id="duration">—</strong></div></div><div class="creator"><img id="avatar" class="avatar" alt="Avatar du créateur" referrerpolicy="no-referrer"><div><div id="nickname" class="creator-name">Créateur TikTok</div><div id="username" class="handle"></div></div></div></div></article>
-<div class="stats"><article class="surface metric"><div class="metric-head"><span class="micro">J'AIME</span><span class="metric-icon" style="color:var(--pink)">♥</span></div><div class="metric-value" id="likes">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">COMMENTAIRES</span><span class="metric-icon" style="color:var(--violet)">◉</span></div><div class="metric-value" id="comments">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PARTAGES</span><span class="metric-icon" style="color:var(--cyan)">↗</span></div><div class="metric-value" id="shares">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">FAVORIS</span><span class="metric-icon" style="color:#f7c56a">★</span></div><div class="metric-value" id="favorites">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">ENGAGEMENT</span><span class="metric-icon" style="color:var(--green)">%</span></div><div class="metric-value" id="engagement">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">VUES / MIN</span><span class="metric-icon" style="color:var(--cyan)">⚡</span></div><div class="metric-value" id="perMinute">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PROGRESSION</span><span class="metric-icon" style="color:var(--green)">↑</span></div><div class="metric-value" id="gain">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">DERNIER RELEVÉ</span><span class="metric-icon" style="color:#adb2c5">◷</span></div><div class="metric-value" id="lastUpdate" style="font-size:25px">—</div></article></div>
+<article class="surface video"><img id="cover" class="thumb" alt="Miniature de la vidéo" referrerpolicy="no-referrer"><div class="video-info"><div class="micro" id="videoTag">DERNIÈRE VIDÉO PUBLIÉE</div><div id="title" class="video-title skel" style="margin-top:11px">Chargement de ta dernière vidéo en cours</div><div class="video-meta"><div><span>Publiée</span><strong id="videoDate">—</strong></div><div><span>Heure</span><strong id="pubHour">—</strong></div><div><span>Durée</span><strong id="duration">—</strong></div></div><div class="creator"><img id="avatar" class="avatar" alt="Avatar du créateur" referrerpolicy="no-referrer"><div><div id="nickname" class="creator-name">Créateur TikTok</div><div id="username" class="handle"></div></div></div></div></article>
+<div class="stats"><article class="surface metric"><div class="metric-head"><span class="micro">J'AIME</span><span class="metric-icon" data-icon="heart"></span></div><div class="metric-value skel" id="likes">0 000</div></article><article class="surface metric"><div class="metric-head"><span class="micro">COMMENTAIRES</span><span class="metric-icon" data-icon="message"></span></div><div class="metric-value skel" id="comments">0 000</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PARTAGES</span><span class="metric-icon" data-icon="share"></span></div><div class="metric-value skel" id="shares">0 000</div></article><article class="surface metric"><div class="metric-head"><span class="micro">FAVORIS</span><span class="metric-icon" data-icon="bookmark"></span></div><div class="metric-value skel" id="favorites">0 000</div></article><article class="surface metric"><div class="metric-head"><span class="micro">ENGAGEMENT</span><span class="metric-icon" data-icon="percent"></span></div><div class="metric-value skel" id="engagement">0 000</div></article><article class="surface metric"><div class="metric-head"><span class="micro">VUES / MIN</span><span class="metric-icon" data-icon="zap"></span></div><div class="metric-value" id="perMinute">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">PROGRESSION</span><span class="metric-icon" data-icon="up"></span></div><div class="metric-value" id="gain">—</div></article><article class="surface metric"><div class="metric-head"><span class="micro">DERNIER RELEVÉ</span><span class="metric-icon" data-icon="clock"></span></div><div class="metric-value" id="lastUpdate" style="font-size:25px">—</div></article></div>
 <div class="bottom"><article class="surface chart-panel"><div class="row"><div><div class="section-title">Évolution des vues</div><div class="sub">Historique de cette session · dernières 60 minutes</div></div><span class="pill">LIVE</span></div><div class="chart-wrap"><canvas id="chart" aria-label="Graphique des vues" role="img"></canvas><div class="empty-chart" id="chartEmpty">Les premières mesures apparaîtront ici.</div></div></article><article class="surface profile-panel"><div class="section-title">Détails de la vidéo</div><div class="sub">Taux calculés par rapport aux vues</div><div class="profile-grid"><div class="profile-stat"><strong id="favRate">—</strong><span>Favoris / vues</span></div><div class="profile-stat"><strong id="likeRate">—</strong><span>Likes / vues</span></div><div class="profile-stat"><strong id="commentRate">—</strong><span>Commentaires / vues</span></div><div class="profile-stat"><strong id="shareRate">—</strong><span>Partages / vues</span></div></div><a id="openTikTok" class="ghost-btn hidden" style="display:inline-block;margin-top:18px" target="_blank" rel="noopener">Ouvrir sur TikTok ↗</a></article></div></section></main><footer class="shell footer"><span>© TikTok Pulse · Espace créateur</span><span>Projet indépendant · Non affilié à TikTok · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 <script>
 'use strict';
@@ -435,75 +431,17 @@ function chipImg(url) {
   return img;
 }
 
-async function loadAccounts() {
+function loadAccounts() {
   const info = new URLSearchParams(location.search).get('info');
   if (info) { $('infoBanner').textContent = info; $('infoBanner').classList.remove('hidden'); window.history.replaceState(null, '', '/'); }
-
-  let data;
-  try { data = await api('/api/comptes'); } catch { return; }
-  if (!data.google) return;
-
-  const list = $('accList');
-  list.querySelectorAll('.acc-chip').forEach(n => n.remove());
-  data.comptes.forEach(a => {
-    const chip = document.createElement(a.actif ? 'span' : 'button');
-    chip.className = 'acc-chip' + (a.actif ? ' on' : '');
-    chip.append(chipImg(a.avatar), document.createTextNode(a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte TikTok')));
-    if (!a.actif) {
-      chip.type = 'button';
-      chip.title = 'Passer sur ce compte';
-      chip.addEventListener('click', async e => {
-        if (e.target.classList.contains('x')) return;
-        try { await post('/auth/switch', { openId: a.openId }); location.reload(); }
-        catch (err) { if (err.data?.reconnect) location.href = '/auth/tiktok?ajout=1'; else error(err.message); }
-      });
-      const x = document.createElement('span');
-      x.className = 'x'; x.textContent = '×'; x.title = 'Délier ce compte';
-      x.addEventListener('click', async () => {
-        if (!confirm('Délier ce compte TikTok de ton compte TikTok Pulse ?')) return;
-        try { await post('/api/comptes/delier', { openId: a.openId }); loadAccounts(); } catch (err) { error(err.message); }
-      });
-      chip.append(x);
-    }
-    list.append(chip);
-  });
-
-  const full = data.comptes.length >= data.max;
-  const add = document.createElement('a');
-  add.className = 'acc-chip add';
-  add.textContent = '+ Ajouter un compte';
-  if (full) {
-    add.setAttribute('aria-disabled', 'true');
-    add.title = data.google.premium ? `Limite de ${data.max} comptes atteinte` : 'Le premium permet de relier plusieurs comptes TikTok';
-    add.textContent = data.google.premium ? '+ Ajouter un compte' : '+ Ajouter un compte 🔒 Premium';
-  } else {
-    add.href = '/auth/tiktok?ajout=1';
-  }
-  list.append(add);
-
-  const g = $('gLine');
-  g.innerHTML = '';
-  const who = document.createElement('span');
-  who.append('Compte Google : ');
-  const b = document.createElement('b'); b.textContent = data.google.email || data.google.nom || '';
-  who.append(b);
-  if (data.google.premium) { const p = document.createElement('span'); p.className = 'prem'; p.textContent = ' ★ PREMIUM'; who.append(p); }
-  const out = document.createElement('button');
-  out.type = 'button'; out.textContent = 'Déconnecter Google';
-  out.addEventListener('click', async () => { await post('/auth/google/logout'); location.reload(); });
-  const del = document.createElement('button');
-  del.type = 'button'; del.className = 'danger'; del.textContent = 'Supprimer mon compte TikTok Pulse';
-  del.addEventListener('click', async () => {
-    if (!confirm('Supprimer ton compte TikTok Pulse ? Ton compte Google, tes comptes TikTok reliés et ton statut premium seront effacés. Cette action est définitive.')) return;
-    try { await post('/api/compte/supprimer'); location.reload(); } catch (err) { error(err.message); }
-  });
-  g.append(who, out, del);
-  $('switcher').classList.remove('hidden');
+  PulseUI.picker($('pickerSlot'));
 }
+
+const unskel = (...ids) => ids.forEach(id => $(id)?.classList.remove('skel'));
 
 async function loadMe() {
   me = await api('/api/me');
-  $('analyseLock').classList.toggle('hidden', me.premium === true);
+  unskel('meName', 'meHandle', 'meBio', 'followers', 'following', 'profileLikes', 'videos');
   const name = $('meName');
   name.textContent = me.nickname || me.username || 'Créateur';
   if (me.verified) { const v = document.createElement('span'); v.className = 'verified'; v.textContent = '✓'; v.title = 'Compte vérifié'; name.append(v); }
@@ -545,7 +483,7 @@ function videoCard(v) {
   const body = document.createElement('div'); body.className = 'b';
   const t = document.createElement('div'); t.className = 't'; t.textContent = v.title;
   const views = document.createElement('div'); views.className = 'v'; views.textContent = fmt(v.views) + ' vues';
-  const s = document.createElement('div'); s.className = 's'; s.textContent = `♥ ${fmt(v.likes)} · 💬 ${fmt(v.comments)} · ↗ ${fmt(v.shares)}`;
+  const s = document.createElement('div'); s.className = 's'; s.innerHTML = `${PulseUI.icon('heart')} ${fmt(v.likes)} · ${PulseUI.icon('message')} ${fmt(v.comments)} · ${PulseUI.icon('share')} ${fmt(v.shares)}`;
   body.append(t, views, s);
   if (v.id === firstVideo?.id) { const tag = document.createElement('div'); tag.className = 'tag'; tag.textContent = '◆ DERNIÈRE VIDÉO'; body.append(tag); }
   b.append(im, body);
@@ -609,8 +547,9 @@ function update(v, fromList = false) {
     });
   }
   if (!fromList) lastStats = { id: v.id, likes: v.likes, comments: v.comments, shares: v.shares, favorites: v.favorites };
+  unskel('likes', 'comments', 'shares', 'engagement', 'title');
   show('likes', v.likes); show('comments', v.comments); show('shares', v.shares);
-  if (!fromList) show('favorites', v.favorites);
+  if (!fromList) { unskel('favorites'); show('favorites', v.favorites); }
   $('title').textContent = v.title || 'Vidéo TikTok';
   imageSet('cover', v.cover);
   const pub = v.createTime ? new Date(v.createTime * 1000) : null;
@@ -696,11 +635,7 @@ async function refresh() {
 }
 
 $('toggleVideos').addEventListener('click', () => setLibrary($('library').classList.contains('hidden')));
-$('logout').addEventListener('click', async () => {
-  $('logout').disabled = true;
-  await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-  location.replace('/connexion.html');
-});
+
 // Un seul relevé toutes les 5 s, jamais deux boucles en parallèle.
 // Au retour sur l'onglet, relevé immédiat seulement si le dernier date de plus de 10 s.
 let lastFetch = 0;

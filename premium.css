@@ -30,3 +30,59 @@ button{font:inherit;cursor:pointer}
 .verified{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#20d5ec;color:#04131c;font-size:11px;font-weight:900;margin-left:6px;vertical-align:2px}
 @media(max-width:560px){.topbar{height:72px}.brand{font-size:18px}.footer{flex-direction:column}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* =====================================================
+   SYSTÈME COMMUN — couleurs à rôle unique :
+   cyan = action / direct · or = premium · vert / rose = hausse / baisse
+   ===================================================== */
+:root{--muted:#93b2c4;--muted2:#7d9db0;--radius:10px;--radius-sm:6px}
+.eyebrow:before{color:var(--cyan)}
+body:after{background:linear-gradient(90deg,transparent,var(--cyan) 30%,#5aa8ff 70%,transparent)}
+
+/* Icônes SVG */
+.ico{width:1.15em;height:1.15em;flex:0 0 auto;vertical-align:-.2em}
+[data-icon]{display:inline-flex;align-items:center;gap:.5em}
+
+/* Boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:var(--radius-sm);border:1px solid #3c6c8988;background:transparent;color:#d7eef7;font:700 12px 'Space Grotesk';letter-spacing:.06em;cursor:pointer;text-decoration:none;transition:border-color .15s,color .15s,background .15s}
+.btn:hover{border-color:var(--cyan);color:#fff}
+.btn.gold{border-color:#f7c56a77;color:var(--gold);background:#f7c56a0d}
+.btn.gold:hover{border-color:var(--gold);color:#ffe2a8}
+
+/* Barre d'onglets : en haut sur ordinateur, en bas sur téléphone */
+.pnav{position:sticky;top:14px;z-index:20;display:flex;gap:4px;width:max-content;margin:14px auto 0;padding:5px;border:1px solid #2d536c9e;border-radius:999px;background:#07111fe6;backdrop-filter:blur(10px);box-shadow:0 10px 30px #0006}
+.pnav a{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;color:#9fc3d4;font:700 12px 'Space Grotesk';letter-spacing:.04em}
+.pnav a:hover{color:#fff}
+.pnav a[aria-current=page]{background:#0e2a3d;color:#fff;box-shadow:inset 0 0 0 1px #3bf7ef55}
+.pnav a[aria-current=page] .ico{color:var(--cyan)}
+@media(max-width:760px){
+ .pnav{position:fixed;top:auto;bottom:0;left:0;right:0;width:auto;margin:0;border-radius:0;border-width:1px 0 0;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#060e1bf2}
+ .pnav a{flex:1;flex-direction:column;gap:3px;padding:7px 4px;border-radius:8px;font-size:11px}
+ .pnav a .ico{width:20px;height:20px}
+ body.has-pnav{padding-bottom:76px}
+}
+
+/* Blocs de chargement animés */
+.skel{color:transparent!important;background:linear-gradient(90deg,#12263a 25%,#1b3550 50%,#12263a 75%)!important;background-size:200% 100%!important;animation:skel 1.3s linear infinite;border-radius:4px;-webkit-text-fill-color:transparent}
+.skel *{visibility:hidden}
+@keyframes skel{to{background-position:-200% 0}}
+
+/* Logos des plateformes */
+.brand-ico{width:20px;height:20px;flex:0 0 auto}
+
+/* Sélecteur de compte (premium) */
+.picker{position:relative;display:inline-block}
+.picker-btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:4px 12px 4px 5px;border:1px solid #3bf7ef66;border-radius:999px;background:#0b2033;color:#fff;font:600 13px 'Space Grotesk';cursor:pointer}
+.picker-btn:hover{border-color:var(--cyan)}
+.picker-btn img,.picker-item img{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#0b2233}
+.picker-btn .ico{color:#9fc3d4}
+.picker-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:30;min-width:250px;padding:6px;border:1px solid #2d536c;border-radius:10px;background:#081424;box-shadow:0 18px 45px #000a;display:grid;gap:2px}
+.picker-menu[hidden]{display:none}
+.picker-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:#d7eef7;font:600 13px 'DM Sans';text-align:left;cursor:pointer}
+.picker-item:hover{background:#0e2a3d}
+.picker-item.on{color:#fff}
+.picker-item > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.picker-item .ico{color:var(--cyan)}
+.picker-item.add{color:#9fc3d4;border-top:1px solid #2c587055;border-radius:0 0 7px 7px;margin-top:4px;padding-top:10px}
+.picker-btn{justify-content:center}
+@media(max-width:700px){.picker{display:block;width:100%}.picker .picker-btn{width:100%}.picker-menu{left:0;right:0;min-width:0}}

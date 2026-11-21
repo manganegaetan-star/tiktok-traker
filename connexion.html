@@ -3,14 +3,14 @@
 <title>TikTok Pulse — Connexion créateur</title>
 <link rel="stylesheet" href="premium.css">
 <style>
-.wrap{min-height:calc(100vh - 88px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:clamp(30px,5vw,80px);align-items:center;padding-block:60px}
+.wrap{min-height:calc(100vh - 80px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:clamp(30px,5vw,80px);align-items:center;padding-block:60px}
 .headline{font:700 clamp(40px,5.6vw,80px)/.98 'Space Grotesk';letter-spacing:-.07em;margin:22px 0 20px}
 .headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 45%,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .lead{color:#8eafc2;line-height:1.8;max-width:560px;margin:0 0 30px}
 .perks{list-style:none;padding:0;margin:0;display:grid;gap:12px;max-width:560px}
 .perks li{display:flex;gap:14px;align-items:flex-start;padding:15px 17px;border:1px solid #2c587050;border-radius:6px;background:#07172799}
 .perks b{display:block;font:700 14px 'Space Grotesk';margin-bottom:3px}
-.perks span{color:#7f9caf;font-size:13px;line-height:1.55}
+.perks span{color:#93b2c4;font-size:13px;line-height:1.55}
 .ic{flex:0 0 34px;height:34px;border-radius:6px;display:grid;place-items:center;background:#0b2233;border:1px solid #3bf7ef44;color:var(--cyan);font-size:16px}
 .card{padding:clamp(26px,4vw,44px);overflow:hidden}
 .card:before{content:"";position:absolute;left:0;top:0;width:160px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);box-shadow:0 0 20px var(--gold)}
@@ -20,32 +20,29 @@
 .tt-btn:hover{transform:translateY(-2px);box-shadow:0 0 0 2px var(--cyan),0 14px 40px #3bf7ef33}
 .tt-btn svg{width:18px;height:18px}
 .tt-btn[aria-disabled=true]{opacity:.45;pointer-events:none}
-.or{display:flex;align-items:center;gap:12px;margin:16px auto;max-width:400px;color:#5f8399;font:700 10px 'Space Grotesk';letter-spacing:.16em}
+.or{display:flex;align-items:center;gap:12px;margin:16px auto;max-width:400px;color:#86a6b8;font:700 10px 'Space Grotesk';letter-spacing:.16em}
 .or:before,.or:after{content:"";flex:1;height:1px;background:#31546a52}
 .gwrap{display:grid;justify-items:center;min-height:44px}
-.gnote{font-size:12px;color:#7f9caf;text-align:center;margin:0}
+.gnote{font-size:12px;color:#93b2c4;text-align:center;margin:0}
 .ok{margin:15px 0 0;padding:13px 16px;border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;font-size:13px;display:none}
 .ok.show{display:block}
-.scopes{margin:24px 0 0;padding:18px 0 0;border-top:1px solid #31546a52;display:grid;gap:9px;font-size:12px;color:#7f9caf}
+.scopes{margin:24px 0 0;padding:18px 0 0;border-top:1px solid #31546a52;display:grid;gap:9px;font-size:12px;color:#93b2c4}
 .scopes div{display:flex;gap:9px}.scopes div:before{content:"✓";color:var(--green);font-weight:900}
-.legal{margin-top:20px;font-size:11px;color:#5f8399;line-height:1.6}
-.back{display:inline-block;margin-top:18px;font-size:12px;color:#7f9caf}.back:hover{color:var(--cyan)}
+.legal{margin-top:20px;font-size:12px;color:#86a6b8;line-height:1.6}
+.back{display:inline-block;margin-top:18px;font-size:12px;color:#93b2c4}.back:hover{color:var(--cyan)}
 @media(max-width:900px){.wrap{grid-template-columns:1fr;padding-block:40px}}
-</style></head><body>
-<header class="shell topbar">
- <a href="/connexion.html" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a>
- <span class="pill gold">★ ESPACE CRÉATEUR</span>
-</header>
+</style><script src="pulse-ui.js"></script></head><body>
 
 <main class="shell wrap">
  <section>
-  <div class="eyebrow">Accès membres</div>
+  <div class="eyebrow">TikTok Pulse · Espace créateur</div>
   <h1 class="headline">Tes chiffres.<br><em>Au chiffre près.</em></h1>
-  <p class="lead">TikTok Pulse est réservé aux créateurs connectés. Connecte ton compte TikTok pour suivre tes vidéos avec les statistiques officielles de TikTok — pas d'arrondi « 160,2K », pas d'intermédiaire qui tombe en panne.</p>
+  <p class="lead">Suis tes vidéos en direct avec les statistiques officielles, au chiffre près : pas d'arrondi « 160,2K », pas d'intermédiaire qui tombe en panne.</p>
   <ul class="perks">
-   <li><div class="ic">◎</div><div><b>Vues exactes, en direct</b><span>Le vrai compteur, unité par unité, directement depuis l'API officielle TikTok.</span></div></li>
-   <li><div class="ic">▦</div><div><b>Toutes tes vidéos d'un coup d'œil</b><span>Ton catalogue complet avec vues, likes, commentaires et partages.</span></div></li>
-   <li><div class="ic">⛨</div><div><b>Sécurisé par TikTok</b><span>Tu te connectes sur TikTok. Nous ne voyons jamais ton mot de passe et tu peux révoquer l'accès à tout moment.</span></div></li>
+   <li><div class="ic" data-icon="eye"></div><div><b>Vues exactes, en direct</b><span>Le vrai compteur, unité par unité, directement depuis les API officielles.</span></div></li>
+   <li><div class="ic" data-icon="chart"></div><div><b>Analyse de ton compte</b><span>Meilleurs jours, créneaux, durées et hashtags : sache quoi publier et quand.</span></div></li>
+   <li><div class="ic" data-icon="swap"></div><div><b>Tous tes comptes au même endroit</b><span>Relie plusieurs comptes et passe de l'un à l'autre en un clic.</span></div></li>
+   <li><div class="ic" data-icon="shield"></div><div><b>Connexion sécurisée</b><span>Tu te connectes directement chez TikTok ou Google. Nous ne voyons jamais ton mot de passe et tu peux révoquer l'accès à tout moment.</span></div></li>
   </ul>
  </section>
 
@@ -94,11 +91,7 @@ function info(msg) { okBox.textContent = msg; okBox.classList.add('show'); }
 
 // Après la connexion Google : tableau de bord, ou connexion TikTok si aucun compte relié.
 function go(r) {
-  if (r.next === '/') { location.replace('/'); return; }
-  if (r.needTikTok) {
-    info('Compte Google connecté ✓ Relie maintenant un compte à suivre.');
-    setTimeout(() => { location.href = '/auth/tiktok'; }, 1600);
-  }
+  if (r.next) location.replace(r.next);
 }
 
 async function postJson(url, body) {

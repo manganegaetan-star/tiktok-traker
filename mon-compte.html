@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813">
+<title>TikTok Pulse — Mon compte</title>
+<link rel="stylesheet" href="premium.css">
+<style>
+.main{padding-block:40px 20px;max-width:900px}
+.title{font:700 clamp(30px,4.2vw,48px)/1.05 'Space Grotesk';letter-spacing:-.06em;margin:16px 0 26px}
+.card{padding:24px 26px;margin-bottom:16px}
+.card h2{font:700 18px 'Space Grotesk';letter-spacing:-.02em;margin:6px 0 4px}
+.card .sub{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 16px}
+.gprofile{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.gprofile img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#0b2233}
+.gprofile .n{font:700 16px 'Space Grotesk'}
+.gprofile .e{color:var(--muted);font-size:13px}
+.gprofile .grow{flex:1;min-width:180px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font:700 11px 'Space Grotesk';letter-spacing:.08em;border:1px solid #2d536c9e;color:#cfe9f3}
+.badge.prem{border-color:#f7c56a77;color:var(--gold);background:#f7c56a0d}
+.list{display:grid;gap:8px}
+.acc{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #2c587050;border-radius:8px;background:#07172799}
+.acc.on{border-color:#3bf7ef66;background:#0b2033}
+.acc img.av{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#0b2233}
+.acc .who{flex:1;min-width:0}
+.acc .who b{display:block;font:600 14px 'DM Sans';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc .who span{color:var(--muted);font-size:12px}
+.acc .now{color:var(--cyan);font:700 11px 'Space Grotesk';letter-spacing:.08em}
+.acc .x{background:none;border:0;color:var(--muted2);cursor:pointer;padding:6px;border-radius:6px}
+.acc .x:hover{color:#ff8a8a;background:#ff4c9a12}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn.danger{border-color:#ff4c9a66;color:#ff9bbd}
+.btn.danger:hover{border-color:#ff4c9a;color:#fff}
+.btn[aria-disabled=true]{opacity:.5;pointer-events:none}
+.gbtn{min-height:44px;margin-top:6px}
+.note{color:var(--muted2);font-size:12px;line-height:1.6;margin-top:10px}
+@media(max-width:560px){.card{padding:20px 18px}.acc{flex-wrap:wrap;gap:10px}.acc .who{flex:1 1 150px}.acc > span:not(.now){display:none}.acc .now,.acc .btn{margin-left:auto}}
+.tipwrap{position:relative;display:inline-flex}
+.tipwrap .tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);width:max-content;max-width:280px;padding:10px 12px;border:1px solid #f7c56a66;border-radius:8px;background:#0b1626;color:#f7dca0;font-size:12px;line-height:1.5;box-shadow:0 12px 30px #000a;opacity:0;pointer-events:none;transition:opacity .15s;z-index:10}
+.tipwrap .tip:after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#f7c56a66}
+.tipwrap.locked:hover .tip,.tipwrap.locked:focus-within .tip,.tipwrap.locked.show .tip{opacity:1}
+.tipwrap.locked .btn{opacity:.45;cursor:not-allowed;filter:grayscale(1)}
+.ok{margin:0 0 16px;padding:12px 16px;border:1px solid #f7c56a66;border-radius:6px;color:#f7dca0;background:#f7c56a0d;font-size:13px}
+</style><script src="pulse-ui.js"></script></head><body data-nav="compte">
+<main class="shell main">
+ <div class="eyebrow">Mon compte</div>
+ <h1 class="title">Compte et abonnement</h1>
+ <div class="ok hidden" id="info" role="status"></div>
+ <div id="error" class="error" role="alert"></div>
+
+ <section class="surface card" id="googleCard">
+  <div class="micro">Compte TikTok Pulse</div>
+  <div id="googleBody"><p class="sub skel" style="height:46px"></p></div>
+ </section>
+
+ <section class="surface card">
+  <div class="micro">Comptes reliés</div>
+  <h2>Mes comptes</h2>
+  <p class="sub" id="accSub">Les comptes que tu suis avec TikTok Pulse.</p>
+  <div class="list" id="accList"></div>
+  <div class="row"><a class="btn" id="addBtn" href="/relier.html" data-icon="plus">Ajouter un compte</a></div>
+ </section>
+
+ <section class="surface card">
+  <div class="micro">Session</div>
+  <h2>Déconnexion et données</h2>
+  <p class="sub">Se déconnecter ferme ta session sur cet appareil. Supprimer ton compte efface ton compte Google, tes comptes reliés et ton statut premium.</p>
+  <div class="row">
+   <button class="btn" id="logout" type="button" data-icon="logout">Se déconnecter</button>
+   <span class="tipwrap hidden" id="deleteWrap"><button class="btn danger" id="delete" type="button">Supprimer mon compte TikTok Pulse</button><span class="tip" role="tooltip" id="deleteTip"></span></span>
+  </div>
+ </section>
+</main>
+<footer class="shell footer"><span>© TikTok Pulse · Mon compte</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const error = m => { $('error').textContent = m || ''; $('error').classList.toggle('show', !!m); };
+
+async function api(path) {
+  const r = await fetch(path, { cache: 'no-store', credentials: 'same-origin' });
+  if (r.status === 401) { location.replace('/connexion.html?erreur=session'); throw new Error('Session expirée'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erreur ' + r.status);
+  return d;
+}
+async function post(path, body) {
+  const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.error || 'Erreur ' + r.status); e.data = d; throw e; }
+  return d;
+}
+function img(url, cls) {
+  const i = document.createElement('img'); i.alt = ''; i.referrerPolicy = 'no-referrer'; if (cls) i.className = cls;
+  if (typeof url === 'string' && /^https:\/\//i.test(url)) i.src = url;
+  return i;
+}
+
+const info = new URLSearchParams(location.search).get('info');
+if (info) { $('info').textContent = info; $('info').classList.remove('hidden'); window.history.replaceState(null, '', location.pathname); }
+
+async function render() {
+  let me, data;
+  try { [me, data] = await Promise.all([api('/api/me'), api('/api/comptes')]); }
+  catch (e) { error('Impossible de charger ton compte : ' + e.message); return; }
+
+  // ----- Compte Google / abonnement -----
+  const gb = $('googleBody');
+  gb.textContent = '';
+  if (data.google) {
+    const g = data.google;
+    const wrap = document.createElement('div'); wrap.className = 'gprofile';
+    const txt = document.createElement('div'); txt.className = 'grow';
+    const n = document.createElement('div'); n.className = 'n'; n.textContent = g.nom || 'Compte Google';
+    const e = document.createElement('div'); e.className = 'e'; e.textContent = g.email || '';
+    txt.append(n, e);
+    const badge = document.createElement('span');
+    badge.className = 'badge' + (g.premium ? ' prem' : '');
+    badge.innerHTML = g.premium ? PulseUI.icon('star') + ' PREMIUM' : 'GRATUIT';
+    wrap.append(img(g.photo), txt, badge);
+    gb.append(wrap);
+    const note = document.createElement('p'); note.className = 'note';
+    note.textContent = g.premium
+      ? `Premium actif : analyse détaillée, filtre 7 jours et jusqu'à ${data.max} comptes reliés.`
+      : 'Compte gratuit : suivi en direct d\'1 compte. Le premium (analyse détaillée, plusieurs comptes) arrive bientôt.';
+    const out = document.createElement('button'); out.type = 'button'; out.className = 'btn'; out.style.marginTop = '12px';
+    out.textContent = 'Déconnecter Google';
+    out.addEventListener('click', async () => { await post('/auth/google/logout'); location.reload(); });
+    gb.append(note, out);
+    $('deleteWrap').classList.remove('hidden');
+    $('deleteWrap').classList.toggle('locked', g.premium);
+    $('delete').setAttribute('aria-disabled', String(g.premium));
+    $('deleteTip').textContent = g.premium ? "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." : '';
+    if (g.premium) $('delete').setAttribute('aria-describedby', 'deleteTip'); else $('delete').removeAttribute('aria-describedby');
+  } else {
+    const h = document.createElement('h2'); h.textContent = 'Pas encore de compte TikTok Pulse';
+    const p = document.createElement('p'); p.className = 'sub';
+    p.textContent = 'Connecte ton compte Google pour passer premium plus tard, relier plusieurs comptes et garder ton abonnement même si tu changes de compte TikTok.';
+    const btn = document.createElement('div'); btn.className = 'gbtn'; btn.id = 'gBtn';
+    gb.append(h, p, btn);
+    setupGoogle();
+  }
+
+  // ----- Comptes reliés -----
+  const list = $('accList');
+  list.textContent = '';
+  const accounts = data.google ? data.comptes : [{ openId: '', pseudo: me.username, nom: me.nickname, avatar: me.avatar, actif: true }];
+  accounts.forEach(a => {
+    const row = document.createElement('div'); row.className = 'acc' + (a.actif ? ' on' : '');
+    const who = document.createElement('div'); who.className = 'who';
+    const b = document.createElement('b'); b.textContent = a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte TikTok');
+    const s = document.createElement('span'); s.textContent = 'TikTok' + (a.nom && a.pseudo ? ' · ' + a.nom : '');
+    who.append(b, s);
+    const logo = document.createElement('span'); logo.innerHTML = PulseUI.brand('tiktok');
+    row.append(img(a.avatar, 'av'), who, logo);
+    if (a.actif) {
+      const now = document.createElement('span'); now.className = 'now'; now.textContent = 'AFFICHÉ';
+      row.append(now);
+    } else {
+      const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'btn'; sw.textContent = 'Afficher';
+      sw.addEventListener('click', async () => {
+        try { await post('/auth/switch', { openId: a.openId }); try { sessionStorage.clear(); } catch {} location.href = '/'; }
+        catch (err) { if (err.data?.reconnect) location.href = '/relier.html'; else error(err.message); }
+      });
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.title = 'Délier ce compte'; x.innerHTML = PulseUI.icon('logout');
+      x.addEventListener('click', async () => {
+        if (!confirm('Délier ce compte de ton compte TikTok Pulse ?')) return;
+        try { await post('/api/comptes/delier', { openId: a.openId }); render(); } catch (err) { error(err.message); }
+      });
+      row.append(sw, x);
+    }
+    list.append(row);
+  });
+
+  const add = $('addBtn');
+  if (!data.google) {
+    $('accSub').textContent = 'Connecte Google pour relier d\'autres comptes (TikTok, et bientôt YouTube et Facebook Reels).';
+    add.setAttribute('aria-disabled', 'true');
+  } else if (data.comptes.length >= data.max) {
+    $('accSub').textContent = data.google.premium ? `Limite de ${data.max} comptes atteinte.` : 'Compte gratuit : 1 compte relié. Le premium permet d\'en relier plusieurs.';
+    add.setAttribute('aria-disabled', 'true');
+  } else {
+    $('accSub').textContent = `${data.comptes.length} / ${data.max} compte${data.max > 1 ? 's' : ''} relié${data.comptes.length > 1 ? 's' : ''}.`;
+    add.removeAttribute('aria-disabled');
+  }
+}
+
+$('logout').addEventListener('click', async () => {
+  try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { location.replace('/connexion.html'); }
+});
+$('delete').addEventListener('click', async () => {
+  // Premium actif : bouton grisé, on affiche juste l'explication (utile au toucher sur téléphone).
+  if ($('delete').getAttribute('aria-disabled') === 'true') {
+    $('deleteWrap').classList.add('show');
+    setTimeout(() => $('deleteWrap').classList.remove('show'), 3500);
+    return;
+  }
+  if (!confirm('Supprimer ton compte TikTok Pulse ? Ton compte Google, tes comptes reliés et ton statut premium seront effacés. Cette action est définitive.')) return;
+  try { await post('/api/compte/supprimer'); location.reload(); } catch (err) { error(err.message); }
+});
+
+async function setupGoogle() {
+  let clientId;
+  try { clientId = (await api('/auth/google/config')).clientId; } catch { return; }
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async r => {
+        try { const out = await post('/auth/google', { credential: r.credential }); if (out.warning) error(out.warning); render(); }
+        catch (e) { error('Connexion Google impossible : ' + e.message); }
+      }
+    });
+    google.accounts.id.renderButton($('gBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr' });
+  };
+  document.head.append(s);
+}
+
+render();
+</script>
+</body></html>

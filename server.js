@@ -27,7 +27,7 @@ require("./tiktok-auth")(app);
 // .env, package.json…). La page d'accueil est l'espace
 // créateur.
 const SITE_FILES = new Set([
-    "/compte.html", "/analyse.html", "/connexion.html", "/premium.css",
+    "/compte.html", "/analyse.html", "/connexion.html", "/premium.css", "/pulse-ui.js", "/relier.html", "/mon-compte.html",
     "/confidentialite.html", "/conditions.html"
 ]);
 
