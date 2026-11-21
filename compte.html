@@ -34,7 +34,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .pill{background:#09192a;border:1px solid #3c6c8955;color:#9dd5e6;
  font:700 10px 'Space Grotesk';letter-spacing:.16em;border-radius:4px}
 .dot.on{background:#73ffb8;box-shadow:0 0 0 3px #73ffb81b,0 0 14px #73ffb8}
-.main{padding-top:68px}
+.main{padding-top:32px}
 .eyebrow{color:#3bf7ef;font:700 11px 'Space Grotesk';letter-spacing:.27em}
 .eyebrow:before{content:"◈";margin-right:11px;color:#ff4c9a}
 .headline{font:700 clamp(47px,6.5vw,94px)/.98 'Space Grotesk';letter-spacing:-.075em;
@@ -127,7 +127,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 }
 @media(max-width:560px){
  .shell{padding-inline:17px}.topbar{height:75px}
- .brand{font-size:19px}.main{padding-top:45px}
+ .brand{font-size:19px}.main{padding-top:18px}
  .headline{font-size:clamp(43px,11vw,62px)}
  .lead{font-size:13px}
  .search{flex-direction:column}
@@ -237,7 +237,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 @media(max-width:700px){.account{grid-template-columns:auto 1fr;padding:22px}.account .ghost-btn{grid-column:1/-1}.account-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.account-avatar{width:64px;height:64px}}
 
 </style></head><body>
-<header class="shell topbar"><a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a><div class="top-right hidden" aria-hidden="true"><span class="pill"><span id="headerDot" class="dot"></span><span id="headerStatus">CHARGEMENT</span></span></div></header>
+<div class="hidden" aria-hidden="true"><span id="headerDot"></span><span id="headerStatus"></span></div>
 <main class="shell main">
 
 <div class="info-banner hidden" id="infoBanner" role="status"></div>

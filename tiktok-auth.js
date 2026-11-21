@@ -201,11 +201,11 @@ async function tokenRequest(params) {
 // Le document est créé à la première visite avec premium: false.
 // Pour passer quelqu'un en premium : console Firestore →
 // utilisateurs → son document → premium = true.
-// Lecture mise en cache 5 min pour rester dans le quota gratuit.
+// Lecture mise en cache 1 min pour rester dans le quota gratuit.
 // Sans Firestore (ex. en local), tout le monde est gratuit.
 // =====================================================
 
-const PREMIUM_CACHE_MS = 5 * 60 * 1000;
+const PREMIUM_CACHE_MS = 60 * 1000;
 const premiumCache = new Map();
 let firestore;
 

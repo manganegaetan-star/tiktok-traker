@@ -5,6 +5,7 @@
 <style>
 .main{padding-block:38px 10px}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
 .head h1{font:700 clamp(30px,4.2vw,54px)/1 'Space Grotesk';letter-spacing:-.06em;margin:14px 0 8px}
 .head h1 em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 50%,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .head p{color:#8eafc2;margin:0;font-size:14px;line-height:1.6;max-width:640px}
@@ -77,10 +78,6 @@ th.n{text-align:right}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
 @media(max-width:560px){.bar{grid-template-columns:118px minmax(0,1fr) 72px;font-size:12px}.card{padding:20px}.hide-sm{display:none}}
 </style></head><body>
-<header class="shell topbar">
- <a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a>
- <a class="ghost" href="/">← Suivi en direct</a>
-</header>
 
 <main class="shell main">
  <section class="head">
@@ -89,7 +86,7 @@ th.n{text-align:right}
    <h1 id="hTitle">Ton compte <em>à la loupe.</em></h1>
    <p id="hSub">Analyse calculée à partir de toutes tes vidéos publiques.</p>
   </div>
-  <button class="ghost" id="reload" type="button">↻ Actualiser l'analyse</button>
+  <div class="head-actions"><a class="ghost" href="/">← Suivi en direct</a><button class="ghost" id="reload" type="button">↻ Actualiser l'analyse</button></div>
  </section>
 
  <div class="filters hidden" id="filters">
@@ -226,14 +223,15 @@ async function api(path) {
 
 // Toutes les vidéos publiques (20 par page, 10 pages max = 200 vidéos).
 async function fetchAll(force) {
+  // Le statut premium est revérifié à chaque ouverture ; seules les vidéos sont gardées en cache.
+  const me = await api('/api/me');
+  if (!me.premium) { try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ } return { t: Date.now(), me, videos: [] }; }
   if (!force) {
     try {
       const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-      if (c && Date.now() - c.t < CACHE_MS) return c;
+      if (c && Date.now() - c.t < CACHE_MS) return { ...c, me };
     } catch { /* stockage indisponible */ }
   }
-  const me = await api('/api/me');
-  if (!me.premium) return { t: Date.now(), me, videos: [] };
   let videos = [], cursor = null, more = true, pages = 0;
   while (more && pages++ < 10) {
     const d = await api('/api/me/videos?limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
