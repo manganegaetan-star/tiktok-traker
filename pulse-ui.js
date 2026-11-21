@@ -426,7 +426,8 @@
     // Téléphone : petite barre du haut (logo + compte affiché).
     const top = document.createElement('header');
     top.className = 'ptop';
-    top.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a><div class="psw"></div>';
+    top.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a>'
+      + '<div class="ptop-right"><div class="psw"></div><a class="ptop-gear" href="/parametres.html" aria-label="Paramètres" title="Paramètres"' + (current === 'parametres' ? ' aria-current="page"' : '') + '>' + icon('gear') + '</a></div>';
 
     document.body.prepend(side, top, bar);
     const mobile = window.matchMedia('(max-width: 900px)').matches;

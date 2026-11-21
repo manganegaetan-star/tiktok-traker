@@ -386,3 +386,11 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 }
 
 .st-cost{color:var(--gold);font-weight:600}
+
+/* Téléphone : accès aux Paramètres depuis la barre du haut */
+.ptop-right{display:flex;align-items:center;gap:8px;min-width:0}
+.ptop .ptop-right .psw{max-width:none;min-width:0}
+.ptop-gear{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border:1px solid #2d536c88;border-radius:999px;background:#0b1d2e;color:#cfe9f3}
+.ptop-gear .ico{width:20px;height:20px}
+.ptop-gear[aria-current=page]{border-color:var(--cyan);color:var(--cyan)}
+@media(max-width:900px){.ptop .psw-btn > span{max-width:120px}}
