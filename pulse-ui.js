@@ -94,14 +94,14 @@
       const item = document.createElement('button');
       item.type = 'button'; item.className = 'picker-item' + (a.actif ? ' on' : '');
       item.setAttribute('role', 'option'); item.setAttribute('aria-selected', String(!!a.actif));
-      item.insertAdjacentHTML('beforeend', brand('tiktok'));
+      item.insertAdjacentHTML('beforeend', brand(a.platform || 'tiktok'));
       item.append(chip(a));
       if (a.actif) item.insertAdjacentHTML('beforeend', icon('check'));
       item.addEventListener('click', async () => {
         if (a.actif) { menu.hidden = true; return; }
         item.disabled = true;
         try {
-          const r = await fetch('/auth/switch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ openId: a.openId }) });
+          const r = await fetch('/auth/switch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: a.platform || 'tiktok', id: a.id || a.openId }) });
           const out = await r.json().catch(() => ({}));
           if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else alert(out.error || 'Changement impossible'); return; }
           try { sessionStorage.clear(); } catch { /* ignore */ }
@@ -137,6 +137,14 @@
     ).join('');
     document.body.prepend(el);
     document.body.classList.add('has-pnav');
+
+    // Pages des onglets préchargées au survol / toucher : le changement est quasi instantané.
+    if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
+      const rules = document.createElement('script');
+      rules.type = 'speculationrules';
+      rules.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: ['/', '/analyse.html', '/mon-compte.html'], eagerness: 'moderate' }] });
+      document.head.append(rules);
+    }
   }
 
   window.PulseUI = { icon, brand, hydrate, picker };

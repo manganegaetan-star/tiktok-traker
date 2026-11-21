@@ -393,7 +393,7 @@ function status(active,label){$('headerDot').classList.toggle('on',active);$('he
 function plot(){const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect();if(!rect.width)return;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.scale(dpr,dpr);const w=rect.width,h=rect.height,pad={l:55,r:10,t:15,b:25};ctx.clearRect(0,0,w,h);ctx.font='11px DM Sans';ctx.fillStyle='#8990a6';ctx.strokeStyle='#ffffff13';ctx.lineWidth=1;if(history.length<2){$('chartEmpty').classList.remove('hidden');return}$('chartEmpty').classList.add('hidden');const values=history.map(p=>p.v),min=Math.min(...values),max=Math.max(...values),spread=Math.max(1,max-min),lo=min-spread*.12,hi=max+spread*.12;for(let i=0;i<4;i++){const y=pad.t+(h-pad.t-pad.b)*i/3;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(nf.format(Math.round(hi-(hi-lo)*i/3)),3,y+4)}const x=i=>pad.l+(w-pad.l-pad.r)*i/(history.length-1),y=v=>pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);const grad=ctx.createLinearGradient(0,pad.t,0,h-pad.b);grad.addColorStop(0,'#42e9e344');grad.addColorStop(1,'#42e9e300');ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.lineTo(x(history.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();history.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.v)):ctx.moveTo(x(i),y(p.v)));ctx.strokeStyle='#42e9e3';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();ctx.fillStyle='#8d93a6';ctx.fillText(new Date(history[0].t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),pad.l,h-5);ctx.textAlign='right';ctx.fillText(new Date(history.at(-1).t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),w-pad.r,h-5);ctx.textAlign='left'}
 
 // ═══ ESPACE CRÉATEUR : données officielles TikTok ═══
-const POLL_MS = 10000; // 10 s : le moins de requêtes possible
+let POLL_MS = 10000; // 10 s sur TikTok ; 60 s sur YouTube (quota de l'API)
 const counter = new RollingCounter($('views'));
 let selected = null, timer = null, busy = false, requestId = 0, lastStats = null;
 let history = [], initialViews = null, previous = null;
@@ -437,6 +437,18 @@ function loadAccounts() {
   PulseUI.picker($('pickerSlot'));
 }
 
+// Compte YouTube affiché : pas de partages ni de favoris dans l'API, relevé toutes les 60 s.
+function applyYouTube() {
+  POLL_MS = 60000;
+  const following = $('following');
+  following.nextElementSibling.textContent = 'Vues de la chaîne';
+  show('following', me.channelViews);
+  $('profileLikes').parentElement.classList.add('hidden');
+  ['shares', 'favorites'].forEach(id => $(id).closest('.metric')?.classList.add('hidden'));
+  ['favRate', 'shareRate'].forEach(id => $(id).parentElement.classList.add('hidden'));
+  $('openTikTok').textContent = 'Ouvrir sur YouTube ↗';
+}
+
 const unskel = (...ids) => ids.forEach(id => $(id)?.classList.remove('skel'));
 
 async function loadMe() {
@@ -450,9 +462,10 @@ async function loadMe() {
   imageSet('meAvatar', me.avatar);
   show('followers', me.followers); show('following', me.following);
   show('profileLikes', me.likes); show('videos', me.videos);
+  if (me.platform === 'youtube') applyYouTube();
   titleFollowers = Number.isFinite(Number(me.followers)) ? Number(me.followers) : null;
   imageSet('avatar', me.avatar);
-  $('nickname').textContent = me.nickname || 'Créateur TikTok';
+  $('nickname').textContent = me.nickname || (me.platform === 'youtube' ? 'Chaîne YouTube' : 'Créateur TikTok');
   $('username').textContent = me.username ? '@' + me.username : '';
 }
 
@@ -461,7 +474,7 @@ async function loadMe() {
 async function refreshMe() {
   try {
     const fresh = await api('/api/me');
-    [['followers', 'followers'], ['following', 'following'], ['profileLikes', 'likes'], ['videos', 'videos']].forEach(([id, key]) => {
+    [['followers', 'followers'], ['following', fresh.platform === 'youtube' ? 'channelViews' : 'following'], ['profileLikes', 'likes'], ['videos', 'videos']].forEach(([id, key]) => {
       const before = Number(me[key]), after = Number(fresh[key]);
       show(id, fresh[key]);
       if (Number.isFinite(before) && Number.isFinite(after) && after !== before) {
@@ -483,7 +496,7 @@ function videoCard(v) {
   const body = document.createElement('div'); body.className = 'b';
   const t = document.createElement('div'); t.className = 't'; t.textContent = v.title;
   const views = document.createElement('div'); views.className = 'v'; views.textContent = fmt(v.views) + ' vues';
-  const s = document.createElement('div'); s.className = 's'; s.innerHTML = `${PulseUI.icon('heart')} ${fmt(v.likes)} · ${PulseUI.icon('message')} ${fmt(v.comments)} · ${PulseUI.icon('share')} ${fmt(v.shares)}`;
+  const s = document.createElement('div'); s.className = 's'; s.innerHTML = `${PulseUI.icon('heart')} ${fmt(v.likes)} · ${PulseUI.icon('message')} ${fmt(v.comments)}` + (v.shares == null ? '' : ` · ${PulseUI.icon('share')} ${fmt(v.shares)}`);
   body.append(t, views, s);
   if (v.id === firstVideo?.id) { const tag = document.createElement('div'); tag.className = 'tag'; tag.textContent = '◆ DERNIÈRE VIDÉO'; body.append(tag); }
   b.append(im, body);

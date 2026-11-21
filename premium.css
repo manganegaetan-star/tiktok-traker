@@ -86,3 +86,13 @@ body:after{background:linear-gradient(90deg,transparent,var(--cyan) 30%,#5aa8ff 
 .picker-item.add{color:#9fc3d4;border-top:1px solid #2c587055;border-radius:0 0 7px 7px;margin-top:4px;padding-top:10px}
 .picker-btn{justify-content:center}
 @media(max-width:700px){.picker{display:block;width:100%}.picker .picker-btn{width:100%}.picker-menu{left:0;right:0;min-width:0}}
+
+/* Transitions fluides entre les pages (Chrome, Edge, Safari récents) :
+   la barre d'onglets reste en place, le contenu glisse en fondu. */
+@view-transition{navigation:auto}
+.pnav{view-transition-name:pnav}
+::view-transition-old(root){animation:pv-out .18s ease both}
+::view-transition-new(root){animation:pv-in .28s ease both}
+@keyframes pv-out{to{opacity:0;transform:translateY(-6px)}}
+@keyframes pv-in{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}

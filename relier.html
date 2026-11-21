@@ -45,11 +45,11 @@
    <p>Vues exactes en direct, favoris, analyse de tes vidéos.</p>
    <div id="tiktokAction"><a class="go" href="/auth/tiktok?ajout=1">Connecter TikTok</a></div>
   </article>
-  <article class="surface pf off">
+  <article class="surface pf off" id="pfYoutube">
    <div class="logo" id="logoYoutube"></div>
    <h2>YouTube</h2>
-   <p>Shorts et vidéos : vues, likes et abonnés de ta chaîne.</p>
-   <div class="soon">Bientôt disponible</div>
+   <p>Shorts et vidéos : vues, likes, commentaires et abonnés de ta chaîne.</p>
+   <div id="youtubeAction"><div class="soon">Bientôt disponible</div></div>
   </article>
   <article class="surface pf off">
    <div class="logo" id="logoFacebook"></div>
@@ -104,8 +104,15 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   plan.classList.toggle('prem', me.google.premium);
   plan.classList.remove('hidden');
 
+  if (me.youtube) {
+    $('pfYoutube').classList.remove('off');
+    $('youtubeAction').innerHTML = '<a class="go" href="/auth/youtube">Connecter YouTube</a>';
+  }
+
   if (me.count >= me.max) {
-    $('tiktokAction').innerHTML = '<div class="full">' + PulseUI.icon('lock') + (me.google.premium ? ' Limite de comptes atteinte' : ' Premium requis pour un 2ᵉ compte') + '</div>';
+    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.premium ? ' Limite de comptes atteinte' : ' Premium requis pour un 2ᵉ compte') + '</div>';
+    $('tiktokAction').innerHTML = full;
+    if (me.youtube) $('youtubeAction').innerHTML = full;
   }
 })();
 </script>

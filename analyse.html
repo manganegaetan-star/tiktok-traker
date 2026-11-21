@@ -359,7 +359,7 @@ function render({ me, videos, t }) {
   if (last30 < 4) add('trend', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
   $('tips').innerHTML = tips.join('') || '<div class="empty">Publie encore quelques vidéos pour obtenir des conseils personnalisés.</div>';
 
-  $('note').textContent = 'Les vues médianes limitent l\'effet d\'une vidéo virale isolée. Les heures sont celles de ton appareil. Données : API officielle TikTok (vidéos publiques uniquement).';
+  $('note').textContent = 'Les vues médianes limitent l\'effet d\'une vidéo virale isolée. Les heures sont celles de ton appareil. Données : API officielle ' + (DATA?.me?.platform === 'youtube' ? 'YouTube' : 'TikTok (vidéos publiques uniquement)') + '.';
 }
 
 async function load(force) {

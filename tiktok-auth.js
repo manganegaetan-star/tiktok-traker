@@ -18,6 +18,7 @@
 // =====================================================
 
 const crypto = require("crypto");
+const createYouTube = require("./youtube");
 
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const API = "https://open.tiktokapis.com/v2";
@@ -306,8 +307,8 @@ async function linkTikTok(store, uid, session, profile, secret) {
     const tiktokRef = accountRef.collection("tiktok").doc(session.openId);
 
     return store.runTransaction(async t => {
-        const [link, account, existing, all] = await Promise.all([
-            t.get(linkRef), t.get(accountRef), t.get(tiktokRef), t.get(accountRef.collection("tiktok"))
+        const [link, account, existing, all, yall] = await Promise.all([
+            t.get(linkRef), t.get(accountRef), t.get(tiktokRef), t.get(accountRef.collection("tiktok")), t.get(accountRef.collection("youtube"))
         ]);
 
         if (link.exists && link.get("compte") !== uid) {
@@ -318,7 +319,7 @@ async function linkTikTok(store, uid, session, profile, secret) {
             const premium = account.exists && account.get("premium") === true;
             const max = premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE;
 
-            if (all.size >= max) {
+            if (all.size + yall.size >= max) {
                 return premium
                     ? `Tu as atteint la limite de ${MAX_TIKTOK_PREMIUM} comptes TikTok.`
                     : "Passe au premium pour relier plusieurs comptes TikTok.";
@@ -545,9 +546,22 @@ function isPublicPath(path) {
 }
 
 module.exports = function mountTikTokAuth(app) {
+    const youtube = createYouTube({
+        config, seal, unseal, readCookie, setCookie, clearCookie, db, readGoogle, cached, cache,
+        TIMEOUT_MS, GOOGLE_CLIENT_ID
+    });
+
+    // Compte YouTube affiché (cookie) + compte Google connecté.
+    function youtubeShown(req) {
+        const c = config(req);
+        if (!c.secret) return false;
+        const a = youtube.readActive(req, c.secret);
+        return Boolean(a?.p === "youtube" && readGoogle(req, c.secret));
+    }
+
     // Verrou global : à placer AVANT les autres routes.
     app.use((req, res, next) => {
-        if (isPublicPath(req.path) || readSession(req)) return next();
+        if (isPublicPath(req.path) || readSession(req) || youtubeShown(req)) return next();
 
         res.set("Cache-Control", "no-store");
 
@@ -629,7 +643,7 @@ module.exports = function mountTikTokAuth(app) {
         res.set("Cache-Control", "no-store");
         res.json({
             enabled: config(req).ready,
-            connected: Boolean(readSession(req)),
+            connected: Boolean(readSession(req) || youtubeShown(req)),
             google: Boolean(readGoogle(req, config(req).secret))
         });
     });
@@ -700,6 +714,7 @@ module.exports = function mountTikTokAuth(app) {
                 (session.refreshExpires - Date.now()) / 1000);
 
             console.log("[AUTH] Créateur connecté");
+            youtube.clearActive(req, res);
 
             // Connecté à Google : on relie ce compte TikTok au compte Google.
             const google = readGoogle(req, c.secret);
@@ -748,6 +763,7 @@ module.exports = function mountTikTokAuth(app) {
 
         clearCookie(req, res, SESSION_COOKIE);
         clearCookie(req, res, GOOGLE_COOKIE);
+        youtube.clearActive(req, res);
 
         // Compte relié à un compte Google : on garde l'accès (sélecteur de comptes).
         let linked = false;
@@ -772,15 +788,88 @@ module.exports = function mountTikTokAuth(app) {
         res.json({ success: true });
     });
 
-    // ---------- Compte Google (premium) ----------
+    // ---------- Compte Google (premium) + comptes reliés (TikTok, YouTube) ----------
+
+    const maxFor = premium => (premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE);
+
+    async function countAll(store, uid) {
+        const ref = store.collection("comptes").doc(uid);
+        const [t, y] = await Promise.all([ref.collection("tiktok").get(), ref.collection("youtube").get()]);
+        return t.size + y.size;
+    }
+
+    youtube.mountRoutes(app, { maxFor, countAll });
+
+    // Affiche un compte relié (TikTok le plus récent, sinon YouTube) ; sinon page « Relier un compte ».
+    async function activateAny(req, res, store, uid, secret) {
+        const session = await pickStoredSession(store, uid, secret);
+        if (session) {
+            setCookie(req, res, SESSION_COOKIE, seal(session, secret), (session.refreshExpires - Date.now()) / 1000);
+            youtube.clearActive(req, res);
+            return "/";
+        }
+
+        const yts = await youtube.list(store, uid);
+        if (yts.length) {
+            clearCookie(req, res, SESSION_COOKIE);
+            youtube.setActive(req, res, secret, "youtube", yts[0].id);
+            return "/";
+        }
+
+        clearCookie(req, res, SESSION_COOKIE);
+        youtube.clearActive(req, res);
+        return "/relier.html";
+    }
+
+    async function googlePremium(uid) {
+        const k = "g:" + uid;
+        const hit = premiumCache.get(k);
+        if (hit && hit.expires > Date.now()) return hit.value;
+
+        let value = false;
+        try {
+            const a = await db()?.collection("comptes").doc(uid).get();
+            value = Boolean(a?.exists && a.get("premium") === true);
+        } catch (error) {
+            console.warn("Lecture premium impossible :", error.message);
+        }
+        premiumCache.set(k, { value, expires: Date.now() + PREMIUM_CACHE_MS });
+        return value;
+    }
+
+    // Compte affiché : YouTube (cookie tp_active) ou TikTok (session).
+    async function requireAccount(req, res, next) {
+        const yt = await youtube.sessionFor(req, res);
+
+        if (yt && !yt.error) {
+            req.youtube = yt;
+            res.set("Cache-Control", "no-store");
+            return next();
+        }
+
+        if (yt?.error) {
+            if (!readSession(req)) return res.status(401).json({ error: "Reconnecte ton compte YouTube" });
+            youtube.clearActive(req, res);
+        }
+
+        return requireSession(req, res, next);
+    }
+
+    function ytError(res, error) {
+        console.warn("[YOUTUBE API]", error.status || "", error.reason || "", error.message);
+        if (error.status === 401) return res.status(401).json({ error: "Reconnecte ton compte YouTube" });
+        if (error.reason === "quotaExceeded") return res.status(429).json({ error: "Quota YouTube du jour atteint, réessaie plus tard" });
+        if (error.status === 404) return res.status(404).json({ error: error.message });
+        return res.status(502).json({ error: error.message });
+    }
 
     app.get("/auth/google/config", (req, res) => {
-        res.json({ clientId: GOOGLE_CLIENT_ID });
+        res.json({ clientId: GOOGLE_CLIENT_ID, youtube: youtube.ready() });
     });
 
     // Connexion directe avec Google (page de connexion).
-    // → s'il a un compte TikTok relié : connecté directement ;
-    // → sinon : il doit connecter un compte TikTok (relié automatiquement).
+    // → s'il a un compte relié : connecté directement ;
+    // → sinon : page « Relier un compte ».
     app.post("/auth/google/login", async (req, res) => {
         const c = config(req);
         const store = db();
@@ -801,22 +890,15 @@ module.exports = function mountTikTokAuth(app) {
         try {
             await upsertGoogleAccount(store, google, null);
             setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
-
-            const session = await pickStoredSession(store, google.uid, c.secret);
-            if (session) {
-                setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
-                    (session.refreshExpires - Date.now()) / 1000);
-                return res.json({ next: "/" });
-            }
-
-            res.json({ next: "/relier.html", needTikTok: true });
+            const next = await activateAny(req, res, store, google.uid, c.secret);
+            res.json({ next, needTikTok: next === "/relier.html" });
         } catch (error) {
             console.warn("[GOOGLE] Connexion impossible :", error.message);
             res.status(500).json({ error: "Connexion impossible, réessaie" });
         }
     });
 
-    // Compte Google connecté (cookie), sans exiger de session TikTok : page « Relier un compte ».
+    // Compte Google connecté (cookie), sans exiger d'autre session : page « Relier un compte ».
     app.get("/auth/google/me", async (req, res) => {
         const c = config(req);
         const google = c.ready ? readGoogle(req, c.secret) : null;
@@ -826,15 +908,15 @@ module.exports = function mountTikTokAuth(app) {
         if (!google || !store) return res.json({ google: null });
 
         try {
-            const accountRef = store.collection("comptes").doc(google.uid);
-            const [account, list] = await Promise.all([accountRef.get(), accountRef.collection("tiktok").get()]);
+            const account = await store.collection("comptes").doc(google.uid).get();
             if (!account.exists) { clearCookie(req, res, GOOGLE_COOKIE); return res.json({ google: null }); }
 
             const premium = account.get("premium") === true;
             res.json({
                 google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
-                count: list.size,
-                max: premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE
+                count: await countAll(store, google.uid),
+                max: maxFor(premium),
+                youtube: youtube.ready()
             });
         } catch (error) {
             console.warn("[GOOGLE] Lecture du compte impossible :", error.message);
@@ -842,7 +924,7 @@ module.exports = function mountTikTokAuth(app) {
         }
     });
 
-    // Déjà connecté à Google (cookie) mais plus à TikTok : on reprend le dernier compte relié.
+    // Déjà connecté à Google (cookie) mais sans compte affiché : on reprend un compte relié.
     app.post("/auth/google/resume", async (req, res) => {
         const c = config(req);
         const google = c.ready ? readGoogle(req, c.secret) : null;
@@ -852,12 +934,8 @@ module.exports = function mountTikTokAuth(app) {
         if (!google || !store) return res.json({ next: null });
 
         try {
-            const session = await pickStoredSession(store, google.uid, c.secret);
-            if (!session) return res.json({ next: "/relier.html", needTikTok: true });
-
-            setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
-                (session.refreshExpires - Date.now()) / 1000);
-            res.json({ next: "/" });
+            const next = await activateAny(req, res, store, google.uid, c.secret);
+            res.json({ next, needTikTok: next === "/relier.html" });
         } catch (error) {
             console.warn("[GOOGLE] Reprise impossible :", error.message);
             res.json({ next: null });
@@ -890,6 +968,7 @@ module.exports = function mountTikTokAuth(app) {
             const problem = await linkTikTok(store, google.uid, req.tiktok, profile, c.secret);
 
             premiumCache.delete(req.tiktok.openId);
+            premiumCache.delete("g:" + google.uid);
             setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
             res.json({ success: true, warning: problem });
         } catch (error) {
@@ -900,11 +979,12 @@ module.exports = function mountTikTokAuth(app) {
 
     app.post("/auth/google/logout", (req, res) => {
         clearCookie(req, res, GOOGLE_COOKIE);
+        youtube.clearActive(req, res);
         res.json({ success: true });
     });
 
-    // Compte Google + comptes TikTok reliés (pour le sélecteur).
-    app.get("/api/comptes", requireSession, async (req, res) => {
+    // Compte Google + comptes reliés (sélecteur, onglet Compte).
+    app.get("/api/comptes", requireAccount, async (req, res) => {
         const c = config(req);
         const google = readGoogle(req, c.secret);
         const store = db();
@@ -913,7 +993,9 @@ module.exports = function mountTikTokAuth(app) {
 
         try {
             const accountRef = store.collection("comptes").doc(google.uid);
-            const [account, list] = await Promise.all([accountRef.get(), accountRef.collection("tiktok").get()]);
+            const [account, tk, yts] = await Promise.all([
+                accountRef.get(), accountRef.collection("tiktok").get(), youtube.list(store, google.uid)
+            ]);
 
             if (!account.exists) {
                 clearCookie(req, res, GOOGLE_COOKIE);
@@ -921,16 +1003,25 @@ module.exports = function mountTikTokAuth(app) {
             }
 
             const premium = account.get("premium") === true;
+            const activeYt = req.youtube?.channelId || null;
+            const activeTk = req.tiktok?.openId || null;
+
             res.json({
                 google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
-                max: premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE,
-                comptes: list.docs.map(d => ({
-                    openId: d.id,
-                    pseudo: d.get("pseudo"),
-                    nom: d.get("nom"),
-                    avatar: d.get("avatar"),
-                    actif: d.id === req.tiktok.openId
-                }))
+                max: maxFor(premium),
+                youtube: youtube.ready(),
+                comptes: [
+                    ...tk.docs.map(d => ({
+                        platform: "tiktok", id: d.id, openId: d.id,
+                        pseudo: d.get("pseudo"), nom: d.get("nom"), avatar: d.get("avatar"),
+                        actif: !activeYt && d.id === activeTk
+                    })),
+                    ...yts.map(d => ({
+                        platform: "youtube", id: d.id,
+                        pseudo: d.get("pseudo"), nom: d.get("nom"), avatar: d.get("avatar"),
+                        actif: d.id === activeYt
+                    }))
+                ]
             });
         } catch (error) {
             console.warn("[COMPTES]", error.message);
@@ -938,23 +1029,38 @@ module.exports = function mountTikTokAuth(app) {
         }
     });
 
-    // Passer sur un autre compte TikTok relié, sans se reconnecter.
-    app.post("/auth/switch", requireSession, async (req, res) => {
+    function target(req) {
+        const b = req.body || {};
+        const platform = b.platform === "youtube" ? "youtube" : "tiktok";
+        const id = typeof b.id === "string" ? b.id : typeof b.openId === "string" ? b.openId : "";
+        return { platform, id };
+    }
+
+    // Passer sur un autre compte relié, sans se reconnecter (premium).
+    app.post("/auth/switch", async (req, res) => {
         const c = config(req);
-        const google = readGoogle(req, c.secret);
-        const openId = typeof req.body?.openId === "string" ? req.body.openId : "";
+        const google = c.ready ? readGoogle(req, c.secret) : null;
+        const { platform, id } = target(req);
         const store = db();
 
-        if (!google || !store || !openId) return res.status(400).json({ error: "Changement impossible" });
+        res.set("Cache-Control", "no-store");
+        if (!google || !store || !id) return res.status(400).json({ error: "Changement impossible" });
 
         try {
-            // Passer d'un compte à l'autre est réservé au premium.
-            const account = await store.collection("comptes").doc(google.uid).get();
+            const accountRef = store.collection("comptes").doc(google.uid);
+            const account = await accountRef.get();
             if (!account.exists || account.get("premium") !== true) {
                 return res.status(403).json({ error: "Le premium permet de passer d'un compte à l'autre" });
             }
 
-            const doc = await store.collection("comptes").doc(google.uid).collection("tiktok").doc(openId).get();
+            if (platform === "youtube") {
+                const doc = await accountRef.collection("youtube").doc(id).get();
+                if (!doc.exists) return res.status(404).json({ error: "Compte introuvable" });
+                youtube.setActive(req, res, c.secret, "youtube", id);
+                return res.json({ success: true });
+            }
+
+            const doc = await accountRef.collection("tiktok").doc(id).get();
             const session = doc.exists ? unseal(doc.get("jeton"), c.secret) : null;
 
             if (!session || Date.now() >= session.refreshExpires) {
@@ -963,6 +1069,7 @@ module.exports = function mountTikTokAuth(app) {
 
             setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
                 (session.refreshExpires - Date.now()) / 1000);
+            youtube.clearActive(req, res);
             res.json({ success: true });
         } catch (error) {
             console.warn("[COMPTES] Changement impossible :", error.message);
@@ -970,41 +1077,87 @@ module.exports = function mountTikTokAuth(app) {
         }
     });
 
-    // Délier un compte TikTok (pas celui en cours d'utilisation).
-    app.post("/api/comptes/delier", requireSession, async (req, res) => {
+    // Délier un compte (premium ou non, compte Google requis).
+    // Si c'est le compte affiché : on bascule sur un autre compte relié,
+    // ou, s'il n'en reste aucun, on renvoie vers « Relier un compte ».
+    app.post("/api/comptes/delier", async (req, res) => {
         const c = config(req);
-        const google = readGoogle(req, c.secret);
-        const openId = typeof req.body?.openId === "string" ? req.body.openId : "";
+        const google = c.ready ? readGoogle(req, c.secret) : null;
+        const { platform, id } = target(req);
         const store = db();
 
-        if (!google || !store || !openId || openId === req.tiktok.openId) {
-            return res.status(400).json({ error: "Impossible de délier ce compte" });
+        res.set("Cache-Control", "no-store");
+        if (!google || !store || !id) {
+            return res.status(400).json({ error: "Connecte ton compte Google pour gérer tes comptes reliés" });
         }
 
+        const active = youtube.readActive(req, c.secret);
+        const activeYt = active?.p === "youtube" ? active.id : null;
+        const currentTk = readSession(req)?.openId || null;
+
         try {
-            const ref = store.collection("comptes").doc(google.uid).collection("tiktok").doc(openId);
-            const doc = await ref.get();
-            if (!doc.exists) return res.status(404).json({ error: "Compte introuvable" });
+            let wasShown = false;
 
-            const s = unseal(doc.get("jeton"), c.secret);
-            if (s) revokeToken(c, s.accessToken);
+            if (platform === "youtube") {
+                if (!(await youtube.unlink(store, google.uid, id, c.secret))) return res.status(404).json({ error: "Compte introuvable" });
+                wasShown = activeYt === id;
+            } else {
+                const ref = store.collection("comptes").doc(google.uid).collection("tiktok").doc(id);
+                const doc = await ref.get();
+                if (!doc.exists) return res.status(404).json({ error: "Compte introuvable" });
 
-            await Promise.all([ref.delete(), store.collection("liensTiktok").doc(openId).delete()]);
-            premiumCache.delete(openId);
-            res.json({ success: true });
+                const s = unseal(doc.get("jeton"), c.secret);
+                if (s) revokeToken(c, s.accessToken);
+
+                await Promise.all([
+                    ref.delete(),
+                    store.collection("liensTiktok").doc(id).delete(),
+                    store.collection("utilisateurs").doc(id).delete()
+                ]);
+                premiumCache.delete(id);
+                wasShown = !activeYt && id === currentTk;
+                if (id === currentTk) clearCookie(req, res, SESSION_COOKIE);
+            }
+
+            if (!wasShown) return res.json({ success: true, next: null });
+            res.json({ success: true, next: await activateAny(req, res, store, google.uid, c.secret) });
         } catch (error) {
             console.warn("[COMPTES] Déliaison impossible :", error.message);
             res.status(500).json({ error: "Impossible de délier ce compte" });
         }
     });
 
-    // Supprimer le compte TikTok Pulse (compte Google + liaisons + jetons stockés).
-    app.post("/api/compte/supprimer", requireSession, async (req, res) => {
+    // Supprimer le compte TikTok Pulse : tout est effacé et l'utilisateur est déconnecté.
+    app.post("/api/compte/supprimer", requireAccount, async (req, res) => {
         const c = config(req);
         const google = readGoogle(req, c.secret);
         const store = db();
+        const currentTk = req.tiktok?.openId || null;
 
-        if (!google || !store) return res.status(400).json({ error: "Aucun compte à supprimer" });
+        if (!store) return res.status(503).json({ error: "Base de données indisponible" });
+
+        const logoutAll = () => {
+            if (req.tiktok) revokeToken(c, req.tiktok.accessToken);
+            clearCookie(req, res, GOOGLE_COOKIE);
+            clearCookie(req, res, SESSION_COOKIE);
+            youtube.clearActive(req, res);
+        };
+
+        // Sans compte Google : on efface la fiche TikTok et on déconnecte.
+        if (!google) {
+            try {
+                if (currentTk) {
+                    await store.collection("utilisateurs").doc(currentTk).delete();
+                    premiumCache.delete(currentTk);
+                    for (const k of [...cache.keys()]) if (k.includes(currentTk)) cache.delete(k);
+                }
+                logoutAll();
+                return res.json({ success: true, next: "/connexion.html" });
+            } catch (error) {
+                console.warn("[COMPTES] Suppression impossible :", error.message);
+                return res.status(500).json({ error: "Suppression impossible, réessaie" });
+            }
+        }
 
         try {
             const accountRef = store.collection("comptes").doc(google.uid);
@@ -1015,23 +1168,35 @@ module.exports = function mountTikTokAuth(app) {
                 return res.status(409).json({ error: "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." });
             }
 
+            // YouTube : accès révoqués, chaînes déliées.
+            for (const d of await youtube.list(store, google.uid)) {
+                await youtube.unlink(store, google.uid, d.id, c.secret);
+            }
+
+            // TikTok : comptes reliés, fiches et jetons (révoqués).
             const list = await accountRef.collection("tiktok").get();
             const batch = store.batch();
+            const ids = new Set(currentTk ? [currentTk] : []);
 
             for (const d of list.docs) {
                 const s = unseal(d.get("jeton"), c.secret);
-                if (s && d.id !== req.tiktok.openId) revokeToken(c, s.accessToken);
+                if (s && d.id !== currentTk) revokeToken(c, s.accessToken);
                 batch.delete(d.ref);
                 batch.delete(store.collection("liensTiktok").doc(d.id));
-                premiumCache.delete(d.id);
+                ids.add(d.id);
+            }
+            for (const id of ids) {
+                batch.delete(store.collection("utilisateurs").doc(id));
+                premiumCache.delete(id);
+                for (const k of [...cache.keys()]) if (k.includes(id)) cache.delete(k);
             }
 
             batch.delete(accountRef);
-            batch.delete(store.collection("utilisateurs").doc(req.tiktok.openId));
             await batch.commit();
+            premiumCache.delete("g:" + google.uid);
 
-            clearCookie(req, res, GOOGLE_COOKIE);
-            res.json({ success: true });
+            logoutAll();
+            res.json({ success: true, next: "/connexion.html" });
         } catch (error) {
             console.warn("[COMPTES] Suppression impossible :", error.message);
             res.status(500).json({ error: "Suppression impossible, réessaie" });
@@ -1039,7 +1204,12 @@ module.exports = function mountTikTokAuth(app) {
     });
 
     // Profil du créateur connecté
-    app.get("/api/me", requireSession, async (req, res) => {
+    app.get("/api/me", requireAccount, async (req, res) => {
+        if (req.youtube) {
+            try { return res.json({ ...(await youtube.me(req.youtube)), premium: await googlePremium(req.youtube.uid) }); }
+            catch (error) { return ytError(res, error); }
+        }
+
         try {
             const data = await cached(`user:${req.tiktok.openId}`, USER_CACHE_MS, () =>
                 apiCall(req.tiktok, `/user/info/?fields=${USER_FIELDS}`));
@@ -1048,6 +1218,7 @@ module.exports = function mountTikTokAuth(app) {
             const premium = await premiumStatus(req.tiktok.openId, u.username);
 
             res.json({
+                platform: "tiktok",
                 premium,
                 username: u.username || null,
                 nickname: u.display_name || null,
@@ -1065,7 +1236,14 @@ module.exports = function mountTikTokAuth(app) {
     });
 
     // Liste de ses vidéos (paginée)
-    app.get("/api/me/videos", requireSession, async (req, res) => {
+    app.get("/api/me/videos", requireAccount, async (req, res) => {
+        if (req.youtube) {
+            const limit = Math.min(20, Math.max(1, Number.parseInt(req.query.limit, 10) || 6));
+            const cursor = /^[A-Za-z0-9_-]{1,120}$/.test(req.query.cursor || "") ? req.query.cursor : null;
+            try { return res.json(await youtube.videos(req.youtube, limit, cursor)); }
+            catch (error) { return ytError(res, error); }
+        }
+
         const cursor = /^\d{1,20}$/.test(req.query.cursor || "") ? Number(req.query.cursor) : undefined;
         // Nombre de vidéos demandées (1 à 20, 6 par défaut : les plus récentes).
         const limit = Math.min(20, Math.max(1, Number.parseInt(req.query.limit, 10) || 6));
@@ -1088,8 +1266,16 @@ module.exports = function mountTikTokAuth(app) {
     });
 
     // Stats exactes d'une vidéo (suivi en direct)
-    app.get("/api/me/video/:id", requireSession, async (req, res) => {
+    app.get("/api/me/video/:id", requireAccount, async (req, res) => {
         const id = req.params.id;
+
+        if (req.youtube) {
+            if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return res.status(400).json({ error: "Identifiant invalide" });
+            try {
+                const v = await youtube.video(req.youtube, id);
+                return v ? res.json(v) : res.status(404).json({ error: "Vidéo introuvable sur cette chaîne" });
+            } catch (error) { return ytError(res, error); }
+        }
 
         if (!/^\d{5,25}$/.test(id)) {
             return res.status(400).json({ error: "Identifiant invalide" });

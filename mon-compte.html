@@ -37,6 +37,11 @@
 .tipwrap .tip:after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#f7c56a66}
 .tipwrap.locked:hover .tip,.tipwrap.locked:focus-within .tip,.tipwrap.locked.show .tip{opacity:1}
 .tipwrap.locked .btn{opacity:.45;cursor:not-allowed;filter:grayscale(1)}
+.sub-dlg{max-width:460px;width:calc(100% - 32px);padding:24px 26px;color:var(--text)}
+.sub-dlg::backdrop{background:#020610cc;backdrop-filter:blur(3px)}
+.sub-dlg h2{font:700 20px 'Space Grotesk';margin:6px 0 12px}
+.sub-dlg ul{padding-left:18px;margin:10px 0;color:#cfe9f3;font-size:14px;line-height:1.7}
+.sub-dlg p{color:var(--muted);font-size:13px;line-height:1.6}
 .ok{margin:0 0 16px;padding:12px 16px;border:1px solid #f7c56a66;border-radius:6px;color:#f7dca0;background:#f7c56a0d;font-size:13px}
 </style><script src="pulse-ui.js"></script></head><body data-nav="compte">
 <main class="shell main">
@@ -61,13 +66,20 @@
  <section class="surface card">
   <div class="micro">Session</div>
   <h2>Déconnexion et données</h2>
-  <p class="sub">Se déconnecter ferme ta session sur cet appareil. Supprimer ton compte efface ton compte Google, tes comptes reliés et ton statut premium.</p>
+  <p class="sub">Se déconnecter ferme ta session sur cet appareil. Supprimer ton compte efface toutes tes données TikTok Pulse (compte Google, comptes reliés, infos TikTok enregistrées) et te déconnecte.</p>
   <div class="row">
    <button class="btn" id="logout" type="button" data-icon="logout">Se déconnecter</button>
-   <span class="tipwrap hidden" id="deleteWrap"><button class="btn danger" id="delete" type="button">Supprimer mon compte TikTok Pulse</button><span class="tip" role="tooltip" id="deleteTip"></span></span>
+   <span class="tipwrap" id="deleteWrap"><button class="btn danger" id="delete" type="button">Supprimer mon compte TikTok Pulse</button><span class="tip" role="tooltip" id="deleteTip"></span></span>
   </div>
  </section>
 </main>
+
+<dialog class="surface sub-dlg" id="subDlg" aria-labelledby="subTitle">
+ <div class="micro">Abonnement</div>
+ <h2 id="subTitle">Mon abonnement</h2>
+ <div id="subBody"></div>
+ <div class="row" style="justify-content:flex-end"><button class="btn" type="button" id="subClose">Fermer</button></div>
+</dialog>
 <footer class="shell footer"><span>© TikTok Pulse · Mon compte</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 
 <script>
@@ -121,13 +133,12 @@ async function render() {
     note.textContent = g.premium
       ? `Premium actif : analyse détaillée, filtre 7 jours et jusqu'à ${data.max} comptes reliés.`
       : 'Compte gratuit : suivi en direct d\'1 compte. Le premium (analyse détaillée, plusieurs comptes) arrive bientôt.';
-    const out = document.createElement('button'); out.type = 'button'; out.className = 'btn'; out.style.marginTop = '12px';
-    out.textContent = 'Déconnecter Google';
-    out.addEventListener('click', async () => { await post('/auth/google/logout'); location.reload(); });
-    gb.append(note, out);
-    $('deleteWrap').classList.remove('hidden');
-    $('deleteWrap').classList.toggle('locked', g.premium);
-    $('delete').setAttribute('aria-disabled', String(g.premium));
+    const sub = document.createElement('button'); sub.type = 'button'; sub.className = 'btn' + (g.premium ? ' gold' : ''); sub.style.marginTop = '12px';
+    sub.innerHTML = PulseUI.icon('star') + ' Gérer mon abonnement';
+    sub.addEventListener('click', () => openSub(g, data.max));
+    gb.append(note, sub);
+    $('deleteWrap').classList.toggle('locked', !!g.premium);
+    $('delete').setAttribute('aria-disabled', String(!!g.premium));
     $('deleteTip').textContent = g.premium ? "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." : '';
     if (g.premium) $('delete').setAttribute('aria-describedby', 'deleteTip'); else $('delete').removeAttribute('aria-describedby');
   } else {
@@ -142,14 +153,15 @@ async function render() {
   // ----- Comptes reliés -----
   const list = $('accList');
   list.textContent = '';
-  const accounts = data.google ? data.comptes : [{ openId: '', pseudo: me.username, nom: me.nickname, avatar: me.avatar, actif: true }];
+  const accounts = data.google ? data.comptes : [{ platform: me.platform || 'tiktok', id: '', pseudo: me.username, nom: me.nickname, avatar: me.avatar, actif: true }];
   accounts.forEach(a => {
     const row = document.createElement('div'); row.className = 'acc' + (a.actif ? ' on' : '');
     const who = document.createElement('div'); who.className = 'who';
-    const b = document.createElement('b'); b.textContent = a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte TikTok');
-    const s = document.createElement('span'); s.textContent = 'TikTok' + (a.nom && a.pseudo ? ' · ' + a.nom : '');
+    const b = document.createElement('b'); b.textContent = a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte');
+    const pf = a.platform === 'youtube' ? 'YouTube' : 'TikTok';
+    const s = document.createElement('span'); s.textContent = pf + (a.nom && a.pseudo ? ' · ' + a.nom : '');
     who.append(b, s);
-    const logo = document.createElement('span'); logo.innerHTML = PulseUI.brand('tiktok');
+    const logo = document.createElement('span'); logo.innerHTML = PulseUI.brand(a.platform || 'tiktok');
     row.append(img(a.avatar, 'av'), who, logo);
     if (a.actif) {
       const now = document.createElement('span'); now.className = 'now'; now.textContent = 'AFFICHÉ';
@@ -157,22 +169,33 @@ async function render() {
     } else {
       const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'btn'; sw.textContent = 'Afficher';
       sw.addEventListener('click', async () => {
-        try { await post('/auth/switch', { openId: a.openId }); try { sessionStorage.clear(); } catch {} location.href = '/'; }
+        try { await post('/auth/switch', { platform: a.platform, id: a.id }); try { sessionStorage.clear(); } catch {} location.href = '/'; }
         catch (err) { if (err.data?.reconnect) location.href = '/relier.html'; else error(err.message); }
       });
-      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.title = 'Délier ce compte'; x.innerHTML = PulseUI.icon('logout');
-      x.addEventListener('click', async () => {
-        if (!confirm('Délier ce compte de ton compte TikTok Pulse ?')) return;
-        try { await post('/api/comptes/delier', { openId: a.openId }); render(); } catch (err) { error(err.message); }
+      row.append(sw);
+    }
+    if (data.google) {
+      const un = document.createElement('button'); un.type = 'button'; un.className = 'btn danger'; un.textContent = 'Délier';
+      un.title = 'Délier ce compte de ton compte TikTok Pulse';
+      un.addEventListener('click', async () => {
+        const msg = a.actif
+          ? 'Délier le compte affiché ? Tu basculeras sur un autre compte relié, ou tu pourras en relier un nouveau.'
+          : 'Délier ce compte de ton compte TikTok Pulse ?';
+        if (!confirm(msg)) return;
+        try {
+          const out = await post('/api/comptes/delier', { platform: a.platform, id: a.id });
+          try { sessionStorage.clear(); } catch {}
+          if (out.next) location.href = out.next; else render();
+        } catch (err) { error(err.message); }
       });
-      row.append(sw, x);
+      row.append(un);
     }
     list.append(row);
   });
 
   const add = $('addBtn');
   if (!data.google) {
-    $('accSub').textContent = 'Connecte Google pour relier d\'autres comptes (TikTok, et bientôt YouTube et Facebook Reels).';
+    $('accSub').textContent = 'Connecte Google pour relier d\'autres comptes (TikTok, YouTube, et bientôt Facebook Reels).';
     add.setAttribute('aria-disabled', 'true');
   } else if (data.comptes.length >= data.max) {
     $('accSub').textContent = data.google.premium ? `Limite de ${data.max} comptes atteinte.` : 'Compte gratuit : 1 compte relié. Le premium permet d\'en relier plusieurs.';
@@ -193,8 +216,8 @@ $('delete').addEventListener('click', async () => {
     setTimeout(() => $('deleteWrap').classList.remove('show'), 3500);
     return;
   }
-  if (!confirm('Supprimer ton compte TikTok Pulse ? Ton compte Google, tes comptes reliés et ton statut premium seront effacés. Cette action est définitive.')) return;
-  try { await post('/api/compte/supprimer'); location.reload(); } catch (err) { error(err.message); }
+  if (!confirm('Supprimer ton compte TikTok Pulse ? Tout est effacé (compte Google, comptes reliés, infos TikTok enregistrées) et tu seras déconnecté. Cette action est définitive.')) return;
+  try { const out = await post('/api/compte/supprimer'); try { sessionStorage.clear(); } catch {} location.replace(out.next || '/connexion.html'); } catch (err) { error(err.message); }
 });
 
 async function setupGoogle() {
@@ -214,6 +237,24 @@ async function setupGoogle() {
   };
   document.head.append(s);
 }
+
+function openSub(g, max) {
+  const b = $('subBody');
+  b.innerHTML = '';
+  const badge = document.createElement('span'); badge.className = 'badge' + (g.premium ? ' prem' : '');
+  badge.innerHTML = g.premium ? PulseUI.icon('star') + ' PREMIUM ACTIF' : 'FORMULE GRATUITE';
+  const ul = document.createElement('ul');
+  (g.premium
+    ? ['Analyse détaillée de tes statistiques', 'Filtre sur les 7 derniers jours', `Jusqu'à ${max} comptes reliés et changement de compte en un clic`]
+    : ['Suivi en direct d’1 compte', 'Vues exactes, favoris, animations en direct']).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); });
+  const p = document.createElement('p');
+  p.textContent = g.premium
+    ? 'Ton premium est activé manuellement pour l’instant. Le paiement en ligne arrive bientôt : tu pourras alors changer de moyen de paiement, voir tes factures et résilier d’ici.'
+    : 'Le premium (analyse détaillée, plusieurs comptes) arrive bientôt. Tu pourras t’abonner et gérer ton abonnement ici.';
+  b.append(badge, ul, p);
+  $('subDlg').showModal();
+}
+$('subClose').addEventListener('click', () => $('subDlg').close());
 
 render();
 </script>
