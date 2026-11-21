@@ -199,6 +199,9 @@ module.exports = function createReleves(d) {
 
     const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Europe/Paris" });
     const parisHour = ms => Number(hourFmt.format(new Date(ms))) % 24;
+    const dayFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Paris" });
+    const parisDay = ms => dayFmt.format(new Date(ms));                       // AAAA-MM-JJ (Paris)
+    const parisWeekday = ms => new Date(parisDay(ms) + "T12:00:00Z").getUTCDay(); // 0 = dimanche
 
     async function summary(platform, id) {
         const k = key(platform, id);
@@ -238,6 +241,35 @@ module.exports = function createReleves(d) {
             byHour[h].n++;
         }
 
+        // Vues gagnées par jour (heure de Paris) et par jour de la semaine.
+        const perDay = new Map();
+        for (let i = 1; i < all.length; i++) {
+            const a = all[i - 1], b = all[i];
+            if (b.t - a.t > 26 * 3600000) continue; // trou trop long : ignoré
+            const dk = parisDay(a.t);
+            perDay.set(dk, (perDay.get(dk) || 0) + sumGain(a, b));
+        }
+        const today = parisDay(now);
+        const dayGains = [...perDay].filter(([dk]) => dk !== today).sort().slice(-30).map(([d, gain]) => ({ d, gain }));
+        const wd = Array.from({ length: 7 }, () => ({ sum: 0, n: 0 }));
+        for (const { d, gain } of dayGains) { const w = new Date(d + "T12:00:00Z").getUTCDay(); wd[w].sum += gain; wd[w].n++; }
+        const weekdays = wd.map(x => (x.n ? Math.round(x.sum / x.n) : null));
+
+        // Top de la semaine : vues gagnées sur 7 jours par vidéo.
+        const ref7 = at(all, now - 7 * 86400000);
+        const top7 = ref7 && ref7 !== last
+            ? Object.entries(last.videos)
+                .map(([vid, v]) => ({ id: vid, views: v[0], gain: ref7.videos?.[vid] ? v[0] - ref7.videos[vid][0] : null }))
+                .filter(r => r.gain != null && r.gain > 0)
+                .sort((a, b) => b.gain - a.gain).slice(0, 5)
+            : [];
+
+        // Semaine précédente (comparaison).
+        const p14 = at(all, now - 14 * 86400000), p7 = ref7;
+        const prevWeek = p14 && p7 && p14 !== p7
+            ? { views: sumGain(p14, p7), followers: p14.followers != null && p7.followers != null ? p7.followers - p14.followers : null }
+            : null;
+
         // Vidéos qui décollent : vues gagnées sur 24 h.
         const ref24 = at(all, now - 24 * 3600000);
         const rising = ref24 && ref24 !== last
@@ -267,6 +299,11 @@ module.exports = function createReleves(d) {
             views: { h24: gain(24 * 3600000), d7: gain(7 * 86400000), d30: gain(30 * 86400000) },
             followersGain: { h24: fGain(24 * 3600000), d7: fGain(7 * 86400000), d30: fGain(30 * 86400000) },
             hours: byHour.map(h => (h.n ? Math.round(h.sum / h.n) : null)),
+            hourSamples: byHour.reduce((m, h) => Math.min(m, h.n), Infinity),
+            days: dayGains,
+            weekdays,
+            top7,
+            prevWeek,
             rising,
             curve
         };

@@ -116,23 +116,18 @@ th.n{text-align:right}
   <div class="head-actions"><div id="pickerSlot"></div><button class="btn" id="reload" type="button"><span data-icon="refresh">Actualiser l'analyse</span></button></div>
  </section>
 
- <div class="filters hidden" id="filters">
-  <span class="lbl">Période</span>
-  <button type="button" data-period="all" aria-pressed="true">Toutes les vidéos</button>
-  <button type="button" data-period="7" aria-pressed="false">7 derniers jours</button>
- </div>
-
+ 
  <section class="surface lock hidden" id="lock">
   <div class="ic" data-icon="lock"></div>
   <div class="micro">Premium</div>
   <h2>L'analyse détaillée est réservée au premium</h2>
   <p>Le suivi en direct de tes vidéos reste gratuit. Avec le premium, tu débloques l'analyse complète de ton compte.</p>
   <ul>
-   <li>Meilleurs jours et créneaux de publication</li>
-   <li>Durée idéale et hashtags les plus porteurs</li>
-   <li>Top, flop et vidéos les plus engageantes</li>
-   <li>Conseils personnalisés</li>
-   <li>Filtre sur les 7 derniers jours</li>
+   <li>Relevé automatique de tes chiffres toutes les heures</li>
+   <li>Tes vraies heures et jours de vues</li>
+   <li>Vues et abonnés gagnés sur 24 h, 7 et 30 jours</li>
+   <li>Vidéos qui décollent et top de la semaine</li>
+   <li>Conseils calculés uniquement sur tes données</li>
   </ul>
   <div class="why">
    <div class="micro">Pourquoi un compte Google pour le premium ?</div>
@@ -154,74 +149,14 @@ th.n{text-align:right}
  <div id="loading" class="loading"><div class="kpis"><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div></div><div class="surface skel" style="height:220px;margin-top:16px"></div><p style="margin-top:16px">Analyse de tes vidéos en cours…</p></div>
 
  <div id="content" class="hidden">
-  <section class="surface card" id="histCard" style="margin-top:0;margin-bottom:16px">
+  <section class="surface card" id="histCard" style="margin-top:0">
    <div class="hist-head">
     <div><div class="micro">Suivi heure par heure</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2></div>
     <span class="hist-upd" id="histUpd"><span class="dot"></span><span id="histUpdTxt">Chargement…</span></span>
    </div>
    <div id="histBody"></div>
   </section>
-  <section class="kpis">
-   <article class="surface kpi"><div class="micro">Vues totales</div><strong id="kViews">—</strong><span id="kViewsSub">sur toutes tes vidéos</span></article>
-   <article class="surface kpi"><div class="micro">Vues par vidéo</div><strong id="kMedian">—</strong><span id="kMedianSub">médiane</span></article>
-   <article class="surface kpi"><div class="micro">Engagement moyen</div><strong id="kEng">—</strong><span>likes + commentaires + partages / vues</span></article>
-   <article class="surface kpi"><div class="micro">Rythme</div><strong id="kRate">—</strong><span id="kRateSub">vidéos par semaine (30 derniers jours)</span></article>
-  </section>
-
-  <section class="surface card">
-   <div class="micro">Conseils</div>
-   <h2>Ce que disent tes chiffres</h2>
-   <div class="sub">Repères calculés automatiquement à partir de tes vidéos. Plus tu publies, plus ils deviennent fiables.</div>
-   <div class="tips" id="tips"></div>
-  </section>
-
-  <section class="surface card">
-   <div class="micro">Historique</div>
-   <h2>Vues de chaque vidéo, de la plus ancienne à la plus récente</h2>
-   <div class="sub">Survole une barre pour voir la vidéo. En doré : tes 3 meilleures.</div>
-   <div class="timeline" id="timeline"></div>
-   <div class="tl-axis"><span id="tlStart"></span><span id="tlEnd"></span></div>
-  </section>
-
-  <section class="surface card">
-   <div class="micro">Classement</div>
-   <h2>Tes vidéos qui marchent le mieux… et le moins</h2>
-   <div class="tabs" role="tablist">
-    <button type="button" role="tab" aria-selected="true" data-tab="top">TOP 5</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="flop">FLOP 5</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="eng">MEILLEUR ENGAGEMENT</button>
-   </div>
-   <table><thead><tr><th></th><th>Vidéo</th><th class="n">Vues</th><th class="n hide-sm">Likes</th><th class="n hide-sm">Engagement</th><th class="n hide-sm">Publiée</th></tr></thead><tbody id="ranking"></tbody></table>
-  </section>
-
-  <div class="grid2">
-   <section class="surface card">
-    <div class="micro">Quand publier</div>
-    <h2>Par jour de la semaine</h2>
-    <div class="sub">Vues médianes des vidéos publiées ce jour-là (pas le jour où les vues arrivent). En doré : le meilleur parmi ceux avec au moins 3 vidéos.</div>
-    <div class="bars" id="byDay"></div>
-   </section>
-   <section class="surface card">
-    <div class="micro">Quand publier</div>
-    <h2>Par moment de la journée</h2>
-    <div class="sub">Vues médianes selon l'heure de publication (heure de ton appareil). Basé sur l'heure où tu publies, pas sur l'heure où les vues arrivent.</div>
-    <div class="bars" id="byHour"></div>
-   </section>
-   <section class="surface card">
-    <div class="micro">Format</div>
-    <h2>Selon la durée</h2>
-    <div class="sub">Vues médianes par durée de vidéo.</div>
-    <div class="bars" id="byDuration"></div>
-   </section>
-   <section class="surface card">
-    <div class="micro">Thèmes</div>
-    <h2>Hashtags les plus porteurs</h2>
-    <div class="sub">Vues médianes des vidéos qui contiennent le hashtag (utilisé au moins 2 fois).</div>
-    <div class="bars" id="byTag"></div>
-   </section>
-  </div>
-
-  <p class="note" id="note"></p>
+  <p class="note">Toutes les données de cette page viennent uniquement des relevés de tes propres chiffres, enregistrés toutes les heures. Heures et jours : heure de Paris.</p>
  </div>
 </main>
 
@@ -298,104 +233,6 @@ function group(videos, keyFn, labels) {
   return (labels || [...m.keys()]).map(k => ({ key: k, label: typeof k === 'string' ? k : String(k), value: median(m.get(k) || []), count: (m.get(k) || []).length }));
 }
 
-function render({ me, videos, t }) {
-  const since = PERIOD === '7' ? Date.now() / 1000 - 7 * 86400 : 0;
-  const vids = videos.filter(v => !since || (v.createTime && v.createTime >= since)).filter(v => Number.isFinite(v.views)).map(v => ({ ...v, likes: v.likes || 0, comments: v.comments || 0, shares: v.shares || 0 }));
-  $('loading').classList.add('hidden');
-  if (!vids.length) { $('content').classList.add('hidden'); error(PERIOD === '7' ? 'Aucune vidéo publiée ces 7 derniers jours.' : 'Aucune vidéo publique à analyser pour le moment.'); return; }
-  error('');
-  $('content').classList.remove('hidden');
-
-  const name = me.nickname || me.username || 'ton compte';
-  $('hTitle').innerHTML = `${esc(name)} <em>à la loupe.</em>`;
-  $('hSub').textContent = `${vids.length} vidéo${vids.length > 1 ? 's' : ''} analysée${vids.length > 1 ? 's' : ''}${PERIOD === '7' ? ' (7 derniers jours)' : ''} · données du ${new Date(t).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}.`;
-
-  // KPIs
-  const total = vids.reduce((s, v) => s + v.views, 0);
-  const med = median(vids.map(v => v.views));
-  const avg = total / vids.length;
-  const engAvg = vids.reduce((s, v) => s + eng(v), 0) / vids.length;
-  const now = Date.now() / 1000;
-  const last30 = videos.filter(v => v.createTime && now - v.createTime <= 30 * 86400).length;
-  $('kViews').textContent = fmt(total);
-  $('kViewsSub').textContent = `sur ${vids.length} vidéos · moyenne ${fmt(avg)}`;
-  $('kMedian').textContent = fmt(med);
-  $('kMedianSub').textContent = 'médiane (la moitié de tes vidéos fait plus)';
-  $('kEng').textContent = pct(engAvg);
-  $('kRate').textContent = (last30 / 30 * 7).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
-  $('kRateSub').textContent = `${last30} vidéo${last30 > 1 ? 's' : ''} sur les 30 derniers jours`;
-
-  // Timeline
-  const chrono = [...vids].sort((a, b) => (a.createTime || 0) - (b.createTime || 0));
-  const top3 = new Set([...vids].sort((a, b) => b.views - a.views).slice(0, 3).map(v => v.id));
-  const tl = $('timeline'); tl.textContent = '';
-  const maxV = Math.max(...chrono.map(v => v.views)) || 1;
-  const tip = $('tlTip');
-  chrono.forEach(v => {
-    const c = document.createElement('div');
-    c.className = 'col' + (top3.has(v.id) ? ' top' : '');
-    c.style.height = Math.max(2, v.views / maxV * 100) + '%';
-    c.addEventListener('mousemove', e => {
-      tip.innerHTML = `<b>${fmt(v.views)} vues</b><br>${esc(v.title).slice(0, 90)}<br><span style="color:#93b2c4">${v.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : ''}</span>`;
-      tip.style.display = 'block';
-      tip.style.left = Math.min(e.clientX + 14, innerWidth - 250) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
-    });
-    c.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
-    if (v.shareUrl) { c.style.cursor = 'pointer'; c.addEventListener('click', () => window.open(v.shareUrl, '_blank', 'noopener')); }
-    tl.append(c);
-  });
-  const dt = v => v?.createTime ? new Date(v.createTime * 1000).toLocaleDateString('fr-FR', { dateStyle: 'medium' }) : '';
-  $('tlStart').textContent = dt(chrono[0]); $('tlEnd').textContent = dt(chrono.at(-1));
-
-  // Ranking
-  const lists = {
-    top: [...vids].sort((a, b) => b.views - a.views).slice(0, 5),
-    flop: [...vids].sort((a, b) => a.views - b.views).slice(0, 5),
-    eng: [...vids].filter(v => v.views >= 100).sort((a, b) => eng(b) - eng(a)).slice(0, 5)
-  };
-  const showRank = k => {
-    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === k)));
-    $('ranking').innerHTML = lists[k].map((v, i) => `<tr><td class="rank">${i + 1}</td><td><a class="vt" ${v.shareUrl ? `href="${esc(v.shareUrl)}" target="_blank" rel="noopener"` : ''}><img src="${esc(v.cover || '')}" alt="" loading="lazy" referrerpolicy="no-referrer"><span>${esc(v.title)}</span></a></td><td class="n"><b>${fmt(v.views)}</b></td><td class="n hide-sm">${fmt(v.likes)}</td><td class="n hide-sm">${pct(eng(v))}</td><td class="n hide-sm">${dt(v)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Pas assez de données.</td></tr>';
-  };
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showRank(b.dataset.tab));
-  showRank('top');
-
-  // Jour / heure / durée
-  const withDate = vids.filter(v => v.createTime);
-  const dayRows = group(withDate, v => new Date(v.createTime * 1000).getDay(), [1, 2, 3, 4, 5, 6, 0]).map(r => ({ ...r, label: DAYS[r.key] }));
-  const bestDay = bars($('byDay'), dayRows);
-  const slots = [['Nuit · 0h–6h', 0, 6], ['Matin · 6h–12h', 6, 12], ['Après-midi · 12h–17h', 12, 17], ['Soirée · 17h–21h', 17, 21], ['Tard · 21h–0h', 21, 24]];
-  const hourRows = group(withDate, v => { const h = new Date(v.createTime * 1000).getHours(); return slots.find(s => h >= s[1] && h < s[2])[0]; }, slots.map(s => s[0]));
-  const bestHour = bars($('byHour'), hourRows);
-  const dur = [['< 30 s', 0, 30], ['30–59 s', 30, 60], ['1–2 min', 60, 120], ['2–3 min', 120, 180], ['3 min +', 180, 1e9]];
-  const durRows = group(vids.filter(v => v.duration), v => dur.find(d => v.duration >= d[1] && v.duration < d[2])[0], dur.map(d => d[0]));
-  const bestDur = bars($('byDuration'), durRows);
-
-  // Hashtags
-  const tagMap = new Map();
-  vids.forEach(v => { new Set((v.title.match(/#[\p{L}\p{N}_]+/gu) || []).map(t => t.toLowerCase())).forEach(t => { if (!tagMap.has(t)) tagMap.set(t, []); tagMap.get(t).push(v.views); }); });
-  const tagRows = [...tagMap].map(([k, a]) => ({ label: k, value: median(a), count: a.length })).filter(r => r.count >= 2).sort((a, b) => b.value - a.value).slice(0, 8);
-  const bestTag = bars($('byTag'), tagRows);
-
-  // Conseils automatiques
-  const tips = [];
-  const rel = (x, ref) => Math.round((x / ref - 1) * 100);
-  const add = (ic, html) => tips.push(`<div class="tip"><span class="ic">${PulseUI.icon(ic)}</span><span>${html}</span></div>`);
-  const enough = r => r && r.count >= 3 && Number.isFinite(med) && med > 0;
-  const best = lists.top[0];
-  if (best) add('trophy', `Ta meilleure vidéo, <b>« ${esc(short(best.title))} »</b>, a fait <b>${fmt(best.views)} vues</b>, soit <b>${(best.views / med).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}×</b> ta médiane. Inspire-toi de son sujet et de son accroche.`);
-  if (enough(bestDay) && rel(bestDay.value, med) >= 15) add('calendar', `Tes vidéos <b>publiées le ${bestDay.label.toLowerCase()}</b> font en moyenne <b>+${rel(bestDay.value, med)} %</b> de vues par rapport à ta médiane (sur ${bestDay.count} vidéos).`);
-  if (enough(bestHour) && rel(bestHour.value, med) >= 15) add('clock', `Tes vidéos <b>publiées ${({ Nuit: 'la nuit', Matin: 'le matin', 'Après-midi': "l'après-midi", Soirée: 'en soirée', Tard: 'tard le soir' })[bestHour.label.split(' · ')[0]]} (${bestHour.label.split(' · ')[1]})</b> font en moyenne <b>+${rel(bestHour.value, med)} %</b> de vues (sur ${bestHour.count} vidéos).`);
-  if (enough(bestDur) && rel(bestDur.value, med) >= 15) add('timer', `Les vidéos de <b>${bestDur.label}</b> performent le mieux chez toi (<b>+${rel(bestDur.value, med)} %</b>).`);
-  if (enough(bestTag) && rel(bestTag.value, med) >= 15) add('hash', `Le hashtag <b>${esc(bestTag.label)}</b> accompagne tes vidéos les plus vues (<b>+${rel(bestTag.value, med)} %</b>).`);
-  if (engAvg >= 8) add('message', `Ton engagement moyen (<b>${pct(engAvg)}</b>) est solide : ta communauté réagit bien. Les commentaires aident TikTok à pousser tes vidéos.`);
-  else if (engAvg > 0) add('message', `Ton engagement moyen est de <b>${pct(engAvg)}</b>. Pose une question ou lance un débat en fin de vidéo pour faire réagir.`);
-  if (last30 < 4) add('trend', `Tu as publié <b>${last30} vidéo${last30 > 1 ? 's' : ''}</b> ces 30 derniers jours. Publier plus régulièrement donne plus de chances à l'algorithme de te mettre en avant.`);
-  $('tips').innerHTML = tips.join('') || '<div class="empty">Publie encore quelques vidéos pour obtenir des conseils personnalisés.</div>';
-
-  $('note').textContent = 'Les vues médianes limitent l\'effet d\'une vidéo virale isolée. Les heures sont celles de ton appareil. Données : API officielle ' + (DATA?.me?.platform === 'youtube' ? 'YouTube' : 'TikTok (vidéos publiques uniquement)') + '.';
-}
-
 async function load(force) {
   $('reload').disabled = true; error('');
   if (force) { $('loading').classList.remove('hidden'); $('content').classList.add('hidden'); }
@@ -403,9 +240,14 @@ async function load(force) {
     DATA = await fetchAll(force);
     const premium = DATA.me.premium === true;
     $('lock').classList.toggle('hidden', premium);
-    $('filters').classList.toggle('hidden', !premium);
     $('reload').classList.toggle('hidden', !premium);
-    if (premium) { render(DATA); loadHistory(); }
+    if (premium) {
+      $('loading').classList.add('hidden');
+      $('content').classList.remove('hidden');
+      const name = DATA.me.nickname || DATA.me.username || 'Ton compte';
+      $('hTitle').innerHTML = `${esc(name)} <em>à la loupe.</em>`;
+      loadHistory();
+    }
     else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; setupGoogle(); }
   }
   catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
@@ -433,6 +275,61 @@ function curveSvg(points) {
     <div class="hlabels"><span>${fmt(v0)} abonnés</span><span>${fmt(v1)} abonnés</span></div>`;
 }
 
+const WEEK = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
+const WEEK_LONG = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+function barsHtml(values, labels, titleFn) {
+  const vals = values.filter(v => v != null);
+  const max = Math.max(...vals, 1);
+  const top = values.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]).slice(0, 3).map(x => x[1]);
+  return values.map((v, i) => v == null
+    ? `<i class="none" title="${labels[i]} : pas encore de relevé"></i>`
+    : `<i class="${top.includes(i) ? 'top' : ''}" style="height:${Math.max(3, v / max * 100)}%" title="${titleFn(i, v)}"></i>`).join('');
+}
+
+function videoRows(list, suffix) {
+  const byId = new Map((DATA?.videos || []).map(v => [String(v.id), v]));
+  return list.map(r => {
+    const v = byId.get(String(r.id));
+    const title = v ? v.title : 'Vidéo ' + r.id;
+    const href = v?.shareUrl ? `href="${esc(v.shareUrl)}" target="_blank" rel="noopener"` : '';
+    return `<a ${href}><img src="${esc(v?.cover || '')}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="t">${esc(title)}</span><b>+${fmt(r.gain)}${suffix}</b></a>`;
+  }).join('');
+}
+
+function adviceFrom(h) {
+  const tips = [];
+  const add = (ic, html) => tips.push(`<div class="tip"><span class="ic">${PulseUI.icon(ic)}</span><span>${html}</span></div>`);
+  const byId = new Map((DATA?.videos || []).map(v => [String(v.id), v]));
+
+  if (h.hourSamples >= 2) {
+    const best = h.hours.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]);
+    if (best.length) {
+      const hb = best[0][1];
+      add('clock', `Tes vues arrivent surtout vers <b>${hb} h–${(hb + 1) % 24} h</b> (heure de Paris). Publier <b>1 à 2 h avant</b> laisse le temps à ta vidéo d'être diffusée à ce moment-là.`);
+    }
+  }
+  const wds = h.weekdays.map((v, i) => [v, i]).filter(x => x[0] != null);
+  if (wds.length >= 3) {
+    const [v, i] = wds.sort((a, b) => b[0] - a[0])[0];
+    add('calendar', `Ton meilleur jour est le <b>${WEEK_LONG[i]}</b> : <b>${fmt(v)} vues</b> gagnées en moyenne ce jour-là.`);
+  }
+  if (h.prevWeek && h.views.d7 != null && h.prevWeek.views > 0) {
+    const pct = Math.round((h.views.d7 / h.prevWeek.views - 1) * 100);
+    add('trend', `Cette semaine : <b>${signed(h.views.d7)} vues</b>, soit <b>${pct >= 0 ? '+' : ''}${pct} %</b> par rapport à la semaine précédente.`);
+  }
+  if (h.followersGain.d7 != null) {
+    add('users', `<b>${signed(h.followersGain.d7)} abonnés</b> sur les 7 derniers jours.`);
+  } else if (h.followersGain.h24 != null) {
+    add('users', `<b>${signed(h.followersGain.h24)} abonnés</b> sur les dernières 24 h.`);
+  }
+  if (h.rising[0]) {
+    const v = byId.get(String(h.rising[0].id));
+    add('zap', `<b>« ${esc(v ? short(v.title) : 'Une vidéo')} »</b> décolle : <b>+${fmt(h.rising[0].gain)} vues</b> en 24 h.`);
+  }
+  return tips.join('') || '<p class="hist-empty" style="margin:0">Les conseils apparaîtront après environ 2 jours de relevés.</p>';
+}
+
 async function loadHistory() {
   const body = $('histBody');
   let h;
@@ -441,36 +338,38 @@ async function loadHistory() {
 
   if (h.empty) {
     $('histUpdTxt').textContent = 'Premier relevé vers ' + fmtHour(h.nextUpdate);
-    body.innerHTML = '<p class="hist-empty">Ton suivi heure par heure démarre : un relevé de tes chiffres est enregistré toutes les heures. Reviens après quelques relevés pour voir tes vues gagnées, tes heures de vues et la courbe de tes abonnés.</p>';
+    $('hSub').textContent = 'Ton suivi démarre : les analyses se construisent à partir de tes relevés horaires.';
+    body.innerHTML = '<p class="hist-empty">Un relevé de tes chiffres est enregistré toutes les heures. Reviens après quelques relevés : tes vues gagnées, tes vraies heures de vues et la courbe de tes abonnés apparaîtront ici, et les conseils après environ 2 jours.</p>';
     return;
   }
 
   $('histUpdTxt').textContent = 'Dernière mise à jour : ' + fmtDate(h.lastUpdate) + ' · prochaine vers ' + fmtHour(h.nextUpdate);
+  $('hSub').textContent = `Analyse basée sur ${fmt(h.count)} relevé${h.count > 1 ? 's' : ''} horaire${h.count > 1 ? 's' : ''} depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.`;
 
   const kpi = (label, v, f, wait) => `<div><span>${label}</span><strong class="${v > 0 ? 'up' : ''}">${signed(v)}</strong><small>${v == null ? 'disponible après ' + wait + ' de suivi' : 'abonnés : ' + signed(f)}</small></div>`;
-  const maxH = Math.max(...h.hours.filter(v => v != null), 1);
-  const top3 = h.hours.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]).slice(0, 3).map(x => x[1]);
-  const bars = h.hours.map((v, i) => v == null
-    ? `<i class="none" title="${i} h : pas encore de relevé"></i>`
-    : `<i class="${top3.includes(i) ? 'top' : ''}" style="height:${Math.max(3, v / maxH * 100)}%" title="${i} h–${(i + 1) % 24} h : ${fmt(v)} vues en moyenne"></i>`).join('');
-  const best = top3.length ? top3.slice().sort((a, b) => a - b).map(i => i + ' h').join(', ') : '—';
-
-  const byId = new Map((DATA?.videos || []).map(v => [String(v.id), v]));
-  const rising = h.rising.map(r => {
-    const v = byId.get(String(r.id));
-    const title = v ? v.title : 'Vidéo ' + r.id;
-    const href = v?.shareUrl ? `href="${esc(v.shareUrl)}" target="_blank" rel="noopener"` : '';
-    return `<a ${href}><img src="${esc(v?.cover || '')}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="t">${esc(title)}</span><b>+${fmt(r.gain)}</b></a>`;
-  }).join('') || '<p class="hist-empty" style="margin:0">Pas encore assez de relevés (24 h).</p>';
+  const hourBars = barsHtml(h.hours, h.hours.map((_, i) => i + ' h'), (i, v) => `${i} h–${(i + 1) % 24} h : ${fmt(v)} vues en moyenne`);
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const wdVals = order.map(i => h.weekdays[i]);
+  const wdBars = barsHtml(wdVals, order.map(i => WEEK[i]), (k, v) => `${WEEK_LONG[order[k]]} : ${fmt(v)} vues en moyenne`);
+  const dayVals = h.days.map(d => d.gain);
+  const dayLabel = d => new Date(d + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const dayBars = h.days.length ? barsHtml(dayVals, h.days.map(d => dayLabel(d.d)), (i, v) => `${dayLabel(h.days[i].d)} : ${fmt(v)} vues gagnées`) : '';
 
   body.innerHTML = `
     <div class="hist-kpis">${kpi('Vues gagnées · 24 h', h.views.h24, h.followersGain.h24, '24 h')}${kpi('Vues gagnées · 7 jours', h.views.d7, h.followersGain.d7, '7 jours')}${kpi('Vues gagnées · 30 jours', h.views.d30, h.followersGain.d30, '30 jours')}</div>
+    <div class="hist-box" style="margin-top:16px"><h3>Ce que disent tes relevés</h3><p>Conseils calculés uniquement à partir de tes chiffres réels.</p><div class="tips">${adviceFrom(h)}</div></div>
     <div class="hist-grid">
-      <div class="hist-box"><h3>Tes heures de vues</h3><p>Vues gagnées en moyenne à chaque heure de la journée (heure de Paris). Meilleures heures : <b>${best}</b>.</p><div class="hbars">${bars}</div><div class="hlabels"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div></div>
-      <div class="hist-box"><h3>Vidéos qui décollent</h3><p>Plus de vues gagnées sur les dernières 24 h.</p><div class="rise">${rising}</div></div>
+      <div class="hist-box"><h3>Tes heures de vues</h3><p>Vues gagnées en moyenne à chaque heure de la journée.</p><div class="hbars">${hourBars}</div><div class="hlabels"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div></div>
+      <div class="hist-box"><h3>Tes jours de vues</h3><p>Vues gagnées en moyenne selon le jour de la semaine.</p><div class="hbars">${wdBars}</div><div class="hlabels">${order.map(i => `<span>${WEEK[i]}</span>`).join('')}</div></div>
     </div>
-    <div class="hist-box" style="margin-top:16px"><h3>Courbe des abonnés</h3><p>Depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${fmt(h.count)} relevés horaires.</p>${curveSvg(h.curve)}</div>`;
+    <div class="hist-box" style="margin-top:16px"><h3>Vues gagnées par jour</h3><p>Les ${h.days.length || 30} derniers jours complets.</p>${h.days.length ? `<div class="hbars">${dayBars}</div><div class="hlabels"><span>${dayLabel(h.days[0].d)}</span><span>${dayLabel(h.days[h.days.length - 1].d)}</span></div>` : '<p class="hist-empty" style="margin:0">Disponible après la première journée complète de relevés.</p>'}</div>
+    <div class="hist-grid">
+      <div class="hist-box"><h3>Vidéos qui décollent</h3><p>Plus de vues gagnées sur les dernières 24 h.</p><div class="rise">${videoRows(h.rising, '') || '<p class="hist-empty" style="margin:0">Disponible après 24 h de relevés.</p>'}</div></div>
+      <div class="hist-box"><h3>Top de la semaine</h3><p>Plus de vues gagnées sur les 7 derniers jours.</p><div class="rise">${videoRows(h.top7, '') || '<p class="hist-empty" style="margin:0">Disponible après 7 jours de relevés.</p>'}</div></div>
+    </div>
+    <div class="hist-box" style="margin-top:16px"><h3>Courbe des abonnés</h3><p>Depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.</p>${curveSvg(h.curve)}</div>`;
 }
+
 PulseUI.picker($('pickerSlot'));
 
 // ---------- Connexion Google (passage premium) ----------
@@ -514,11 +413,6 @@ async function setupGoogle() {
   };
   document.head.append(s);
 }
-document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => {
-  PERIOD = b.dataset.period;
-  document.querySelectorAll('#filters button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  if (DATA) render(DATA);
-}));
 load(false);
 </script>
 </body></html>
