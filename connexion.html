@@ -73,7 +73,8 @@ const messages = {
   refus: "Connexion annulée : tu n'as pas autorisé TikTok Pulse.",
   state: "La connexion a expiré ou a été interrompue. Réessaie.",
   jeton: "TikTok a refusé la connexion. Réessaie dans un instant.",
-  session: "Ta session TikTok a expiré ou a été révoquée. Reconnecte-toi."
+  session: "Ta session TikTok a expiré ou a été révoquée. Reconnecte-toi.",
+  google: "La connexion Google a échoué. Réessaie dans un instant."
 };
 const err = new URLSearchParams(location.search).get('erreur');
 const box = document.getElementById('error');
@@ -109,27 +110,8 @@ fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(async s =>
   setupGoogle();
 }).catch(() => {});
 
-async function setupGoogle() {
-  let clientId;
-  try { clientId = (await (await fetch('/auth/google/config', { cache: 'no-store' })).json()).clientId; } catch { return; }
-  if (!clientId) return;
-  const sc = document.createElement('script');
-  sc.src = 'https://accounts.google.com/gsi/client';
-  sc.async = true;
-  sc.onload = () => {
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async resp => {
-        box.classList.remove('show');
-        info('Connexion avec Google…');
-        try { go(await postJson('/auth/google/login', { credential: resp.credential })); }
-        catch (e) { okBox.classList.remove('show'); box.textContent = 'Connexion Google impossible : ' + e.message; box.classList.add('show'); }
-      }
-    });
-    const w = document.getElementById('gBtn');
-    google.accounts.id.renderButton(w, { theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr', width: Math.min(400, document.getElementById('loginBtn').getBoundingClientRect().width || 320) });
-  };
-  document.head.append(sc);
+function setupGoogle() {
+  document.getElementById('gBtn').innerHTML = PulseUI.googleButton('connexion');
 }
 </script>
 </body></html>

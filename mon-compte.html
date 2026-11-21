@@ -227,22 +227,8 @@ $('delete')?.addEventListener('click', async () => {
   try { const out = await post('/api/compte/supprimer'); try { sessionStorage.clear(); } catch {} location.replace(out.next || '/connexion.html'); } catch (err) { error(err.message); }
 });
 
-async function setupGoogle() {
-  let clientId;
-  try { clientId = (await api('/auth/google/config')).clientId; } catch { return; }
-  const s = document.createElement('script');
-  s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-  s.onload = () => {
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async r => {
-        try { const out = await post('/auth/google', { credential: r.credential }); if (out.warning) error(out.warning); render(); }
-        catch (e) { error('Connexion Google impossible : ' + e.message); }
-      }
-    });
-    google.accounts.id.renderButton($('gBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr' });
-  };
-  document.head.append(s);
+function setupGoogle() {
+  $('gBtn').innerHTML = PulseUI.googleButton('lier');
 }
 
 // Moyen de paiement et factures (arrivent avec le paiement en ligne).

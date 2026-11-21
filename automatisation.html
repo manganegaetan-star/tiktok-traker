@@ -115,27 +115,7 @@ async function load() {
     return;
   }
 
-  let clientId;
-  try { clientId = (await api('/auth/google/config')).clientId; } catch { return; }
-  const s = document.createElement('script');
-  s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-  s.onload = () => {
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async r => {
-        $('gNote').textContent = 'Connexion en cours…';
-        try {
-          const res = await fetch('/auth/google', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: r.credential }) });
-          const out = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(out.error || 'Erreur ' + res.status);
-          if (out.warning) error(out.warning);
-          load();
-        } catch (e) { $('gNote').textContent = 'Connexion Google impossible : ' + e.message; }
-      }
-    });
-    google.accounts.id.renderButton($('gBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr' });
-  };
-  document.head.append(s);
+  $('gBtn').innerHTML = PulseUI.googleButton('lier');
 }
 load();
 </script>

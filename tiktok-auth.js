@@ -332,7 +332,7 @@ async function linkTikTok(store, uid, session, profile, secret) {
         ]);
 
         if (link.exists && link.get("compte") !== uid) {
-            return "Ce compte TikTok est déjà relié à un autre compte Google.";
+            return "Ce compte TikTok est déjà relié à un autre compte TikTok Pulse. Un compte TikTok ne peut appartenir qu'à un seul compte TikTok Pulse : connecte-toi avec le compte Google de celui-ci, ou délie-le d'abord depuis ce compte.";
         }
 
         if (!existing.exists) {
@@ -766,7 +766,13 @@ module.exports = function mountTikTokAuth(app) {
                     const profile = (await apiCall(session, "/user/info/?fields=open_id,username,display_name,avatar_url")).user;
                     const problem = await linkTikTok(store, google.uid, session, profile, c.secret);
                     premiumCache.delete(session.openId);
-                    if (problem) return res.redirect("/?info=" + encodeURIComponent(problem));
+                    if (problem) {
+                        // Pas de liaison (doublon ou limite atteinte) : on n'affiche pas ce compte TikTok,
+                        // on revient sur un compte de l'utilisateur, avec le message.
+                        const next = await activateAny(req, res, store, google.uid, c.secret);
+                        const dest = next === "/relier.html" ? "/relier.html" : "/parametres.html";
+                        return res.redirect(dest + "?info=" + encodeURIComponent(problem));
+                    }
                 } catch (error) {
                     console.warn("[COMPTES] Liaison impossible :", error.message);
                 }
@@ -892,6 +898,118 @@ module.exports = function mountTikTokAuth(app) {
     // Connexion directe avec Google (page de connexion).
     // → s'il a un compte relié : connecté directement ;
     // → sinon : page « Relier un compte ».
+    // ---------- Connexion Google avec notre propre bouton (redirection OAuth) ----------
+    // /auth/google/start?mode=connexion|lier&retour=/page  →  Google  →  /auth/google/callback
+    // Adresse de retour à déclarer dans la console Google Cloud (client OAuth « TikTok Pulse ») :
+    //   https://tiktok-tracker.cloud.run/auth/google/callback   (ou GOOGLE_REDIRECT_URI)
+    const GOOGLE_STATE_COOKIE = "tp_gstate";
+
+    function googleRedirectUri(req) {
+        const env = process.env.GOOGLE_REDIRECT_URI?.trim();
+        if (env) return env;
+        try { return new URL(config(req).redirectUri).origin + "/auth/google/callback"; }
+        catch { return `https://${req.get("host")}/auth/google/callback`; }
+    }
+
+    // Page de retour : chemin du site uniquement (jamais une autre adresse).
+    function safeReturn(v) {
+        return typeof v === "string" && /^\/[A-Za-z0-9._\-/]*$/.test(v) && !v.startsWith("//") ? v : "/";
+    }
+
+    app.get("/auth/google/start", (req, res) => {
+        const c = config(req);
+        if (!c.ready || !process.env.GOOGLE_CLIENT_SECRET?.trim()) {
+            return res.redirect("/connexion.html?erreur=google");
+        }
+        const mode = req.query.mode === "lier" ? "lier" : "connexion";
+        const retour = safeReturn(req.query.retour);
+        const state = crypto.randomBytes(24).toString("base64url");
+        setCookie(req, res, GOOGLE_STATE_COOKIE, seal({ state, mode, retour, t: Date.now() }, c.secret), 600);
+
+        const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
+        url.searchParams.set("redirect_uri", googleRedirectUri(req));
+        url.searchParams.set("response_type", "code");
+        url.searchParams.set("scope", "openid email profile");
+        url.searchParams.set("prompt", "select_account");
+        url.searchParams.set("state", state);
+        res.redirect(url.href);
+    });
+
+    app.get("/auth/google/callback", async (req, res) => {
+        const c = config(req);
+        const store = db();
+        const raw = c.ready ? readCookie(req, GOOGLE_STATE_COOKIE) : null;
+        const saved = raw ? unseal(raw, c.secret) : null;
+        clearCookie(req, res, GOOGLE_STATE_COOKIE);
+
+        const mode = saved?.mode === "lier" ? "lier" : "connexion";
+        const retour = safeReturn(saved?.retour);
+        const fail = msg => mode === "lier"
+            ? res.redirect(retour + "?info=" + encodeURIComponent(msg))
+            : res.redirect("/connexion.html?erreur=google");
+
+        if (!c.ready || !store) return fail("Connexion Google indisponible pour le moment.");
+        if (req.query.error) return mode === "lier" ? fail("Connexion Google annulée.") : res.redirect("/connexion.html?erreur=refus");
+
+        const code = typeof req.query.code === "string" ? req.query.code : null;
+        const state = typeof req.query.state === "string" ? req.query.state : "";
+        if (!code || !saved || Date.now() - saved.t > 600000 || state.length !== saved.state.length ||
+            !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(saved.state))) {
+            return mode === "lier" ? fail("La connexion Google a expiré. Réessaie.") : res.redirect("/connexion.html?erreur=state");
+        }
+
+        let google;
+        try {
+            const r = await fetch("https://oauth2.googleapis.com/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    code,
+                    client_id: GOOGLE_CLIENT_ID,
+                    client_secret: process.env.GOOGLE_CLIENT_SECRET.trim(),
+                    redirect_uri: googleRedirectUri(req),
+                    grant_type: "authorization_code"
+                }),
+                signal: AbortSignal.timeout(TIMEOUT_MS)
+            });
+            const t = await r.json().catch(() => ({}));
+            if (!r.ok || !t.id_token) throw new Error(t.error || "HTTP " + r.status);
+            google = await verifyGoogleToken(t.id_token);
+        } catch (error) {
+            console.warn("[GOOGLE] Connexion refusée :", error.message);
+            return fail("Connexion Google refusée. Réessaie.");
+        }
+
+        try {
+            const session = readSession(req);
+            if (mode === "lier" && session) {
+                // Relier le compte TikTok connecté à ce compte Google.
+                await upsertGoogleAccount(store, google, session.openId);
+                const profile = (await cached(`user:${session.openId}`, USER_CACHE_MS, () =>
+                    apiCall(session, `/user/info/?fields=${USER_FIELDS}`))).user;
+                const problem = await linkTikTok(store, google.uid, session, profile, c.secret);
+                premiumCache.delete(session.openId);
+                premiumCache.delete("g:" + google.uid);
+                setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
+                if (problem) {
+                    const next = await activateAny(req, res, store, google.uid, c.secret);
+                    const dest = next === "/relier.html" ? "/relier.html" : "/parametres.html";
+                    return res.redirect(dest + "?info=" + encodeURIComponent(problem));
+                }
+                return res.redirect(retour);
+            }
+
+            // Connexion avec Google : on affiche un compte relié, sinon page « Relier un compte ».
+            await upsertGoogleAccount(store, google, null);
+            setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
+            res.redirect(await activateAny(req, res, store, google.uid, c.secret));
+        } catch (error) {
+            console.warn("[GOOGLE] Connexion impossible :", error.message);
+            fail("Connexion impossible, réessaie.");
+        }
+    });
+
     app.post("/auth/google/login", async (req, res) => {
         const c = config(req);
         const store = db();

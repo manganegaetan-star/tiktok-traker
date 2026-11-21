@@ -298,7 +298,7 @@ module.exports = function createYouTube(d) {
                 const [link, account, existing] = await Promise.all([linkRef.get(), accountRef.get(), ytRef.get()]);
                 if (link.exists && link.get("compte") !== google.uid) {
                     revoke(t.refresh_token);
-                    return back("Cette chaîne YouTube est déjà reliée à un autre compte TikTok Pulse.");
+                    return back("Cette chaîne YouTube est déjà reliée à un autre compte TikTok Pulse. Une chaîne ne peut appartenir qu'à un seul compte TikTok Pulse : connecte-toi avec le compte Google de celui-ci, ou délie-la d'abord depuis ce compte.");
                 }
                 if (!existing.exists) {
                     if ((await countAll(store, google.uid)) >= maxFor(account)) {

@@ -251,3 +251,9 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 /* Bouton « Mettre à niveau » (doré) */
 .btn.upgrade{border-color:#f7c56a66;color:var(--gold);background:#f7c56a0d;font-family:'Space Grotesk'}
 .btn.upgrade:hover{border-color:var(--gold);background:#f7c56a1f;color:var(--gold)}
+
+/* Bouton « Continuer avec Google » du site (même style que le bouton TikTok) */
+.g-btn{width:100%;max-width:400px;min-height:44px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:8px;padding:0 16px;background:#fff;color:#1f1f1f;font:600 14px 'DM Sans';text-decoration:none;box-shadow:0 0 0 1px #ffffff22,0 10px 30px #0006;transition:transform .15s,box-shadow .15s}
+.g-btn:hover{transform:translateY(-2px);box-shadow:0 0 0 2px var(--cyan),0 14px 40px #3bf7ef33;color:#1f1f1f}
+.g-btn .g-logo{width:18px;height:18px;flex:0 0 auto}
+.gwrap > div,.gbox > .gbtn,.gbtn{width:100%;max-width:400px;justify-self:center}
