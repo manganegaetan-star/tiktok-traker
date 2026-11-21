@@ -329,5 +329,12 @@ module.exports = function createYouTube(d) {
         });
     }
 
-    return { ACTIVE_COOKIE, ready, readActive, setActive, clearActive, sessionFor, me, videos, video, list, unlink, revoke, mountRoutes };
+    // Session YouTube pour une chaîne donnée (relevé horaire, sans requête utilisateur).
+    async function sessionForChannel(store, uid, channelId, secret) {
+        if (!ready()) return null;
+        const token = await accessFor(store, uid, channelId, secret);
+        return token ? { uid, channelId, accessToken: token } : null;
+    }
+
+    return { ACTIVE_COOKIE, ready, readActive, setActive, clearActive, sessionFor, sessionForChannel, me, videos, video, list, unlink, revoke, mountRoutes };
 };

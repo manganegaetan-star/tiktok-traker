@@ -13,6 +13,33 @@
 .kpi{padding:20px 22px}
 .kpi strong{display:block;font:700 clamp(22px,2.4vw,32px) 'Space Grotesk';margin-top:12px;font-variant-numeric:tabular-nums;color:#f0fdff}
 .kpi span{display:block;font-size:12px;color:#8aa9bb;margin-top:5px}
+.hist-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.hist-upd{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #3bf7ef44;border-radius:999px;background:#0b2033;color:#cfe9f3;font-size:12px}
+.hist-upd .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.hist-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.hist-kpis div{padding:14px 16px;border:1px solid #2c587050;border-radius:8px;background:#07172799}
+.hist-kpis span{display:block;color:var(--muted);font-size:12px}
+.hist-kpis strong{display:block;font:700 22px 'Space Grotesk';margin-top:6px;font-variant-numeric:tabular-nums}
+.hist-kpis small{display:block;color:var(--muted2);font-size:12px;margin-top:3px}
+.hist-kpis .up{color:var(--green)}
+.hist-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px}
+.hist-box{padding:16px;border:1px solid #2c587050;border-radius:8px;background:#07172766;min-width:0}
+.hist-box h3{font:700 14px 'Space Grotesk';margin:0 0 4px}
+.hist-box p{color:var(--muted);font-size:12px;margin:0 0 10px}
+.fcurve{width:100%;height:150px;display:block}
+.hbars{display:flex;align-items:flex-end;gap:3px;height:120px;border-bottom:1px solid #2c587070}
+.hbars i{flex:1 1 0;min-width:3px;background:linear-gradient(180deg,var(--cyan),#1c5f8f);border-radius:2px 2px 0 0}
+.hbars i.top{background:linear-gradient(180deg,var(--gold),#8a5f1e)}
+.hbars i.none{background:#1b3550;height:3px!important}
+.hlabels{display:flex;justify-content:space-between;color:var(--muted2);font-size:11px;margin-top:5px}
+.rise{display:grid;gap:8px}
+.rise a{display:flex;align-items:center;gap:10px;min-width:0}
+.rise img{width:32px;height:42px;object-fit:cover;border-radius:3px;background:#0b2233;flex:0 0 32px}
+.rise .t{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rise b{color:var(--green);font:700 13px 'Space Grotesk';white-space:nowrap}
+.hist-empty{color:var(--muted);font-size:14px;line-height:1.6;margin-top:12px}
+@media(max-width:900px){.hist-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.hist-kpis{grid-template-columns:1fr}}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
 .card{padding:24px 26px;margin-top:16px;overflow:hidden}
 .grid2 .card{margin-top:0}
@@ -127,6 +154,13 @@ th.n{text-align:right}
  <div id="loading" class="loading"><div class="kpis"><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div><div class="surface kpi skel" style="height:120px"></div></div><div class="surface skel" style="height:220px;margin-top:16px"></div><p style="margin-top:16px">Analyse de tes vidéos en cours…</p></div>
 
  <div id="content" class="hidden">
+  <section class="surface card" id="histCard" style="margin-top:0;margin-bottom:16px">
+   <div class="hist-head">
+    <div><div class="micro">Suivi heure par heure</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2></div>
+    <span class="hist-upd" id="histUpd"><span class="dot"></span><span id="histUpdTxt">Chargement…</span></span>
+   </div>
+   <div id="histBody"></div>
+  </section>
   <section class="kpis">
    <article class="surface kpi"><div class="micro">Vues totales</div><strong id="kViews">—</strong><span id="kViewsSub">sur toutes tes vidéos</span></article>
    <article class="surface kpi"><div class="micro">Vues par vidéo</div><strong id="kMedian">—</strong><span id="kMedianSub">médiane</span></article>
@@ -371,13 +405,72 @@ async function load(force) {
     $('lock').classList.toggle('hidden', premium);
     $('filters').classList.toggle('hidden', !premium);
     $('reload').classList.toggle('hidden', !premium);
-    if (premium) render(DATA);
+    if (premium) { render(DATA); loadHistory(); }
     else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; setupGoogle(); }
   }
   catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
   finally { $('reload').disabled = false; }
 }
 $('reload').addEventListener('click', () => load(true));
+
+// ---------- Suivi heure par heure (relevés enregistrés, premium) ----------
+const fmtDate = ms => new Date(ms).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtHour = ms => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const signed = v => v == null ? '—' : (v > 0 ? '+' : '') + fmt(v);
+
+function curveSvg(points) {
+  if (points.length < 2) return '<p class="hist-empty">La courbe apparaîtra après quelques relevés.</p>';
+  const W = 600, H = 150, P = 6;
+  const ts = points.map(p => p[0]), vs = points.map(p => p[1]);
+  const t0 = Math.min(...ts), t1 = Math.max(...ts), v0 = Math.min(...vs), v1 = Math.max(...vs);
+  const x = t => P + (t - t0) / ((t1 - t0) || 1) * (W - 2 * P);
+  const y = v => H - P - (v - v0) / ((v1 - v0) || 1) * (H - 2 * P);
+  const d = points.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  return `<svg class="fcurve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Courbe des abonnés">
+    <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3bf7ef" stop-opacity=".35"/><stop offset="1" stop-color="#3bf7ef" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d} L ${x(t1).toFixed(1)} ${H} L ${x(t0).toFixed(1)} ${H} Z" fill="url(#fg)"/>
+    <path d="${d}" fill="none" stroke="#3bf7ef" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+    <div class="hlabels"><span>${fmt(v0)} abonnés</span><span>${fmt(v1)} abonnés</span></div>`;
+}
+
+async function loadHistory() {
+  const body = $('histBody');
+  let h;
+  try { h = await api('/api/historique'); }
+  catch (e) { $('histUpdTxt').textContent = 'Historique indisponible'; body.innerHTML = '<p class="hist-empty">' + esc(e.message) + '</p>'; return; }
+
+  if (h.empty) {
+    $('histUpdTxt').textContent = 'Premier relevé vers ' + fmtHour(h.nextUpdate);
+    body.innerHTML = '<p class="hist-empty">Ton suivi heure par heure démarre : un relevé de tes chiffres est enregistré toutes les heures. Reviens après quelques relevés pour voir tes vues gagnées, tes heures de vues et la courbe de tes abonnés.</p>';
+    return;
+  }
+
+  $('histUpdTxt').textContent = 'Dernière mise à jour : ' + fmtDate(h.lastUpdate) + ' · prochaine vers ' + fmtHour(h.nextUpdate);
+
+  const kpi = (label, v, f, wait) => `<div><span>${label}</span><strong class="${v > 0 ? 'up' : ''}">${signed(v)}</strong><small>${v == null ? 'disponible après ' + wait + ' de suivi' : 'abonnés : ' + signed(f)}</small></div>`;
+  const maxH = Math.max(...h.hours.filter(v => v != null), 1);
+  const top3 = h.hours.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]).slice(0, 3).map(x => x[1]);
+  const bars = h.hours.map((v, i) => v == null
+    ? `<i class="none" title="${i} h : pas encore de relevé"></i>`
+    : `<i class="${top3.includes(i) ? 'top' : ''}" style="height:${Math.max(3, v / maxH * 100)}%" title="${i} h–${(i + 1) % 24} h : ${fmt(v)} vues en moyenne"></i>`).join('');
+  const best = top3.length ? top3.slice().sort((a, b) => a - b).map(i => i + ' h').join(', ') : '—';
+
+  const byId = new Map((DATA?.videos || []).map(v => [String(v.id), v]));
+  const rising = h.rising.map(r => {
+    const v = byId.get(String(r.id));
+    const title = v ? v.title : 'Vidéo ' + r.id;
+    const href = v?.shareUrl ? `href="${esc(v.shareUrl)}" target="_blank" rel="noopener"` : '';
+    return `<a ${href}><img src="${esc(v?.cover || '')}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="t">${esc(title)}</span><b>+${fmt(r.gain)}</b></a>`;
+  }).join('') || '<p class="hist-empty" style="margin:0">Pas encore assez de relevés (24 h).</p>';
+
+  body.innerHTML = `
+    <div class="hist-kpis">${kpi('Vues gagnées · 24 h', h.views.h24, h.followersGain.h24, '24 h')}${kpi('Vues gagnées · 7 jours', h.views.d7, h.followersGain.d7, '7 jours')}${kpi('Vues gagnées · 30 jours', h.views.d30, h.followersGain.d30, '30 jours')}</div>
+    <div class="hist-grid">
+      <div class="hist-box"><h3>Tes heures de vues</h3><p>Vues gagnées en moyenne à chaque heure de la journée (heure de Paris). Meilleures heures : <b>${best}</b>.</p><div class="hbars">${bars}</div><div class="hlabels"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div></div>
+      <div class="hist-box"><h3>Vidéos qui décollent</h3><p>Plus de vues gagnées sur les dernières 24 h.</p><div class="rise">${rising}</div></div>
+    </div>
+    <div class="hist-box" style="margin-top:16px"><h3>Courbe des abonnés</h3><p>Depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${fmt(h.count)} relevés horaires.</p>${curveSvg(h.curve)}</div>`;
+}
 PulseUI.picker($('pickerSlot'));
 
 // ---------- Connexion Google (passage premium) ----------

@@ -19,6 +19,7 @@
 
 const crypto = require("crypto");
 const createYouTube = require("./youtube");
+const createReleves = require("./releves");
 
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const API = "https://open.tiktokapis.com/v2";
@@ -541,6 +542,7 @@ function isPublicPath(path) {
     return (
         PUBLIC_PATHS.has(path) ||
         path.startsWith("/auth/") ||
+        path === "/cron/releve" ||
         /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(path) ||
         /^\/google[0-9a-f]{16}\.html$/.test(path)
     );
@@ -550,6 +552,10 @@ module.exports = function mountTikTokAuth(app) {
     const youtube = createYouTube({
         config, seal, unseal, readCookie, setCookie, clearCookie, db, readGoogle, cached, cache,
         TIMEOUT_MS, GOOGLE_CLIENT_ID
+    });
+
+    const releves = createReleves({
+        db, config, seal, unseal, tokenRequest, apiCall, USER_FIELDS, VIDEO_FIELDS, youtube
     });
 
     // Compte YouTube affiché (cookie) + compte Google connecté.
@@ -1104,6 +1110,7 @@ module.exports = function mountTikTokAuth(app) {
 
             if (platform === "youtube") {
                 if (!(await youtube.unlink(store, google.uid, id, c.secret))) return res.status(404).json({ error: "Compte introuvable" });
+                await releves.deleteHistory("youtube", id);
                 wasShown = activeYt === id;
             } else {
                 const ref = store.collection("comptes").doc(google.uid).collection("tiktok").doc(id);
@@ -1119,6 +1126,7 @@ module.exports = function mountTikTokAuth(app) {
                     store.collection("utilisateurs").doc(id).delete()
                 ]);
                 premiumCache.delete(id);
+                await releves.deleteHistory("tiktok", id);
                 wasShown = !activeYt && id === currentTk;
                 if (id === currentTk) clearCookie(req, res, SESSION_COOKIE);
             }
@@ -1175,6 +1183,7 @@ module.exports = function mountTikTokAuth(app) {
             // YouTube : accès révoqués, chaînes déliées.
             for (const d of await youtube.list(store, google.uid)) {
                 await youtube.unlink(store, google.uid, d.id, c.secret);
+                await releves.deleteHistory("youtube", d.id);
             }
 
             // TikTok : comptes reliés, fiches et jetons (révoqués).
@@ -1190,6 +1199,7 @@ module.exports = function mountTikTokAuth(app) {
                 ids.add(d.id);
             }
             for (const id of ids) {
+                await releves.deleteHistory("tiktok", id);
                 batch.delete(store.collection("utilisateurs").doc(id));
                 premiumCache.delete(id);
                 for (const k of [...cache.keys()]) if (k.includes(id)) cache.delete(k);
@@ -1204,6 +1214,57 @@ module.exports = function mountTikTokAuth(app) {
         } catch (error) {
             console.warn("[COMPTES] Suppression impossible :", error.message);
             res.status(500).json({ error: "Suppression impossible, réessaie" });
+        }
+    });
+
+    // ---------- Relevé horaire (Cloud Scheduler) ----------
+    const CRON_SA = process.env.CRON_SERVICE_ACCOUNT?.trim() || "792698279689-compute@developer.gserviceaccount.com";
+    let cronVerifier;
+
+    app.post("/cron/releve", async (req, res) => {
+        const auth = req.get("authorization") || "";
+        const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        const audience = process.env.CRON_AUDIENCE?.trim() ||
+            (() => { try { return new URL(config(req).redirectUri).origin + "/cron/releve"; } catch { return null; } })();
+
+        try {
+            if (!cronVerifier) {
+                const { OAuth2Client } = require("google-auth-library");
+                cronVerifier = new OAuth2Client();
+            }
+            const ticket = await cronVerifier.verifyIdToken({ idToken: token, audience });
+            const p = ticket.getPayload();
+            if (!p?.email_verified || p.email !== CRON_SA) throw new Error("compte non autorisé");
+        } catch (error) {
+            console.warn("[RELEVE] Appel refusé :", error.message);
+            return res.status(401).json({ error: "Non autorisé" });
+        }
+
+        try {
+            res.json(await releves.run());
+        } catch (error) {
+            console.warn("[RELEVE] Échec :", error.message);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Historique du compte affiché (premium uniquement).
+    app.get("/api/historique", requireAccount, async (req, res) => {
+        const platform = req.youtube ? "youtube" : "tiktok";
+        const id = req.youtube ? req.youtube.channelId : req.tiktok.openId;
+        const premium = req.youtube ? await googlePremium(req.youtube.uid) : await premiumStatus(req.tiktok.openId);
+
+        if (!premium) return res.status(403).json({ error: "Réservé au premium" });
+
+        const next = new Date();
+        next.setUTCMinutes(5, 0, 0);
+        if (next <= new Date()) next.setUTCHours(next.getUTCHours() + 1);
+
+        try {
+            res.json({ ...(await releves.summary(platform, id)), nextUpdate: next.getTime() });
+        } catch (error) {
+            console.warn("[HISTORIQUE]", error.message);
+            res.status(500).json({ error: "Historique indisponible" });
         }
     });
 
