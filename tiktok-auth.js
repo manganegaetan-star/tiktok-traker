@@ -201,7 +201,7 @@ async function tokenRequest(params) {
 // -----------------------------------------------------
 // Collection « utilisateurs », un document par compte TikTok
 // (id = open_id) : { pseudo, creeLe, premium }.
-// Le document est créé à la première visite avec premium: false.
+// Le document est créé à la première visite avec premium: "Gratuit".
 // Pour passer quelqu'un en premium : console Firestore →
 // utilisateurs → son document → premium = "Statistiques" ou "Createur".
 // Lecture mise en cache 1 min pour rester dans le quota gratuit.
@@ -248,7 +248,7 @@ async function premiumStatus(openId, username) {
                 if (snap.exists) {
                     value = isPaid(formuleOfDoc(snap));
                 } else {
-                    await ref.set({ pseudo: username || null, creeLe: new Date(), premium: false });
+                    await ref.set({ pseudo: username || null, creeLe: new Date(), premium: "Gratuit" });
                 }
             }
         } catch (error) {
@@ -398,7 +398,7 @@ async function upsertGoogleAccount(store, google, legacyOpenId) {
     const account = await accountRef.get();
 
     // Formule activée à la main sur l'ancienne fiche « utilisateurs » : reprise sur le compte Google.
-    let legacyValue = false;
+    let legacyValue = null;
     if (legacyOpenId) {
         const legacy = await store.collection("utilisateurs").doc(legacyOpenId).get();
         const f = formuleOfDoc(legacy);
@@ -410,7 +410,7 @@ async function upsertGoogleAccount(store, google, legacyOpenId) {
         nom: google.nom,
         photo: google.photo,
         derniereConnexion: new Date(),
-        ...(account.exists ? {} : { creeLe: new Date(), premium: legacyValue }),
+        ...(account.exists ? {} : { creeLe: new Date(), premium: legacyValue || "Gratuit" }),
         ...(account.exists && legacyValue && !isPaid(formuleOfDoc(account)) ? { premium: legacyValue } : {})
     }, { merge: true });
 }

@@ -109,7 +109,7 @@
         try {
           const r = await fetch('/auth/switch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: a.platform || 'tiktok', id: a.id || a.openId }) });
           const out = await r.json().catch(() => ({}));
-          if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else alert(out.error || 'Changement impossible'); return; }
+          if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else await dialog({ title: 'Changement impossible', text: out.error || 'Réessaie dans un instant.', cancel: null }); return; }
           try { sessionStorage.clear(); } catch { /* ignore */ }
           location.reload();
         } finally { item.disabled = false; }
@@ -338,7 +338,7 @@
         try {
           const r = await fetch('/auth/switch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: a.platform || 'tiktok', id: a.id || a.openId }) });
           const out = await r.json().catch(() => ({}));
-          if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else alert(out.error || 'Changement impossible'); return; }
+          if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else await dialog({ title: 'Changement impossible', text: out.error || 'Réessaie dans un instant.', cancel: null }); return; }
           try { sessionStorage.clear(); } catch { /* ignore */ }
           location.reload();
         } finally { item.disabled = false; }
@@ -357,8 +357,37 @@
     el.append(btn, menu);
   }
 
+  // Fenêtre de confirmation / d'information du site (remplace confirm() et alert()).
+  // dialog({ title, text, ok, cancel, danger }) → Promise<boolean>. cancel: null = simple information.
+  function dialog(o) {
+    o = o || {};
+    return new Promise(resolve => {
+      const prev = document.activeElement;
+      const box = document.createElement('div');
+      box.className = 'pdlg';
+      box.innerHTML = '<div class="pdlg-card" role="alertdialog" aria-modal="true" aria-labelledby="pdlgT" aria-describedby="pdlgX">'
+        + '<h2 id="pdlgT"></h2><p id="pdlgX"></p><div class="pdlg-btns"></div></div>';
+      box.querySelector('h2').textContent = o.title || 'TikTok Pulse';
+      box.querySelector('p').textContent = o.text || '';
+      const btns = box.querySelector('.pdlg-btns');
+      const done = v => { box.remove(); document.removeEventListener('keydown', key, true); if (prev && prev.focus) prev.focus(); resolve(v); };
+      if (o.cancel !== null) {
+        const c = document.createElement('button'); c.type = 'button'; c.className = 'btn'; c.textContent = o.cancel || 'Annuler';
+        c.addEventListener('click', () => done(false)); btns.append(c);
+      }
+      const ok = document.createElement('button'); ok.type = 'button';
+      ok.className = 'btn ' + (o.danger ? 'pdlg-danger' : 'pdlg-ok'); ok.textContent = o.ok || 'OK';
+      ok.addEventListener('click', () => done(true)); btns.append(ok);
+      box.addEventListener('click', e => { if (e.target === box) done(o.cancel === null); });
+      const key = e => { if (e.key === 'Escape') { e.preventDefault(); done(o.cancel === null); } };
+      document.addEventListener('keydown', key, true);
+      document.body.append(box);
+      ok.focus();
+    });
+  }
+
   async function logout() {
-    if (!confirm('Te déconnecter de TikTok Pulse sur cet appareil ?')) return;
+    if (!(await dialog({ title: 'Se déconnecter ?', text: 'Tu seras déconnecté de TikTok Pulse sur cet appareil. Tes comptes et ton abonnement restent enregistrés.', ok: 'Me déconnecter' }))) return;
     try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch { /* ignore */ }
     try { sessionStorage.clear(); } catch { /* ignore */ }
     location.replace('/connexion.html');
@@ -454,7 +483,7 @@
     }
   }
 
-  window.PulseUI = { icon, brand, hydrate, picker, cookies, prefsAllowed };
+  window.PulseUI = { icon, brand, hydrate, picker, cookies, prefsAllowed, dialog, confirm: dialog };
   const start = () => { nav(); hydrate(); consentCheck(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

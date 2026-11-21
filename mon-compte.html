@@ -187,7 +187,7 @@ async function render() {
         const msg = a.actif
           ? 'Délier le compte affiché ? Tu basculeras sur un autre compte relié, ou tu pourras en relier un nouveau.'
           : 'Délier ce compte de ton compte TikTok Pulse ?';
-        if (!confirm(msg)) return;
+        if (!(await PulseUI.dialog({ title: 'Délier ce compte ?', text: msg, ok: 'Délier', danger: true }))) return;
         try {
           const out = await post('/api/comptes/delier', { platform: a.platform, id: a.id });
           try { sessionStorage.clear(); } catch {}
@@ -213,6 +213,7 @@ async function render() {
 }
 
 $('logout')?.addEventListener('click', async () => {
+  if (!(await PulseUI.dialog({ title: 'Se déconnecter ?', text: 'Tu seras déconnecté de TikTok Pulse sur cet appareil. Tes comptes et ton abonnement restent enregistrés.', ok: 'Me déconnecter' }))) return;
   try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { location.replace('/connexion.html'); }
 });
 $('delete')?.addEventListener('click', async () => {
@@ -222,7 +223,7 @@ $('delete')?.addEventListener('click', async () => {
     setTimeout(() => $('deleteWrap').classList.remove('show'), 3500);
     return;
   }
-  if (!confirm('Supprimer ton compte TikTok Pulse ? Tout est effacé (compte Google, comptes reliés, infos TikTok enregistrées) et tu seras déconnecté. Cette action est définitive.')) return;
+  if (!(await PulseUI.dialog({ title: 'Supprimer ton compte TikTok Pulse ?', text: 'Tout est effacé : compte Google, comptes reliés, historique de tes statistiques et infos TikTok enregistrées. Tu seras déconnecté. Cette action est définitive.', ok: 'Supprimer définitivement', danger: true }))) return;
   try { const out = await post('/api/compte/supprimer'); try { sessionStorage.clear(); } catch {} location.replace(out.next || '/connexion.html'); } catch (err) { error(err.message); }
 });
 

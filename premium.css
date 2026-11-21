@@ -233,3 +233,17 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 .pcookie-sub b{display:block;font-size:13px;color:#e6f6fb}
 .pcookie-sub small{display:block;color:#8fb0c1;font-size:12px;line-height:1.45}
 .pcookie-sub input{width:18px;height:18px;accent-color:var(--cyan);flex:0 0 auto;margin-top:2px}
+
+/* Fenêtres du site (confirmation, information) */
+.pdlg{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:#020610cc;backdrop-filter:blur(5px);animation:pdlg-in .15s ease}
+.pdlg-card{width:min(440px,100%);padding:24px 24px 20px;border:1px solid #2d536c;border-radius:14px;background:#081424;box-shadow:0 24px 70px #000d;color:#d7eef7}
+.pdlg-card h2{margin:0 0 8px;font:700 19px 'Space Grotesk';letter-spacing:-.02em;color:#fff}
+.pdlg-card p{margin:0 0 20px;color:#a9c8d6;font-size:14px;line-height:1.6}
+.pdlg-btns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.pdlg-btns .btn{min-height:42px}
+.pdlg-ok{background:var(--cyan);border-color:var(--cyan);color:#041018}
+.pdlg-ok:hover{color:#041018;filter:brightness(1.08)}
+.pdlg-danger{background:#ff4c9a;border-color:#ff4c9a;color:#fff}
+.pdlg-danger:hover{color:#fff;filter:brightness(1.08)}
+@keyframes pdlg-in{from{opacity:0}}
+@media(max-width:560px){.pdlg-btns .btn{flex:1 1 auto}}
