@@ -92,6 +92,41 @@
   const missingKeys = () => [...new Set(['texte', 'image', 'video'].filter(isApi).map(st => choice[st].p))].filter(p => !hasKey(p));
   const configured = () => !!cfg.choix && !missingKeys().length;
 
+  // Prix d'une unité (image, seconde de vidéo, script) : ta moyenne réelle si tu as déjà généré avec ce modèle.
+  const KIND = { texte: 'script', image: 'images', video: 'videos' };
+  function avgOf(step, p, m) {
+    const k = (step === 'texte' ? ['script', 'idees'] : [KIND[step]]).map(kd => cfg.moyennes?.[`${kd}:${p}:${m}`]).find(Boolean);
+    return k ? k.parUnite : null;
+  }
+  function unit(step) {
+    if (!isApi(step)) return 0;
+    const m = model(step), avg = avgOf(step, choice[step].p, choice[step].m);
+    return avg ?? (step === 'texte' ? m.est : step === 'image' ? m.par : m.parSec);
+  }
+  const fromAvg = step => isApi(step) && avgOf(step, choice[step].p, choice[step].m) != null;
+  // Nombre d'unités déjà générées avec le modèle choisi (pour dire sur quoi repose le devis).
+  function countOf(step) {
+    if (!isApi(step)) return 0;
+    const kd = step === 'texte' ? 'script' : KIND[step];
+    return cfg.moyennes?.[`${kd}:${choice[step].p}:${choice[step].m}`]?.n || 0;
+  }
+  function sourceText() {
+    const parts = [];
+    if (isApi('image')) parts.push(fromAvg('image') ? `${countOf('image')} image${countOf('image') > 1 ? 's' : ''} déjà générée${countOf('image') > 1 ? 's' : ''}` : '');
+    if (isApi('video')) parts.push(fromAvg('video') ? `${Math.round(countOf('video'))} s de vidéo déjà générées` : '');
+    const known = parts.filter(Boolean);
+    return known.length ? `(d’après ton coût réel sur ${known.join(' et ')})` : '(prix publics : le devis s’affinera avec tes générations)';
+  }
+  // Régénérations : ta vraie habitude si on la connaît (au moins 5 clips), sinon une marge de ×1,5.
+  function regenText(est) {
+    const h = cfg.habitudes;
+    if (h && h.clips >= 5 && h.facteur) {
+      const f = h.facteur;
+      return f > 1.05 ? `Avec tes régénérations habituelles (×${f.toFixed(2).replace('.', ',')}) : ≈ <b>${usd(est.total * f)}</b>.` : 'Tu régénères rarement tes scènes : ce devis devrait être juste.';
+    }
+    return `Compte jusqu’à ≈ ${usd(est.total * 1.5)} si tu régénères des scènes.`;
+  }
+
   function priceHint(step, m) {
     if (step === 'texte') return '≈ ' + usd(m.est) + ' / script';
     if (step === 'image') return '≈ ' + usd(m.par) + ' / image';
@@ -162,6 +197,15 @@
     $('stBudgetBar').style.width = Math.min(100, cfg.budget ? cfg.depense / cfg.budget * 100 : 100) + '%';
     $('stBudgetBar').classList.toggle('warn', cfg.depense >= cfg.budget * 0.8);
   }
+  function learn(step, units, n) {
+    if (!isApi(step) || !(units > 0) || !n) return;
+    const kd = step === 'texte' ? 'script' : KIND[step];
+    const k = `${kd}:${choice[step].p}:${choice[step].m}`;
+    cfg.moyennes = cfg.moyennes || {};
+    const a = cfg.moyennes[k] || { parUnite: 0, n: 0 };
+    const total = a.parUnite * a.n + n;
+    cfg.moyennes[k] = { n: a.n + units, parUnite: total / (a.n + units) };
+  }
   function addCost(n) {
     if (!n) return;
     refreshSpend(n);
@@ -177,7 +221,7 @@
       if (isApi('video')) { if (images.has(i) || isApi('image')) { secs += s.duree; if (!images.has(i)) imgs++; } }
       else if (!images.has(i) && isApi('image')) imgs++;
     });
-    const total = imgs * (model('image')?.par || 0) + secs * (model('video')?.parSec || 0);
+    const total = imgs * unit('image') + secs * unit('video');
     return { imgs, secs, total };
   }
 
@@ -271,7 +315,7 @@ Réponds uniquement avec ce JSON :
     (list || []).forEach(it => {
       const el = document.createElement('article');
       el.className = 'st-idea';
-      const cost = isApi('texte') ? ` <small>≈ ${usd(model('texte').est)}</small>` : '';
+      const cost = isApi('texte') ? ` <small>≈ ${usd(unit('texte'))}</small>` : '';
       el.innerHTML = `<h3>${esc(it.titre)}</h3><p>${esc(it.pitch)}</p>${it.hook ? `<p class="st-hook">« ${esc(it.hook)} »</p>` : ''}${it.pourquoi ? `<p class="st-why">${PulseUI.icon('trend')} ${esc(it.pourquoi)}</p>` : ''}
         <button type="button" class="btn st-main">${PulseUI.icon('zap')} Créer cet épisode${cost}</button>`;
       el.querySelector('button').addEventListener('click', () => writeScript(`${it.titre} — ${it.pitch} (hook : ${it.hook || ''})`));
@@ -305,7 +349,7 @@ Réponds uniquement avec ce JSON :
       const next = toProject(jsonOf(out.texte));
       await clearProject();
       project = next;
-      addCost(out.cout);
+      addCost(out.cout); learn('texte', 1, out.cout);
       await save();
       renderScenes();
       $('stProject').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -340,35 +384,45 @@ Réponds uniquement avec ce JSON :
       const el = document.createElement('article');
       el.className = 'st-scene' + (m ? ' ok' : '');
       el.dataset.i = i;
-      const thumb = m ? (m.type === 'video' ? `<video src="${m.url}" muted playsinline preload="metadata"></video>` : `<img src="${m.url}" alt="">`)
-        : img ? `<img src="${img}" alt="">` : `<span>${PulseUI.icon('plus')}<b>${vApi ? 'Image' : 'Clip'}</b><small>à déposer${vApi ? ' ou générer' : ''}</small></span>`;
+      // À gauche : l'image de départ ; à droite : le clip (aperçu lisible).
+      const vidBox = m && m.type === 'video'
+        ? `<video src="${m.url}" controls playsinline preload="metadata"></video>`
+        : `<span>${PulseUI.icon('film')}<b>Clip</b><small>${vApi ? 'généré ici' : 'à déposer'}</small></span>`;
+      const imgSrc = img || (m && m.type === 'image' ? m.url : null);
+      const imgBox = imgSrc ? `<img src="${imgSrc}" alt="Image de départ de la scène ${s.n}">`
+        : `<span>${PulseUI.icon('plus')}<b>Image</b><small>${iApi ? 'générée ici' : 'à déposer'}</small></span>`;
       const status = m ? '<em>clip prêt</em>' : img ? 'image prête' : '';
-      const genCost = (vApi ? s.duree * model('video').parSec : 0) + (!img && iApi ? model('image').par : 0);
+      const genCost = (vApi ? s.duree * unit('video') : 0) + (!img && iApi ? unit('image') : 0);
       const canGen = vApi && (img || iApi) || (!vApi && iApi && !img);
       el.innerHTML = `
-        <div class="st-drop" tabindex="0" role="button" aria-label="Déposer un fichier pour la scène ${s.n}">${thumb}<div class="st-state" hidden></div><input type="file" accept="video/*,image/*" hidden></div>
+        <div class="st-drop st-img${imgSrc ? ' full' : ''}" tabindex="0" role="button" aria-label="Image de départ de la scène ${s.n}">${imgBox}<input type="file" accept="image/*" hidden></div>
         <div class="st-info">
-          <div class="st-n">Scène ${s.n} · ${s.duree} s${status ? ' · ' + status : ''}</div>
+          <div class="st-n">Scène ${s.n} · ${s.duree} s${status ? ' · ' + status : ''}${s.cout ? ` · <span class="st-cost">coût réel ${usd(s.cout)}</span>` : ''}</div>
           <p class="st-dia">${esc(s.dialogue || '(sans dialogue)')}</p>
           <div class="st-btns">
             ${!iApi ? `<button type="button" class="btn" data-c="cimg">${PulseUI.icon('copy')} Prompt image</button>` : ''}
             ${!vApi ? `<button type="button" class="btn" data-c="cvid">${PulseUI.icon('copy')} Prompt vidéo</button>` : ''}
-            ${canGen ? `<button type="button" class="btn" data-c="gen">${PulseUI.icon(m ? 'refresh' : 'zap')} ${m ? 'Régénérer' : 'Générer'} <small>≈ ${usd(m ? s.duree * (model('video')?.parSec || 0) : genCost)}</small></button>` : ''}
-            ${m ? `<button type="button" class="btn st-x" data-c="remove">Retirer</button>` : ''}
+            ${canGen ? `<button type="button" class="btn" data-c="gen">${PulseUI.icon(m ? 'refresh' : 'zap')} ${m ? 'Régénérer' : 'Générer'} <small>≈ ${usd(m ? s.duree * unit('video') : genCost)}</small></button>` : ''}
+            ${m ? `<button type="button" class="btn st-x" data-c="remove">Retirer le clip</button>` : ''}
           </div>
-        </div>`;
-      const drop = el.querySelector('.st-drop'), input = drop.querySelector('input');
-      drop.addEventListener('click', () => input.click());
-      drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
-      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-      drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) addFile(i, e.dataTransfer.files[0]); });
-      input.addEventListener('change', () => { if (input.files[0]) addFile(i, input.files[0]); });
+        </div>
+        <div class="st-drop st-vid${m && m.type === 'video' ? ' full' : ''}" tabindex="0" role="button" aria-label="Clip de la scène ${s.n}">${vidBox}<div class="st-state" hidden></div><input type="file" accept="video/*" hidden></div>`;
+      el.querySelectorAll('.st-drop').forEach(drop => {
+        const input = drop.querySelector('input');
+        const kind = drop.classList.contains('st-vid') ? 'video' : 'image';
+        // Case remplie : le clip se lit (contrôles), on remplace par glisser-déposer.
+        drop.addEventListener('click', e => { if (drop.classList.contains('full') && kind === 'video') return; if (e.target.tagName !== 'INPUT') input.click(); });
+        drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+        drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) addFile(i, e.dataTransfer.files[0], kind); });
+        input.addEventListener('change', () => { if (input.files[0]) addFile(i, input.files[0], kind); });
+      });
       el.querySelector('[data-c=cimg]')?.addEventListener('click', e => copy(imagePrompt(s), e.currentTarget));
       el.querySelector('[data-c=cvid]')?.addEventListener('click', e => copy(videoPrompt(s), e.currentTarget));
       el.querySelector('[data-c=gen]')?.addEventListener('click', async () => {
         if (busy) return;
-        if (m && !(await PulseUI.dialog({ title: 'Régénérer la scène ' + s.n + ' ?', text: `Un nouveau clip sera créé à partir de la même image. Coût estimé : ${usd(s.duree * model('video').parSec)}.`, ok: 'Régénérer' }))) return;
+        if (m && !(await PulseUI.dialog({ title: 'Régénérer la scène ' + s.n + ' ?', text: `Un nouveau clip sera créé à partir de la même image. Coût estimé : ${usd(s.duree * unit('video'))}.`, ok: 'Régénérer' }))) return;
         busy = true;
         try { await genScene(i, true); } catch (e) { say('Scène ' + s.n, e.message); }
         finally { busy = false; renderScenes(); }
@@ -385,12 +439,12 @@ Réponds uniquement avec ce JSON :
     if (!vApi) steps.push('anime-les dans Grok avec ton abonnement (bouton « Prompt vidéo ») et dépose les clips');
     else if (!iApi) steps.push('dépose chaque image : le clip sera généré par l’API');
     $('stQuote').innerHTML = (est.imgs || est.secs)
-      ? `Reste à générer par l’API : <b>${est.imgs} image${est.imgs > 1 ? 's' : ''}</b>${est.secs ? ` + <b>${est.secs} s de vidéo</b>` : ''} ≈ <b>${usd(est.total)}</b>. Compte environ ×1,5 si tu régénères des scènes.${steps.length ? '<br>Avec ton abonnement : ' + steps.join(', ') + '.' : ''}`
+      ? `Reste à générer par l’API : <b>${est.imgs} image${est.imgs > 1 ? 's' : ''}</b>${est.secs ? ` + <b>${est.secs} s de vidéo</b>` : ''} ≈ <b>${usd(est.total)}</b> ${sourceText()}. ${regenText(est)}${steps.length ? '<br>Avec ton abonnement : ' + steps.join(', ') + '.' : ''}`
       : done === project.scenes.length ? 'Toutes les scènes sont prêtes.' : 'Avec ton abonnement : ' + steps.join(', ') + '.';
     const canAll = est.imgs + est.secs > 0;
     $('stGenAll').classList.toggle('hidden', !canAll);
     $('stGenAll').innerHTML = `${PulseUI.icon('zap')} Tout générer${vApi ? ' et monter' : ''} <small>≈ ${usd(est.total)}</small>`;
-    $('stMake').disabled = done === 0;
+    $('stMake').disabled = !project.scenes.some((_, i) => media.has(i) || images.has(i));
     $('stDesc').textContent = [project.description, (project.hashtags || []).join(' ')].filter(Boolean).join('\n\n');
   }
 
@@ -405,7 +459,8 @@ Réponds uniquement avec ce JSON :
     if (!img && isApi('image')) {
       sceneState(i, 'Image…');
       const out = await api('/api/studio/image', { fournisseur: choice.image.p, modele: choice.image.m, prompt: imagePrompt(s) });
-      img = out.image; images.set(i, img); await put('img:' + i, img); addCost(out.cout);
+      img = out.image; images.set(i, img); await put('img:' + i, img); addCost(out.cout); learn('image', 1, out.cout);
+      s.cout = (s.cout || 0) + (out.cout || 0); save();
       if (!isApi('video')) { renderScenes(); return; }
       renderScenes();
     }
@@ -413,12 +468,20 @@ Réponds uniquement avec ce JSON :
     if (!img) throw new Error('Dépose d’abord l’image de départ de cette scène.');
     if (media.has(i) && !forceVideo) return;
     sceneState(i, 'Vidéo…');
-    const start = await api('/api/studio/video', { image: img, prompt: videoPrompt(s), duree: s.duree, modele: choice.video.m });
+    const regen = media.has(i);
+    const start = await api('/api/studio/video', { image: img, prompt: videoPrompt(s), duree: s.duree, modele: choice.video.m, regen });
+    cfg.habitudes = cfg.habitudes || { clips: 0, regenerations: 0 };
+    cfg.habitudes.clips++; if (regen) cfg.habitudes.regenerations++;
+    const firsts = cfg.habitudes.clips - cfg.habitudes.regenerations;
+    cfg.habitudes.facteur = firsts > 0 ? cfg.habitudes.clips / firsts : null;
     const t0 = Date.now();
     for (;;) {
       await new Promise(r => setTimeout(r, 5000));
       const st = await api('/api/studio/video/' + encodeURIComponent(start.id));
-      if (st.status === 'done') { if (st.cout) addCost(st.cout); break; }
+      if (st.status === 'done') {
+        if (st.cout) { addCost(st.cout); learn('video', Number(st.duree) || s.duree, st.cout); s.cout = (s.cout || 0) + st.cout; save(); }
+        break;
+      }
       if (st.status === 'failed') throw new Error(st.error || 'Génération échouée.');
       sceneState(i, 'Vidéo… ' + (st.progress ? Math.round(st.progress) + ' %' : Math.round((Date.now() - t0) / 1000) + ' s'));
       if (Date.now() - t0 > 10 * 60000) throw new Error('La génération prend trop de temps. Réessaie.');
@@ -437,7 +500,7 @@ Réponds uniquement avec ce JSON :
     if (missing.length) { say('Clé manquante', `Ajoute ta clé ${missing.map(st => PNAME[choice[st].p]).join(' et ')} dans « Tes IA ».`); return; }
     const left = Math.max(0, cfg.budget - cfg.depense);
     const what = [est.imgs ? `${est.imgs} image${est.imgs > 1 ? 's' : ''} (${model('image')?.label || ''})` : '', est.secs ? `${est.secs} s de vidéo (${model('video').label})` : ''].filter(Boolean).join(' + ');
-    if (!(await PulseUI.dialog({ title: 'Lancer la génération ?', text: `${what} ≈ ${usd(est.total)} sur tes comptes API. Il te reste ${usd(left)} sur ton plafond du mois.`, ok: 'Générer (≈ ' + usd(est.total) + ')' }))) return;
+    if (!(await PulseUI.dialog({ title: 'Lancer la génération ?', text: `${what} ≈ ${usd(est.total)} sur tes comptes API ${sourceText()}.${cfg.habitudes?.clips >= 5 && cfg.habitudes.facteur > 1.05 ? ` Avec tes régénérations habituelles : ≈ ${usd(est.total * cfg.habitudes.facteur)}.` : ''} Il te reste ${usd(left)} sur ton plafond du mois.`, ok: 'Générer (≈ ' + usd(est.total) + ')' }))) return;
     busy = true;
     $('stGenAll').disabled = true;
     try {
@@ -466,10 +529,11 @@ Réponds uniquement avec ce JSON :
     media.set(i, { blob, type, url: URL.createObjectURL(blob) });
     await put('media:' + i, { blob, type });
   }
-  async function addFile(i, file) {
+  async function addFile(i, file, slot) {
     const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : null;
     if (!type) { say('Fichier non reconnu', 'Dépose une vidéo ou une image.'); return; }
-    if (type === 'image' && isApi('video')) {
+    if (slot && slot !== type) { say('Mauvaise case', slot === 'video' ? 'Dépose la vidéo à droite (le clip), et l’image à gauche.' : 'Dépose l’image à gauche (l’image de départ), et le clip à droite.'); return; }
+    if (type === 'image') {
       // Image de départ : le clip sera généré par l'API à partir d'elle.
       const url = await blobToDataUrl(file);
       images.set(i, url); await put('img:' + i, url);
@@ -523,7 +587,7 @@ Réponds uniquement avec ce JSON :
   let making = false;
   async function make() {
     if (making || !project) return;
-    const scenes = project.scenes.map((s, i) => ({ s, m: media.get(i) })).filter(x => x.m);
+    const scenes = project.scenes.map((s, i) => ({ s, m: media.get(i) || (images.get(i) ? { type: 'image', url: images.get(i) } : null) })).filter(x => x.m);
     if (!scenes.length) return;
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
       PulseUI.dialog({ title: 'Navigateur non compatible', text: 'Le montage demande un navigateur récent (Chrome ou Edge sur ordinateur).', cancel: null });

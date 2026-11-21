@@ -64,6 +64,15 @@ const CATALOG = {
 };
 const PROVIDERS = ["claude", "openai", "grok"];
 
+// Tarifs Claude par modèle ($ / million de tokens) : sert si l'API a répondu avec un modèle de repli.
+const CLAUDE_RATES = {
+    "claude-opus-5-5": [4, 20], "claude-opus-5": [5, 25], "claude-opus-4-8": [5, 25], "claude-opus-4-7": [5, 25],
+    "claude-sonnet-5-5": [2, 10], "claude-sonnet-5": [2, 10], "claude-haiku-5-5": [0.10, 0.50],
+    "claude-fable-5-2": [8, 40], "claude-fable-5-1": [10, 50]
+};
+// Tarifs des images OpenAI ($ / million de tokens) : texte en entrée, image en entrée, image en sortie.
+const OPENAI_IMAGE_RATES = { "gpt-image-2": [5, 8, 30], "gpt-image-1-mini": [2, 2.5, 8] };
+
 module.exports = function mountStudio(app, d) {
     const { db, config, seal, unseal, readGoogle, formuleOfDoc } = d;
     const month = () => new Date().toISOString().slice(0, 7);
@@ -87,11 +96,15 @@ module.exports = function mountStudio(app, d) {
         const s = await ref.collection("studio").doc(month()).get();
         return s.exists ? Number(s.get("total")) || 0 : 0;
     }
-    async function record(ref, usd, kind) {
+    // Coût d'un appel : total du mois, et moyenne réelle par modèle (unités : images, secondes de vidéo, ou appels de texte).
+    async function record(ref, usd, kind, model, units) {
         await ref.collection("studio").doc(month()).set({
             total: FieldValue.increment(usd), appels: FieldValue.increment(1),
             detail: { [kind]: FieldValue.increment(usd) }, maj: new Date()
         }, { merge: true });
+        if (model && units > 0) {
+            await ref.set({ studio: { moyennes: { [kind + ":" + model]: { n: FieldValue.increment(units), total: FieldValue.increment(usd) } } } }, { merge: true });
+        }
     }
     async function checkBudget(x, res, estimate) {
         const total = await spent(x.ref);
@@ -148,7 +161,12 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             const x = await ctx(req, res); if (!x) return;
             const fins = {};
             PROVIDERS.forEach(p => { if (x.keys[p]) fins[p] = x.st.fins?.[p] || "••••"; });
-            res.json({ cles: fins, choix: x.st.choix || null, budget: x.budget, depense: await spent(x.ref), mois: month(), catalogue: CATALOG });
+            const moyennes = {};
+            Object.entries(x.st.moyennes || {}).forEach(([k, v]) => { if (v && v.n > 0) moyennes[k] = { parUnite: v.total / v.n, n: v.n }; });
+            const h = x.st.habitudes || {};
+            const clips = Number(h.clips) || 0, regen = Number(h.regenerations) || 0;
+            const habitudes = { clips, regenerations: regen, facteur: clips - regen > 0 ? clips / (clips - regen) : null };
+            res.json({ cles: fins, choix: x.st.choix || null, budget: x.budget, depense: await spent(x.ref), mois: month(), catalogue: CATALOG, moyennes, habitudes });
         } catch (error) { fail(res, error, "config"); }
     });
 
@@ -221,8 +239,11 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
                 : await client.messages.create(params);
             if (r.stop_reason === "refusal") { const e = new Error("Claude a refusé cette demande. Reformule ton idée."); e.status = 422; throw e; }
             const text = r.content.filter(b => b.type === "text").map(b => b.text).join("");
-            const usd = ((r.usage?.input_tokens || 0) * m.in + (r.usage?.output_tokens || 0) * m.out) / 1e6;
-            return { text, usd: usd || m.est };
+            const [rin, rout] = CLAUDE_RATES[r.model] || [m.in, m.out];
+            const u = r.usage || {};
+            const usd = ((u.input_tokens || 0) * rin + (u.cache_creation_input_tokens || 0) * rin * 1.25
+                + (u.cache_read_input_tokens || 0) * rin * 0.1 + (u.output_tokens || 0) * rout) / 1e6;
+            return { text, usd: usd || m.est, source: usd ? "tokens" : "estimation" };
         }
         const base = p === "openai" ? OPENAI : XAI;
         const j = await http(base, x.keys[p], "/chat/completions", {
@@ -230,9 +251,9 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             timeout: 120000
         });
         const ticks = Number(j.usage?.cost_in_usd_ticks);
-        const usd = Number.isFinite(ticks) && ticks > 0 ? ticks / TICKS_PER_USD
-            : ((j.usage?.prompt_tokens || 0) * m.in + (j.usage?.completion_tokens || 0) * m.out) / 1e6;
-        return { text: j.choices?.[0]?.message?.content || "", usd: usd || m.est };
+        if (Number.isFinite(ticks) && ticks > 0) return { text: j.choices?.[0]?.message?.content || "", usd: ticks / TICKS_PER_USD, source: "exact" };
+        const usd = ((j.usage?.prompt_tokens || 0) * m.in + (j.usage?.completion_tokens || 0) * m.out) / 1e6;
+        return { text: j.choices?.[0]?.message?.content || "", usd: usd || m.est, source: usd ? "tokens" : "estimation" };
     }
 
     app.post("/api/studio/texte", async (req, res) => {
@@ -245,8 +266,8 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             if (!needKey(x, res, p)) return;
             if (!(await checkBudget(x, res, m.est))) return;
             const out = await writeText(x, p, modelId, prompt);
-            await record(x.ref, out.usd, kind);
-            res.json({ texte: out.text, cout: out.usd });
+            await record(x.ref, out.usd, kind, p + ":" + modelId, 1);
+            res.json({ texte: out.text, cout: out.usd, source: out.source });
         } catch (error) {
             if (error.status === 422) return res.status(422).json({ error: error.message });
             fail(res, error, "texte", p);
@@ -263,15 +284,22 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             const x = await ctx(req, res); if (!x) return;
             if (!needKey(x, res, p)) return;
             if (!(await checkBudget(x, res, m.par))) return;
-            let b64, mime = "image/jpeg", usd = m.par;
+            let b64, mime = "image/jpeg", usd = m.par, source = "estimation";
             if (p === "openai") {
                 const j = await http(OPENAI, x.keys.openai, "/images/generations", {
                     body: { model: m.model || modelId, prompt, n: 1, size: "1024x1536", quality: m.quality, output_format: "jpeg" },
                     timeout: 180000
                 });
                 b64 = j.data?.[0]?.b64_json;
-                const outTok = Number(j.usage?.output_tokens), inTok = Number(j.usage?.input_tokens) || 0;
-                if (Number.isFinite(outTok) && outTok > 0) usd = (outTok * m.outRate + inTok * 5) / 1e6;
+                const u = j.usage || {};
+                const [tin, iin, iout] = OPENAI_IMAGE_RATES[m.model || modelId] || [5, 8, m.outRate];
+                const outTok = Number(u.output_tokens);
+                if (Number.isFinite(outTok) && outTok > 0) {
+                    const textIn = u.input_tokens_details?.text_tokens ?? (u.input_tokens || 0);
+                    const imgIn = u.input_tokens_details?.image_tokens || 0;
+                    usd = (textIn * tin + imgIn * iin + outTok * iout) / 1e6;
+                    source = "tokens";
+                }
             } else {
                 const j = await http(XAI, x.keys.grok, "/images/generations", {
                     body: { model: modelId, prompt, n: 1, aspect_ratio: "9:16", response_format: "b64_json" },
@@ -280,11 +308,11 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
                 b64 = j.data?.[0]?.b64_json;
                 mime = j.data?.[0]?.mime_type || mime;
                 const ticks = Number(j.usage?.cost_in_usd_ticks);
-                if (Number.isFinite(ticks) && ticks > 0) usd = ticks / TICKS_PER_USD;
+                if (Number.isFinite(ticks) && ticks > 0) { usd = ticks / TICKS_PER_USD; source = "exact"; }
             }
             if (!b64) throw new Error("aucune image reçue (contenu refusé par la modération ?)");
-            await record(x.ref, usd, "images");
-            res.json({ image: `data:${mime};base64,${b64}`, cout: usd });
+            await record(x.ref, usd, "images", p + ":" + modelId, 1);
+            res.json({ image: `data:${mime};base64,${b64}`, cout: usd, source });
         } catch (error) { fail(res, error, "image", p); }
     });
 
@@ -307,6 +335,8 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
                 timeout: 60000
             });
             if (!j.request_id) throw new Error("pas d'identifiant de génération");
+            // Habitudes : combien de clips sont des régénérations (pour des devis réalistes).
+            await x.ref.set({ studio: { habitudes: { clips: FieldValue.increment(1), regenerations: FieldValue.increment(req.body?.regen === true ? 1 : 0) } } }, { merge: true });
             res.json({ id: j.request_id, estimation: estimate });
         } catch (error) { fail(res, error, "vidéo", "grok"); }
     });
@@ -322,16 +352,19 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             const j = await http(XAI, x.keys.grok, "/videos/" + encodeURIComponent(id), { timeout: 30000 });
             if (j.status === "done") {
                 if (!j.video?.url) return res.json({ status: "failed", error: "Vidéo refusée par la modération de Grok." });
-                let usd = null;
+                let usd = null, source = null;
                 const k = x.ref.id + ":" + id;
                 if (!counted.has(k)) {
                     counted.add(k);
                     const m = CATALOG.video.grok.modeles[j.model] || CATALOG.video.grok.modeles["grok-imagine-video-1.5-lite"];
                     const ticks = Number(j.usage?.cost_in_usd_ticks);
-                    usd = Number.isFinite(ticks) && ticks > 0 ? ticks / TICKS_PER_USD : (Number(j.video.duration) || 6) * m.parSec;
-                    await record(x.ref, usd, "videos");
+                    const secs = Number(j.video.duration) || 6;
+                    source = Number.isFinite(ticks) && ticks > 0 ? "exact" : "estimation";
+                    usd = source === "exact" ? ticks / TICKS_PER_USD : secs * m.parSec;
+                    const modelKey = "grok:" + (CATALOG.video.grok.modeles[j.model] ? j.model : "grok-imagine-video-1.5-lite");
+                    await record(x.ref, usd, "videos", modelKey, secs);
                 }
-                return res.json({ status: "done", cout: usd, duree: j.video.duration });
+                return res.json({ status: "done", cout: usd, source, duree: j.video.duration });
             }
             if (j.status === "failed" || j.status === "expired") return res.json({ status: "failed", error: j.error?.message || "Génération échouée." });
             res.json({ status: "pending", progress: j.progress || 0 });

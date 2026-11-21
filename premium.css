@@ -368,3 +368,21 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 .st-invite h2{font:700 24px 'Space Grotesk';margin:0 0 10px}
 .st-invite p{color:var(--muted);line-height:1.6;margin:0 auto 20px;max-width:460px}
 .pdlg-card p{white-space:pre-line;overflow-wrap:anywhere}
+
+/* Scène : image de départ à gauche, actions au milieu, clip à droite (aperçu) */
+.st-scene{display:grid;grid-template-columns:132px minmax(0,1fr) 132px;align-items:start;gap:14px}
+.st-drop.st-vid{width:132px;height:235px;flex:none}
+.st-drop.st-img{width:132px;height:235px;flex:none}
+.st-drop.st-img img{width:100%;height:100%;object-fit:cover}
+.st-drop.full{border-style:solid;border-color:#2d536c}
+.st-drop.st-vid.full{cursor:default}
+.st-drop.st-vid video{width:100%;height:100%;object-fit:cover;background:#000}
+.st-drop.st-img::after{content:"Image";position:absolute;top:6px;left:6px;padding:2px 6px;border-radius:6px;background:#000a;color:#cfe9f3;font:700 10px 'Space Grotesk';pointer-events:none}
+.st-drop.st-img:not(.full)::after{display:none}
+@media(max-width:640px){
+ .st-scene{grid-template-columns:1fr 1fr}
+ .st-scene .st-info{grid-column:1/-1;order:3}
+ .st-drop.st-vid,.st-drop.st-img{width:100%;height:auto;aspect-ratio:9/16}
+}
+
+.st-cost{color:var(--gold);font-weight:600}
