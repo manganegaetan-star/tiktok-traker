@@ -367,3 +367,4 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 .st-invite{text-align:center;padding:40px 30px;max-width:620px;margin:10px auto 0}
 .st-invite h2{font:700 24px 'Space Grotesk';margin:0 0 10px}
 .st-invite p{color:var(--muted);line-height:1.6;margin:0 auto 20px;max-width:460px}
+.pdlg-card p{white-space:pre-line;overflow-wrap:anywhere}

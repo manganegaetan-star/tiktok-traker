@@ -122,12 +122,23 @@ module.exports = function mountStudio(app, d) {
         return j;
     }
 
-    function fail(res, error, what) {
+    // Message clair : quelle IA, quelle étape, et ce que l'IA a répondu exactement.
+    const LABEL = { claude: "Claude", openai: "ChatGPT (OpenAI)", grok: "Grok (xAI)" };
+    function fail(res, error, what, p) {
         const status = error.status ?? (error instanceof Anthropic.APIError ? error.status : undefined);
         console.warn(`[STUDIO] ${what} :`, status || "", error.message);
-        if (status === 401 || status === 403) return res.status(400).json({ error: "Ta clé API est refusée (invalide, désactivée ou sans crédit)." });
-        if (status === 429) return res.status(429).json({ error: "L'IA est surchargée ou ta limite d'utilisation est atteinte. Réessaie dans un instant." });
-        res.status(502).json({ error: "Erreur de l'IA : " + error.message });
+        const who = p ? LABEL[p] : "L'IA";
+        const raw = String(error.message || "").replace(/\s+/g, " ").slice(0, 300);
+        let hint = "";
+        if (status === 401 || status === 403) hint = "Ta clé API est refusée : vérifie qu'elle est correcte et active.";
+        else if (status === 402 || /credit|quota|billing|balance|insufficient/i.test(raw)) hint = "Ton compte n'a sans doute plus de crédit : ajoute du crédit sur la console de ce fournisseur.";
+        else if (status === 429) hint = "Trop de demandes d'un coup, ou limite de ton compte atteinte (souvent : pas de crédit sur un nouveau compte). Attends un peu ou vérifie ton crédit.";
+        else if (status === 400) hint = "La demande a été refusée (contenu, format ou modèle non disponible pour ton compte).";
+        else if (status >= 500) hint = "Le service est en panne ou surchargé. Réessaie dans quelques minutes.";
+        const code = status === 401 || status === 403 || status === 400 ? 400 : status === 429 ? 429 : 502;
+        res.status(code).json({ error: `${who} · ${what} : ${hint}${raw ? `
+
+Réponse de l'IA : « ${raw} »` : ""}`.trim() });
     }
 
     // ---------- Réglages ----------
@@ -167,7 +178,7 @@ module.exports = function mountStudio(app, d) {
             await validateKey(p, key);
             await x.ref.set({ studio: { cles: { [p]: seal({ key }, x.c.secret) }, fins: { [p]: key.slice(-4) } } }, { merge: true });
             res.json({ ok: true, fin: key.slice(-4) });
-        } catch (error) { fail(res, error, "clé " + p); }
+        } catch (error) { fail(res, error, "vérification de la clé", p); }
     });
 
     // Choix de l'IA de chaque étape : « abonnement » ou un modèle du catalogue.
@@ -238,7 +249,7 @@ module.exports = function mountStudio(app, d) {
             res.json({ texte: out.text, cout: out.usd });
         } catch (error) {
             if (error.status === 422) return res.status(422).json({ error: error.message });
-            fail(res, error, "texte " + p);
+            fail(res, error, "texte", p);
         }
     });
 
@@ -274,7 +285,7 @@ module.exports = function mountStudio(app, d) {
             if (!b64) throw new Error("aucune image reçue (contenu refusé par la modération ?)");
             await record(x.ref, usd, "images");
             res.json({ image: `data:${mime};base64,${b64}`, cout: usd });
-        } catch (error) { fail(res, error, "image " + p); }
+        } catch (error) { fail(res, error, "image", p); }
     });
 
     // ---------- Clip vidéo (image → vidéo avec les voix, Grok) ----------
@@ -297,7 +308,7 @@ module.exports = function mountStudio(app, d) {
             });
             if (!j.request_id) throw new Error("pas d'identifiant de génération");
             res.json({ id: j.request_id, estimation: estimate });
-        } catch (error) { fail(res, error, "vidéo"); }
+        } catch (error) { fail(res, error, "vidéo", "grok"); }
     });
 
     const counted = new Set();
@@ -324,7 +335,7 @@ module.exports = function mountStudio(app, d) {
             }
             if (j.status === "failed" || j.status === "expired") return res.json({ status: "failed", error: j.error?.message || "Génération échouée." });
             res.json({ status: "pending", progress: j.progress || 0 });
-        } catch (error) { fail(res, error, "suivi vidéo"); }
+        } catch (error) { fail(res, error, "suivi de la vidéo", "grok"); }
     });
 
     app.get("/api/studio/video/:id/fichier", async (req, res) => {
@@ -341,7 +352,7 @@ module.exports = function mountStudio(app, d) {
             res.set("Content-Type", r.headers.get("content-type") || "video/mp4");
             res.set("Cache-Control", "no-store");
             res.send(Buffer.from(await r.arrayBuffer()));
-        } catch (error) { fail(res, error, "téléchargement vidéo"); }
+        } catch (error) { fail(res, error, "téléchargement de la vidéo", "grok"); }
     });
 };
 module.exports.CATALOG = CATALOG;
