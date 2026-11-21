@@ -571,6 +571,9 @@ module.exports = function mountTikTokAuth(app) {
             (req.path === "/" || req.path.endsWith(".html"));
 
         if (wantsPage) {
+            // Connecté à Google mais aucun compte affiché : page « Relier un compte ».
+            const c = config(req);
+            if (c.secret && readGoogle(req, c.secret)) return res.redirect("/relier.html");
             return res.redirect("/connexion.html");
         }
 

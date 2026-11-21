@@ -111,7 +111,7 @@ fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(async s =>
   }
   // Déjà connecté à Google sur cet appareil : reprise automatique du dernier compte TikTok.
   if (s.google && !err) {
-    try { const r = await postJson('/auth/google/resume'); if (r.next === '/') { location.replace('/'); return; } } catch { /* bouton Google */ }
+    try { const r = await postJson('/auth/google/resume'); if (r.next) { location.replace(r.next); return; } } catch { /* bouton Google */ }
   }
   setupGoogle();
 }).catch(() => {});
