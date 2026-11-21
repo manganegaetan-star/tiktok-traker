@@ -511,7 +511,15 @@ async function loadVideos() {
     if (!firstVideo && data.videos[0]) firstVideo = data.videos[0];
     data.videos.forEach(v => $('videosGrid').append(videoCard(v)));
     
-    if (!selected && firstVideo) select(firstVideo);
+    if (!selected) {
+      // Revenir sur la vidéo suivie la dernière fois (pour ce compte), sinon la dernière publiée.
+      await meReady;
+      const saved = readTracked();
+      let again = saved ? data.videos.find(v => v.id === saved) : null;
+      if (saved && !again) { try { again = await api('/api/me/video/' + encodeURIComponent(saved)); } catch { /* vidéo supprimée ou privée */ } }
+      if (again && again.id) select(again);
+      else if (firstVideo) select(firstVideo);
+    }
     if (!firstVideo) { $('title').textContent = 'Aucune vidéo publique sur ce compte pour le moment.'; status(false, 'AUCUNE VIDÉO'); }
     markActive();
   } catch (e) { error('Impossible de charger tes vidéos : ' + e.message); }
@@ -536,8 +544,14 @@ function resetTracking() {
   titleViews = null; plot();
 }
 
+// Vidéo suivie mémorisée par compte (ce navigateur).
+const trackKey = () => 'tp_suivi:' + (me?.platform || 'tiktok') + ':' + (me?.username || me?.nickname || '');
+function readTracked() { try { return localStorage.getItem(trackKey()); } catch { return null; } }
+function saveTracked(id) { try { if (me && (me.username || me.nickname)) localStorage.setItem(trackKey(), id); } catch { /* stockage indisponible */ } }
+
 function select(v) {
   selected = v; requestId++; clearTimeout(timer); busy = false;
+  saveTracked(v.id);
   resetTracking(); markActive();
   $('videoTag').textContent = v.id === firstVideo?.id ? 'DERNIÈRE VIDÉO PUBLIÉE' : 'VIDÉO SUIVIE';
   status(false, 'CHARGEMENT');
@@ -656,7 +670,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 window.addEventListener('resize', plot);
 
 imageSet('cover', null); imageSet('avatar', null); imageSet('meAvatar', null); plot(); syncPageTitle();
-loadMe().catch(e => error('Impossible de charger ton profil : ' + e.message));
+const meReady = loadMe().catch(e => error('Impossible de charger ton profil : ' + e.message));
 loadAccounts();
 loadVideos();
 </script></body></html>
