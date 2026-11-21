@@ -34,17 +34,19 @@ th{background:#0b2233;color:var(--text)}
 
 <h2>3. Stockage et conservation</h2>
 <ul>
-<li>Une base de données (Google Cloud Firestore, hébergée à Paris) conserve uniquement, pour chaque compte connecté : l'identifiant TikTok anonyme (open_id), le nom d'utilisateur, la date de première connexion et le statut premium. Aucune statistique ni aucun jeton n'y est enregistré. Tu peux demander la suppression de ces données à l'adresse ci-dessus.</li>
+<li>Une base de données (Google Cloud Firestore, hébergée à Paris) conserve, pour chaque compte TikTok connecté : l'identifiant TikTok anonyme (open_id), le nom d'utilisateur, la date de première connexion et le statut premium.</li>
+<li><strong>Compte premium (facultatif) :</strong> si tu connectes ton compte Google pour passer premium, nous conservons ton identifiant Google, ton adresse e-mail, ton nom et ta photo de profil Google, ainsi que la liste des comptes TikTok que tu y relies. Pour te permettre de passer d'un compte TikTok à l'autre sans te reconnecter, les jetons d'accès TikTok de ces comptes sont stockés <strong>chiffrés</strong> (AES-256-GCM) dans cette base. Aucune statistique n'y est enregistrée.</li>
+<li>Le bouton « Supprimer mon compte TikTok Pulse » de ton espace efface immédiatement ces données et révoque les accès TikTok stockés. Tu peux aussi délier un compte TikTok à tout moment.</li>
 <li>Les jetons d'accès fournis par TikTok sont chiffrés (AES-256-GCM) et stockés uniquement dans un cookie sécurisé (HttpOnly) de ton navigateur. Ce cookie expire au plus tard après 365 jours, ou immédiatement quand tu te déconnectes.</li>
 <li>Les statistiques sont gardées quelques secondes à quelques minutes en mémoire sur le serveur (cache), puis effacées.</li>
 <li>Les journaux techniques de l'hébergeur (Google Cloud Run) peuvent contenir l'adresse IP et l'heure des requêtes, conservés selon la politique de Google Cloud.</li>
 </ul>
 
 <h2>4. Partage</h2>
-<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), et Google Cloud (hébergement et base de données).</p>
+<p>Nous ne vendons, ne louons et ne partageons aucune donnée personnelle. Les seuls tiers impliqués sont : TikTok (source des données), Google Cloud (hébergement et base de données) et Google (connexion du compte premium).</p>
 
 <h2>5. Cookies</h2>
-<p>Nous utilisons uniquement des cookies strictement nécessaires : <code>tp_session</code> (connexion à l'espace créateur) et <code>tp_oauth_state</code> (sécurité de la connexion, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>
+<p>Nous utilisons uniquement des cookies strictement nécessaires : <code>tp_session</code> (connexion à l'espace créateur), <code>tp_google</code> (connexion du compte Google premium, chiffré, 365 jours au plus) et <code>tp_oauth_state</code> (sécurité de la connexion, 10 minutes). Aucun cookie publicitaire ou de mesure d'audience.</p>
 
 <h2>6. Tes droits</h2>
 <ul>

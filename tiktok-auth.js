@@ -231,13 +231,22 @@ async function premiumStatus(openId, username) {
 
     if (store && openId) {
         try {
-            const ref = store.collection("utilisateurs").doc(openId);
-            const snap = await ref.get();
+            // 1) Compte TikTok relié à un compte Google : premium du compte Google.
+            const link = await store.collection("liensTiktok").doc(openId).get();
 
-            if (snap.exists) {
-                value = snap.get("premium") === true;
+            if (link.exists) {
+                const owner = await store.collection("comptes").doc(link.get("compte")).get();
+                value = owner.exists && owner.get("premium") === true;
             } else {
-                await ref.set({ pseudo: username || null, creeLe: new Date(), premium: false });
+                // 2) Sinon : ancienne fiche « utilisateurs » (premium activé à la main).
+                const ref = store.collection("utilisateurs").doc(openId);
+                const snap = await ref.get();
+
+                if (snap.exists) {
+                    value = snap.get("premium") === true;
+                } else {
+                    await ref.set({ pseudo: username || null, creeLe: new Date(), premium: false });
+                }
             }
         } catch (error) {
             console.warn("Lecture premium impossible :", error.message);
@@ -246,6 +255,116 @@ async function premiumStatus(openId, username) {
 
     premiumCache.set(openId, { value, expires: Date.now() + PREMIUM_CACHE_MS });
     return value;
+}
+
+// =====================================================
+// COMPTE GOOGLE (premium) + COMPTES TIKTOK RELIÉS
+// -----------------------------------------------------
+// Google n'est demandé que pour passer premium.
+// comptes/{googleId}                 { email, nom, photo, premium, creeLe }
+// comptes/{googleId}/tiktok/{openId} { pseudo, nom, avatar, jeton (chiffré), ajouteLe }
+// liensTiktok/{openId}               { compte: googleId }  (un TikTok = un seul compte Google)
+// Pour activer le premium : comptes/{googleId} → premium = true.
+// =====================================================
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim() ||
+    "792698279689-06tnp0anb1f27d6ii1761p21bhrmm5hq.apps.googleusercontent.com";
+const GOOGLE_COOKIE = "tp_google";
+const MAX_TIKTOK_FREE = 1;
+const MAX_TIKTOK_PREMIUM = 5;
+
+let googleVerifier;
+
+async function verifyGoogleToken(credential) {
+    if (!googleVerifier) {
+        const { OAuth2Client } = require("google-auth-library");
+        googleVerifier = new OAuth2Client(GOOGLE_CLIENT_ID);
+    }
+
+    const ticket = await googleVerifier.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID
+    });
+    const p = ticket.getPayload();
+
+    if (!p?.sub || !p.email_verified) throw new Error("Compte Google non vérifié");
+
+    return { uid: p.sub, email: p.email, nom: p.name || null, photo: p.picture || null };
+}
+
+function readGoogle(req, secret) {
+    const raw = readCookie(req, GOOGLE_COOKIE);
+    const g = raw && secret ? unseal(raw, secret) : null;
+    return g && g.uid ? g : null;
+}
+
+// Relie (ou met à jour) un compte TikTok au compte Google.
+// Retourne un message lisible si c'est impossible, sinon null.
+async function linkTikTok(store, uid, session, profile, secret) {
+    const linkRef = store.collection("liensTiktok").doc(session.openId);
+    const accountRef = store.collection("comptes").doc(uid);
+    const tiktokRef = accountRef.collection("tiktok").doc(session.openId);
+
+    return store.runTransaction(async t => {
+        const [link, account, existing, all] = await Promise.all([
+            t.get(linkRef), t.get(accountRef), t.get(tiktokRef), t.get(accountRef.collection("tiktok"))
+        ]);
+
+        if (link.exists && link.get("compte") !== uid) {
+            return "Ce compte TikTok est déjà relié à un autre compte Google.";
+        }
+
+        if (!existing.exists) {
+            const premium = account.exists && account.get("premium") === true;
+            const max = premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE;
+
+            if (all.size >= max) {
+                return premium
+                    ? `Tu as atteint la limite de ${MAX_TIKTOK_PREMIUM} comptes TikTok.`
+                    : "Passe au premium pour relier plusieurs comptes TikTok.";
+            }
+        }
+
+        const old = existing.exists ? existing.data() : {};
+
+        t.set(linkRef, { compte: uid });
+        t.set(tiktokRef, {
+            pseudo: profile?.username || old.pseudo || null,
+            nom: profile?.display_name || old.nom || null,
+            avatar: profile?.avatar_url || old.avatar || null,
+            jeton: seal(session, secret),
+            ajouteLe: old.ajouteLe || new Date(),
+            majLe: new Date()
+        });
+
+        return null;
+    });
+}
+
+// Garde le jeton stocké à jour (après un rafraîchissement).
+async function updateStoredToken(session, secret) {
+    const store = db();
+    if (!store) return;
+
+    try {
+        const link = await store.collection("liensTiktok").doc(session.openId).get();
+        if (!link.exists) return;
+
+        await store.collection("comptes").doc(link.get("compte"))
+            .collection("tiktok").doc(session.openId)
+            .update({ jeton: seal(session, secret), majLe: new Date() });
+    } catch (error) {
+        console.warn("Mise à jour du jeton stocké impossible :", error.message);
+    }
+}
+
+function revokeToken(c, accessToken) {
+    return fetch(`${API}/oauth/revoke/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ client_key: c.clientKey, client_secret: c.clientSecret, token: accessToken }),
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+    }).catch(() => {});
 }
 
 async function apiCall(session, path, { method = "GET", body } = {}) {
@@ -429,6 +548,7 @@ module.exports = function mountTikTokAuth(app) {
 
                 setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
                     (session.refreshExpires - Date.now()) / 1000);
+                updateStoredToken(session, c.secret);
             } catch (error) {
                 console.warn("[AUTH] Rafraîchissement échoué :", error.message);
                 clearCookie(req, res, SESSION_COOKIE);
@@ -495,6 +615,9 @@ module.exports = function mountTikTokAuth(app) {
         url.searchParams.set("redirect_uri", c.redirectUri);
         url.searchParams.set("state", state);
 
+        // « Ajouter un compte TikTok » : forcer le choix du compte.
+        if (req.query.ajout === "1") url.searchParams.set("disable_auto_auth", "1");
+
         res.redirect(url.href);
     });
 
@@ -535,6 +658,22 @@ module.exports = function mountTikTokAuth(app) {
                 (session.refreshExpires - Date.now()) / 1000);
 
             console.log("[AUTH] Créateur connecté");
+
+            // Connecté à Google : on relie ce compte TikTok au compte Google.
+            const google = readGoogle(req, c.secret);
+            const store = google ? db() : null;
+
+            if (store) {
+                try {
+                    const profile = (await apiCall(session, "/user/info/?fields=open_id,username,display_name,avatar_url")).user;
+                    const problem = await linkTikTok(store, google.uid, session, profile, c.secret);
+                    premiumCache.delete(session.openId);
+                    if (problem) return res.redirect("/?info=" + encodeURIComponent(problem));
+                } catch (error) {
+                    console.warn("[COMPTES] Liaison impossible :", error.message);
+                }
+            }
+
             res.redirect("/");
         } catch (error) {
             console.warn("[AUTH] Échange du code échoué :", error.message);
@@ -549,8 +688,16 @@ module.exports = function mountTikTokAuth(app) {
         const session = raw ? unseal(raw, c.secret) : null;
 
         clearCookie(req, res, SESSION_COOKIE);
+        clearCookie(req, res, GOOGLE_COOKIE);
 
-        if (session) {
+        // Compte relié à un compte Google : on garde l'accès (sélecteur de comptes).
+        let linked = false;
+        if (session && db()) {
+            try { linked = (await db().collection("liensTiktok").doc(session.openId).get()).exists; }
+            catch { /* on révoque par prudence */ }
+        }
+
+        if (session && !linked) {
             fetch(`${API}/oauth/revoke/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -564,6 +711,186 @@ module.exports = function mountTikTokAuth(app) {
         }
 
         res.json({ success: true });
+    });
+
+    // ---------- Compte Google (premium) ----------
+
+    app.get("/api/google/config", requireSession, (req, res) => {
+        res.json({ clientId: GOOGLE_CLIENT_ID });
+    });
+
+    // Connexion Google (« Sign in with Google ») + liaison du compte TikTok actuel.
+    app.post("/auth/google", requireSession, async (req, res) => {
+        const c = config(req);
+        const store = db();
+        const credential = typeof req.body?.credential === "string" ? req.body.credential : "";
+
+        if (!store) return res.status(503).json({ error: "Base de données indisponible" });
+        if (!credential) return res.status(400).json({ error: "Jeton Google manquant" });
+
+        let google;
+        try {
+            google = await verifyGoogleToken(credential);
+        } catch (error) {
+            console.warn("[GOOGLE] Jeton refusé :", error.message);
+            return res.status(401).json({ error: "Connexion Google refusée" });
+        }
+
+        try {
+            const accountRef = store.collection("comptes").doc(google.uid);
+            const account = await accountRef.get();
+
+            // Premium déjà activé à la main sur l'ancienne fiche : on le transfère.
+            const legacy = await store.collection("utilisateurs").doc(req.tiktok.openId).get();
+            const legacyPremium = legacy.exists && legacy.get("premium") === true;
+
+            await accountRef.set({
+                email: google.email,
+                nom: google.nom,
+                photo: google.photo,
+                derniereConnexion: new Date(),
+                ...(account.exists ? {} : { creeLe: new Date(), premium: legacyPremium }),
+                ...(account.exists && legacyPremium ? { premium: true } : {})
+            }, { merge: true });
+
+            const profile = (await cached(`user:${req.tiktok.openId}`, USER_CACHE_MS, () =>
+                apiCall(req.tiktok, `/user/info/?fields=${USER_FIELDS}`))).user;
+            const problem = await linkTikTok(store, google.uid, req.tiktok, profile, c.secret);
+
+            premiumCache.delete(req.tiktok.openId);
+            setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
+            res.json({ success: true, warning: problem });
+        } catch (error) {
+            console.warn("[GOOGLE] Création du compte impossible :", error.message);
+            res.status(500).json({ error: "Impossible de créer le compte, réessaie" });
+        }
+    });
+
+    app.post("/auth/google/logout", (req, res) => {
+        clearCookie(req, res, GOOGLE_COOKIE);
+        res.json({ success: true });
+    });
+
+    // Compte Google + comptes TikTok reliés (pour le sélecteur).
+    app.get("/api/comptes", requireSession, async (req, res) => {
+        const c = config(req);
+        const google = readGoogle(req, c.secret);
+        const store = db();
+
+        if (!google || !store) return res.json({ google: null, comptes: [] });
+
+        try {
+            const accountRef = store.collection("comptes").doc(google.uid);
+            const [account, list] = await Promise.all([accountRef.get(), accountRef.collection("tiktok").get()]);
+
+            if (!account.exists) {
+                clearCookie(req, res, GOOGLE_COOKIE);
+                return res.json({ google: null, comptes: [] });
+            }
+
+            const premium = account.get("premium") === true;
+            res.json({
+                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
+                max: premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE,
+                comptes: list.docs.map(d => ({
+                    openId: d.id,
+                    pseudo: d.get("pseudo"),
+                    nom: d.get("nom"),
+                    avatar: d.get("avatar"),
+                    actif: d.id === req.tiktok.openId
+                }))
+            });
+        } catch (error) {
+            console.warn("[COMPTES]", error.message);
+            res.status(500).json({ error: "Comptes indisponibles" });
+        }
+    });
+
+    // Passer sur un autre compte TikTok relié, sans se reconnecter.
+    app.post("/auth/switch", requireSession, async (req, res) => {
+        const c = config(req);
+        const google = readGoogle(req, c.secret);
+        const openId = typeof req.body?.openId === "string" ? req.body.openId : "";
+        const store = db();
+
+        if (!google || !store || !openId) return res.status(400).json({ error: "Changement impossible" });
+
+        try {
+            const doc = await store.collection("comptes").doc(google.uid).collection("tiktok").doc(openId).get();
+            const session = doc.exists ? unseal(doc.get("jeton"), c.secret) : null;
+
+            if (!session || Date.now() >= session.refreshExpires) {
+                return res.status(409).json({ error: "Ce compte doit être reconnecté", reconnect: true });
+            }
+
+            setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
+                (session.refreshExpires - Date.now()) / 1000);
+            res.json({ success: true });
+        } catch (error) {
+            console.warn("[COMPTES] Changement impossible :", error.message);
+            res.status(500).json({ error: "Changement impossible" });
+        }
+    });
+
+    // Délier un compte TikTok (pas celui en cours d'utilisation).
+    app.post("/api/comptes/delier", requireSession, async (req, res) => {
+        const c = config(req);
+        const google = readGoogle(req, c.secret);
+        const openId = typeof req.body?.openId === "string" ? req.body.openId : "";
+        const store = db();
+
+        if (!google || !store || !openId || openId === req.tiktok.openId) {
+            return res.status(400).json({ error: "Impossible de délier ce compte" });
+        }
+
+        try {
+            const ref = store.collection("comptes").doc(google.uid).collection("tiktok").doc(openId);
+            const doc = await ref.get();
+            if (!doc.exists) return res.status(404).json({ error: "Compte introuvable" });
+
+            const s = unseal(doc.get("jeton"), c.secret);
+            if (s) revokeToken(c, s.accessToken);
+
+            await Promise.all([ref.delete(), store.collection("liensTiktok").doc(openId).delete()]);
+            premiumCache.delete(openId);
+            res.json({ success: true });
+        } catch (error) {
+            console.warn("[COMPTES] Déliaison impossible :", error.message);
+            res.status(500).json({ error: "Impossible de délier ce compte" });
+        }
+    });
+
+    // Supprimer le compte TikTok Pulse (compte Google + liaisons + jetons stockés).
+    app.post("/api/compte/supprimer", requireSession, async (req, res) => {
+        const c = config(req);
+        const google = readGoogle(req, c.secret);
+        const store = db();
+
+        if (!google || !store) return res.status(400).json({ error: "Aucun compte à supprimer" });
+
+        try {
+            const accountRef = store.collection("comptes").doc(google.uid);
+            const list = await accountRef.collection("tiktok").get();
+            const batch = store.batch();
+
+            for (const d of list.docs) {
+                const s = unseal(d.get("jeton"), c.secret);
+                if (s && d.id !== req.tiktok.openId) revokeToken(c, s.accessToken);
+                batch.delete(d.ref);
+                batch.delete(store.collection("liensTiktok").doc(d.id));
+                premiumCache.delete(d.id);
+            }
+
+            batch.delete(accountRef);
+            batch.delete(store.collection("utilisateurs").doc(req.tiktok.openId));
+            await batch.commit();
+
+            clearCookie(req, res, GOOGLE_COOKIE);
+            res.json({ success: true });
+        } catch (error) {
+            console.warn("[COMPTES] Suppression impossible :", error.message);
+            res.status(500).json({ error: "Suppression impossible, réessaie" });
+        }
     });
 
     // Profil du créateur connecté

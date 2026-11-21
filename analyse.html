@@ -67,6 +67,11 @@ th.n{text-align:right}
 .lock .why ul{max-width:none;margin:0}
 .lock .why li{font-size:13px;color:#a9c8d6;line-height:1.55}
 .lock .why li b{color:#e6f6fb}
+.lock .gbox{display:grid;justify-items:center;gap:10px;margin:0 auto 22px}
+.lock .gbtn{min-height:44px}
+.lock .gnote{font-size:12px;color:#7f9caf;margin:0}
+.lock .gdone{border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.6;margin:0 auto 22px;max-width:520px}
+.lock .gdone b{color:#fff}
 .lock .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .lock .soon{border:1px solid #f5c84c66;color:var(--gold);border-radius:4px;padding:11px 18px;font:700 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
@@ -114,7 +119,12 @@ th.n{text-align:right}
     <li><b>Factures et alertes par e-mail :</b> TikTok ne nous transmet pas ton adresse e-mail, Google oui (avec ton accord).</li>
    </ul>
   </div>
-  <div class="btns"><span class="soon">Premium bientôt disponible</span><a class="ghost" href="/">← Suivi en direct</a></div>
+  <div class="gbox" id="gBox">
+   <div id="gBtn" class="gbtn"></div>
+   <p class="gnote" id="gNote">Étape 1 : connecte ton compte Google. Le paiement du premium arrive bientôt.</p>
+  </div>
+  <div class="gdone hidden" id="gDone"></div>
+  <div class="btns"><a class="ghost" href="/">← Suivi en direct</a></div>
  </section>
 
  <div id="error" class="error" role="alert"></div>
@@ -365,12 +375,54 @@ async function load(force) {
     $('filters').classList.toggle('hidden', !premium);
     $('reload').classList.toggle('hidden', !premium);
     if (premium) render(DATA);
-    else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; }
+    else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; setupGoogle(); }
   }
   catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
   finally { $('reload').disabled = false; }
 }
 $('reload').addEventListener('click', () => load(true));
+
+// ---------- Connexion Google (passage premium) ----------
+async function setupGoogle() {
+  let comptes = null;
+  try { comptes = await api('/api/comptes'); } catch { /* ignore */ }
+
+  if (comptes?.google) {
+    $('gBox').classList.add('hidden');
+    const d = $('gDone');
+    d.innerHTML = '';
+    d.append('✓ Compte Google relié : ');
+    const b = document.createElement('b'); b.textContent = comptes.google.email || ''; d.append(b);
+    d.append(document.createElement('br'), "Ton compte est prêt pour le premium. Le paiement arrive bientôt ; dès qu'il est activé, l'analyse se débloque ici.");
+    d.classList.remove('hidden');
+    return;
+  }
+
+  let clientId;
+  try { clientId = (await api('/api/google/config')).clientId; } catch { return; }
+
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async r => {
+        $('gNote').textContent = 'Connexion en cours…';
+        try {
+          const res = await fetch('/auth/google', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: r.credential }) });
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(out.error || 'Erreur ' + res.status);
+          if (out.warning) error(out.warning);
+          try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+          load(true);
+        } catch (e) { $('gNote').textContent = 'Connexion Google impossible : ' + e.message; }
+      }
+    });
+    google.accounts.id.renderButton($('gBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr' });
+  };
+  document.head.append(s);
+}
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => {
   PERIOD = b.dataset.period;
   document.querySelectorAll('#filters button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));

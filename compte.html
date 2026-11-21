@@ -184,6 +184,24 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 .exact-tag{color:#f7c56a;margin-left:10px}
 .more-btn{display:block;margin:16px auto 0}
 .account-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.switcher{grid-column:1/-1;border-top:1px solid #2c587055;padding-top:16px;display:grid;gap:12px}
+.switcher.hidden{display:none}
+.switcher .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.switcher .lbl{color:#7f9caf;font:700 10px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
+.acc-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid #3c6c8966;background:transparent;color:#cfeef8;border-radius:999px;padding:5px 12px 5px 5px;font:600 12px 'Space Grotesk';cursor:pointer;text-decoration:none}
+.acc-chip img{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#0b2233}
+.acc-chip.on{border-color:var(--cyan);background:#0b2033;color:#fff;cursor:default}
+.acc-chip.add{padding:7px 14px;border-style:dashed;color:#9fc3d4}
+.acc-chip[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+.acc-chip .x{margin-left:2px;color:#6f8ea2;font-size:14px;line-height:1}
+.acc-chip .x:hover{color:#ff8a8a}
+.gline{font-size:12px;color:#7f9caf;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center}
+.gline b{color:#cfeef8;font-weight:600}
+.gline button{background:none;border:0;color:#7fb6cc;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
+.gline button.danger{color:#e98b8b}
+.gline .prem{color:var(--gold);font:700 10px 'Space Grotesk';letter-spacing:.12em}
+.info-banner{margin:0 0 16px;padding:12px 16px;border:1px solid #f7c56a66;border-radius:6px;color:#f7dca0;background:#f7c56a0d;font-size:13px}
+.info-banner.hidden{display:none}
 .analyse-btn{text-align:center;color:#f7c56a;border-color:#f7c56a77;background:#f7c56a0d}
 .analyse-btn:hover{border-color:#f7c56a;color:#ffe2a8}
 .lock-tag{display:inline-block;margin-left:8px;padding:2px 6px;border:1px solid #f7c56a77;border-radius:3px;font-size:9px;letter-spacing:.1em;vertical-align:middle}
@@ -222,6 +240,7 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
 <header class="shell topbar"><a href="/" class="brand"><div class="brand-mark">↗</div><span>TikTok <span>Pulse</span></span></a><div class="top-right hidden" aria-hidden="true"><span class="pill"><span id="headerDot" class="dot"></span><span id="headerStatus">CHARGEMENT</span></span></div></header>
 <main class="shell main">
 
+<div class="info-banner hidden" id="infoBanner" role="status"></div>
 <section class="surface account" aria-label="Mon compte TikTok">
  <img id="meAvatar" class="account-avatar" alt="Photo de profil" referrerpolicy="no-referrer">
  <div style="min-width:0">
@@ -231,6 +250,10 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
   <div class="account-bio" id="meBio"></div>
  </div>
  <div class="account-actions"><a class="ghost-btn analyse-btn" id="analyseBtn" href="/analyse.html">📊 Analyse des statistiques<span class="lock-tag hidden" id="analyseLock">🔒 Premium</span></a><button class="ghost-btn" id="logout" type="button">Se déconnecter</button></div>
+ <div class="switcher hidden" id="switcher">
+  <div class="row" id="accList"><span class="lbl">Mes comptes TikTok</span></div>
+  <div class="gline" id="gLine"></div>
+ </div>
  <div class="account-stats">
   <div><strong id="followers">—</strong><span>Abonnés</span></div>
   <div><strong id="following">—</strong><span>Abonnements</span></div>
@@ -395,6 +418,87 @@ function ago(ts) {
   if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min';
   if (s < 86400) return Math.round(s / 3600) + ' h';
   return Math.round(s / 86400) + ' j';
+}
+
+// ---------- Comptes TikTok reliés (compte Google premium) ----------
+async function post(path, body) {
+  const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.error || 'Erreur ' + r.status); e.data = d; throw e; }
+  return d;
+}
+
+function chipImg(url) {
+  const img = document.createElement('img');
+  img.alt = ''; img.referrerPolicy = 'no-referrer';
+  if (typeof url === 'string' && /^https:\/\//i.test(url)) img.src = url;
+  return img;
+}
+
+async function loadAccounts() {
+  const info = new URLSearchParams(location.search).get('info');
+  if (info) { $('infoBanner').textContent = info; $('infoBanner').classList.remove('hidden'); window.history.replaceState(null, '', '/'); }
+
+  let data;
+  try { data = await api('/api/comptes'); } catch { return; }
+  if (!data.google) return;
+
+  const list = $('accList');
+  list.querySelectorAll('.acc-chip').forEach(n => n.remove());
+  data.comptes.forEach(a => {
+    const chip = document.createElement(a.actif ? 'span' : 'button');
+    chip.className = 'acc-chip' + (a.actif ? ' on' : '');
+    chip.append(chipImg(a.avatar), document.createTextNode(a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte TikTok')));
+    if (!a.actif) {
+      chip.type = 'button';
+      chip.title = 'Passer sur ce compte';
+      chip.addEventListener('click', async e => {
+        if (e.target.classList.contains('x')) return;
+        try { await post('/auth/switch', { openId: a.openId }); location.reload(); }
+        catch (err) { if (err.data?.reconnect) location.href = '/auth/tiktok?ajout=1'; else error(err.message); }
+      });
+      const x = document.createElement('span');
+      x.className = 'x'; x.textContent = '×'; x.title = 'Délier ce compte';
+      x.addEventListener('click', async () => {
+        if (!confirm('Délier ce compte TikTok de ton compte TikTok Pulse ?')) return;
+        try { await post('/api/comptes/delier', { openId: a.openId }); loadAccounts(); } catch (err) { error(err.message); }
+      });
+      chip.append(x);
+    }
+    list.append(chip);
+  });
+
+  const full = data.comptes.length >= data.max;
+  const add = document.createElement('a');
+  add.className = 'acc-chip add';
+  add.textContent = '+ Ajouter un compte';
+  if (full) {
+    add.setAttribute('aria-disabled', 'true');
+    add.title = data.google.premium ? `Limite de ${data.max} comptes atteinte` : 'Le premium permet de relier plusieurs comptes TikTok';
+    add.textContent = data.google.premium ? '+ Ajouter un compte' : '+ Ajouter un compte 🔒 Premium';
+  } else {
+    add.href = '/auth/tiktok?ajout=1';
+  }
+  list.append(add);
+
+  const g = $('gLine');
+  g.innerHTML = '';
+  const who = document.createElement('span');
+  who.append('Compte Google : ');
+  const b = document.createElement('b'); b.textContent = data.google.email || data.google.nom || '';
+  who.append(b);
+  if (data.google.premium) { const p = document.createElement('span'); p.className = 'prem'; p.textContent = ' ★ PREMIUM'; who.append(p); }
+  const out = document.createElement('button');
+  out.type = 'button'; out.textContent = 'Déconnecter Google';
+  out.addEventListener('click', async () => { await post('/auth/google/logout'); location.reload(); });
+  const del = document.createElement('button');
+  del.type = 'button'; del.className = 'danger'; del.textContent = 'Supprimer mon compte TikTok Pulse';
+  del.addEventListener('click', async () => {
+    if (!confirm('Supprimer ton compte TikTok Pulse ? Ton compte Google, tes comptes TikTok reliés et ton statut premium seront effacés. Cette action est définitive.')) return;
+    try { await post('/api/compte/supprimer'); location.reload(); } catch (err) { error(err.message); }
+  });
+  g.append(who, out, del);
+  $('switcher').classList.remove('hidden');
 }
 
 async function loadMe() {
@@ -605,5 +709,6 @@ window.addEventListener('resize', plot);
 
 imageSet('cover', null); imageSet('avatar', null); imageSet('meAvatar', null); plot(); syncPageTitle();
 loadMe().catch(e => error('Impossible de charger ton profil : ' + e.message));
+loadAccounts();
 loadVideos();
 </script></body></html>
