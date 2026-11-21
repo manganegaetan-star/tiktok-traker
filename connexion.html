@@ -16,10 +16,16 @@
 .card:before{content:"";position:absolute;left:0;top:0;width:160px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);box-shadow:0 0 20px var(--gold)}
 .card h2{font:700 28px 'Space Grotesk';letter-spacing:-.04em;margin:18px 0 10px}
 .card p{color:#8eafc2;line-height:1.7;margin:0 0 26px;font-size:14px}
-.tt-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:6px;padding:17px 20px;background:#fff;color:#000;font:800 15px 'DM Sans';box-shadow:0 0 0 1px #ffffff22,0 10px 35px #3bf7ef22;transition:transform .2s,box-shadow .2s}
+.tt-btn{width:100%;max-width:400px;height:40px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:4px;padding:0 16px;background:#fff;color:#1f1f1f;font:600 14px 'DM Sans';box-shadow:0 0 0 1px #ffffff22,0 10px 35px #3bf7ef22;transition:transform .2s,box-shadow .2s}
 .tt-btn:hover{transform:translateY(-2px);box-shadow:0 0 0 2px var(--cyan),0 14px 40px #3bf7ef33}
-.tt-btn svg{width:22px;height:22px}
+.tt-btn svg{width:18px;height:18px}
 .tt-btn[aria-disabled=true]{opacity:.45;pointer-events:none}
+.or{display:flex;align-items:center;gap:12px;margin:16px auto;max-width:400px;color:#5f8399;font:700 10px 'Space Grotesk';letter-spacing:.16em}
+.or:before,.or:after{content:"";flex:1;height:1px;background:#31546a52}
+.gwrap{display:grid;justify-items:center;min-height:44px}
+.gnote{font-size:12px;color:#7f9caf;text-align:center;margin:0}
+.ok{margin:15px 0 0;padding:13px 16px;border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;font-size:13px;display:none}
+.ok.show{display:block}
 .scopes{margin:24px 0 0;padding:18px 0 0;border-top:1px solid #31546a52;display:grid;gap:9px;font-size:12px;color:#7f9caf}
 .scopes div{display:flex;gap:9px}.scopes div:before{content:"✓";color:var(--green);font-weight:900}
 .legal{margin-top:20px;font-size:11px;color:#5f8399;line-height:1.6}
@@ -46,13 +52,17 @@
  <section class="surface card">
   <div class="micro">Connexion</div>
   <h2>Connecte ton compte</h2>
-  <p>Tu vas être redirigé vers TikTok pour autoriser TikTok Pulse, puis tu reviendras directement sur ton tableau de bord.</p>
+  <p>Connecte-toi avec ton compte TikTok ou avec ton compte Google.</p>
 
   <a class="tt-btn" id="loginBtn" href="/auth/tiktok">
    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25F4EE" d="M9.4 9.6v-.9a7 7 0 0 0-.9-.1 6.6 6.6 0 0 0-3.8 12 6.6 6.6 0 0 1 4.7-11z"/><path fill="#25F4EE" d="M9.6 19.8a3 3 0 0 0 3-2.9V2.7h2.7a5 5 0 0 1-.1-1h-3.6v14.3a3 3 0 0 1-3 2.9 3 3 0 0 1-1.4-.4 3 3 0 0 0 2.4 1.3zM20.4 7.5v-.9a5 5 0 0 1-2.7-.8 5 5 0 0 0 2.7 1.7z"/><path fill="#FE2C55" d="M17.7 5.8a5 5 0 0 1-1.2-3.3h-1a5 5 0 0 0 2.2 3.3zM8.5 12.8a3 3 0 0 0-1.4 5.7 3 3 0 0 1 3.3-4.9V9.9a6 6 0 0 0-.9-.1h-.2v2.8a3 3 0 0 0-.8.2z"/><path fill="#FE2C55" d="M20.4 7.5v2.8a8.5 8.5 0 0 1-5-1.6v7.2a6.6 6.6 0 0 1-10.3 5.5 6.6 6.6 0 0 0 11.4-4.5V9.7a8.5 8.5 0 0 0 5 1.6V7.6a5 5 0 0 1-1.1-.1z"/><path d="M15.4 16.9V9.7a8.5 8.5 0 0 0 5 1.6V8.5a5 5 0 0 1-2.7-1.7 5 5 0 0 1-2.2-3.3h-2.7v14.3a3 3 0 0 1-5.6 1.7 3 3 0 0 1 1.4-5.7 3 3 0 0 1 .9.1v-2.8a6.6 6.6 0 0 0-4.7 11.2 6.6 6.6 0 0 0 10.6-5.4z"/></svg>
    Continuer avec TikTok
   </a>
 
+  <div class="or">OU</div>
+  <div class="gwrap"><div id="gBtn"></div></div>
+
+  <div id="ok" class="ok" role="status"></div>
   <div id="error" class="error" role="alert"></div>
 
   <div class="scopes">
@@ -79,13 +89,61 @@ const err = new URLSearchParams(location.search).get('erreur');
 const box = document.getElementById('error');
 if (err && messages[err]) { box.textContent = messages[err]; box.classList.add('show'); }
 
-fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(s => {
+const okBox = document.getElementById('ok');
+function info(msg) { okBox.textContent = msg; okBox.classList.add('show'); }
+
+// Après la connexion Google : tableau de bord, ou connexion TikTok si aucun compte relié.
+function go(r) {
+  if (r.next === '/') { location.replace('/'); return; }
+  if (r.needTikTok) {
+    info('Compte Google connecté ✓ Relie maintenant un compte à suivre.');
+    setTimeout(() => { location.href = '/auth/tiktok'; }, 1600);
+  }
+}
+
+async function postJson(url, body) {
+  const r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erreur ' + r.status);
+  return d;
+}
+
+fetch('/auth/status', { cache: 'no-store' }).then(r => r.json()).then(async s => {
   // Jamais de renvoi automatique après une erreur (évite toute boucle).
   if (s.connected && !err) { location.replace('/'); return; }
   if (!s.enabled) {
     document.getElementById('loginBtn').setAttribute('aria-disabled', 'true');
     if (!err) { box.textContent = messages.config; box.classList.add('show'); }
+    return;
   }
+  // Déjà connecté à Google sur cet appareil : reprise automatique du dernier compte TikTok.
+  if (s.google && !err) {
+    try { const r = await postJson('/auth/google/resume'); if (r.next === '/') { location.replace('/'); return; } } catch { /* bouton Google */ }
+  }
+  setupGoogle();
 }).catch(() => {});
+
+async function setupGoogle() {
+  let clientId;
+  try { clientId = (await (await fetch('/auth/google/config', { cache: 'no-store' })).json()).clientId; } catch { return; }
+  if (!clientId) return;
+  const sc = document.createElement('script');
+  sc.src = 'https://accounts.google.com/gsi/client';
+  sc.async = true;
+  sc.onload = () => {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async resp => {
+        box.classList.remove('show');
+        info('Connexion avec Google…');
+        try { go(await postJson('/auth/google/login', { credential: resp.credential })); }
+        catch (e) { okBox.classList.remove('show'); box.textContent = 'Connexion Google impossible : ' + e.message; box.classList.add('show'); }
+      }
+    });
+    const w = document.getElementById('gBtn');
+    google.accounts.id.renderButton(w, { theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr', width: Math.min(400, document.getElementById('loginBtn').getBoundingClientRect().width || 320) });
+  };
+  document.head.append(sc);
+}
 </script>
 </body></html>

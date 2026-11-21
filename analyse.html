@@ -397,7 +397,7 @@ async function setupGoogle() {
   }
 
   let clientId;
-  try { clientId = (await api('/api/google/config')).clientId; } catch { return; }
+  try { clientId = (await api('/auth/google/config')).clientId; } catch { return; }
 
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client';

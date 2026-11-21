@@ -358,6 +358,47 @@ async function updateStoredToken(session, secret) {
     }
 }
 
+// Cookie Google à partir de la fiche du compte.
+function googleFromAccount(uid, account) {
+    return { uid, email: account.get("email") || null, nom: account.get("nom") || null, photo: account.get("photo") || null };
+}
+
+// Session TikTok stockée la plus récente et encore valide pour ce compte Google.
+async function pickStoredSession(store, uid, secret) {
+    const list = await store.collection("comptes").doc(uid).collection("tiktok").get();
+    const docs = list.docs
+        .map(d => ({ d, t: d.get("majLe")?.toMillis?.() || 0 }))
+        .sort((a, b) => b.t - a.t);
+
+    for (const { d } of docs) {
+        const session = unseal(d.get("jeton"), secret);
+        if (session && Date.now() < session.refreshExpires) return session;
+    }
+
+    return null;
+}
+
+// Crée ou met à jour la fiche du compte Google.
+async function upsertGoogleAccount(store, google, legacyOpenId) {
+    const accountRef = store.collection("comptes").doc(google.uid);
+    const account = await accountRef.get();
+
+    let legacyPremium = false;
+    if (legacyOpenId) {
+        const legacy = await store.collection("utilisateurs").doc(legacyOpenId).get();
+        legacyPremium = legacy.exists && legacy.get("premium") === true;
+    }
+
+    await accountRef.set({
+        email: google.email,
+        nom: google.nom,
+        photo: google.photo,
+        derniereConnexion: new Date(),
+        ...(account.exists ? {} : { creeLe: new Date(), premium: legacyPremium }),
+        ...(account.exists && legacyPremium ? { premium: true } : {})
+    }, { merge: true });
+}
+
 function revokeToken(c, accessToken) {
     return fetch(`${API}/oauth/revoke/`, {
         method: "POST",
@@ -588,7 +629,8 @@ module.exports = function mountTikTokAuth(app) {
         res.set("Cache-Control", "no-store");
         res.json({
             enabled: config(req).ready,
-            connected: Boolean(readSession(req))
+            connected: Boolean(readSession(req)),
+            google: Boolean(readGoogle(req, config(req).secret))
         });
     });
 
@@ -663,6 +705,23 @@ module.exports = function mountTikTokAuth(app) {
             const google = readGoogle(req, c.secret);
             const store = google ? db() : null;
 
+            // Pas connecté à Google mais ce compte TikTok est relié : on restaure Google.
+            if (!google && db()) {
+                try {
+                    const link = await db().collection("liensTiktok").doc(session.openId).get();
+                    if (link.exists) {
+                        const uid = link.get("compte");
+                        const account = await db().collection("comptes").doc(uid).get();
+                        if (account.exists) {
+                            setCookie(req, res, GOOGLE_COOKIE, seal(googleFromAccount(uid, account), c.secret), 365 * 86400);
+                            updateStoredToken(session, c.secret);
+                        }
+                    }
+                } catch (error) {
+                    console.warn("[COMPTES] Restauration Google impossible :", error.message);
+                }
+            }
+
             if (store) {
                 try {
                     const profile = (await apiCall(session, "/user/info/?fields=open_id,username,display_name,avatar_url")).user;
@@ -715,8 +774,68 @@ module.exports = function mountTikTokAuth(app) {
 
     // ---------- Compte Google (premium) ----------
 
-    app.get("/api/google/config", requireSession, (req, res) => {
+    app.get("/auth/google/config", (req, res) => {
         res.json({ clientId: GOOGLE_CLIENT_ID });
+    });
+
+    // Connexion directe avec Google (page de connexion).
+    // → s'il a un compte TikTok relié : connecté directement ;
+    // → sinon : il doit connecter un compte TikTok (relié automatiquement).
+    app.post("/auth/google/login", async (req, res) => {
+        const c = config(req);
+        const store = db();
+        const credential = typeof req.body?.credential === "string" ? req.body.credential : "";
+
+        res.set("Cache-Control", "no-store");
+        if (!c.ready || !store) return res.status(503).json({ error: "Connexion indisponible pour le moment" });
+        if (!credential) return res.status(400).json({ error: "Jeton Google manquant" });
+
+        let google;
+        try {
+            google = await verifyGoogleToken(credential);
+        } catch (error) {
+            console.warn("[GOOGLE] Jeton refusé :", error.message);
+            return res.status(401).json({ error: "Connexion Google refusée" });
+        }
+
+        try {
+            await upsertGoogleAccount(store, google, null);
+            setCookie(req, res, GOOGLE_COOKIE, seal(google, c.secret), 365 * 86400);
+
+            const session = await pickStoredSession(store, google.uid, c.secret);
+            if (session) {
+                setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
+                    (session.refreshExpires - Date.now()) / 1000);
+                return res.json({ next: "/" });
+            }
+
+            res.json({ next: "/auth/tiktok", needTikTok: true });
+        } catch (error) {
+            console.warn("[GOOGLE] Connexion impossible :", error.message);
+            res.status(500).json({ error: "Connexion impossible, réessaie" });
+        }
+    });
+
+    // Déjà connecté à Google (cookie) mais plus à TikTok : on reprend le dernier compte relié.
+    app.post("/auth/google/resume", async (req, res) => {
+        const c = config(req);
+        const google = c.ready ? readGoogle(req, c.secret) : null;
+        const store = db();
+
+        res.set("Cache-Control", "no-store");
+        if (!google || !store) return res.json({ next: null });
+
+        try {
+            const session = await pickStoredSession(store, google.uid, c.secret);
+            if (!session) return res.json({ next: "/auth/tiktok", needTikTok: true });
+
+            setCookie(req, res, SESSION_COOKIE, seal(session, c.secret),
+                (session.refreshExpires - Date.now()) / 1000);
+            res.json({ next: "/" });
+        } catch (error) {
+            console.warn("[GOOGLE] Reprise impossible :", error.message);
+            res.json({ next: null });
+        }
     });
 
     // Connexion Google (« Sign in with Google ») + liaison du compte TikTok actuel.
@@ -737,21 +856,8 @@ module.exports = function mountTikTokAuth(app) {
         }
 
         try {
-            const accountRef = store.collection("comptes").doc(google.uid);
-            const account = await accountRef.get();
-
-            // Premium déjà activé à la main sur l'ancienne fiche : on le transfère.
-            const legacy = await store.collection("utilisateurs").doc(req.tiktok.openId).get();
-            const legacyPremium = legacy.exists && legacy.get("premium") === true;
-
-            await accountRef.set({
-                email: google.email,
-                nom: google.nom,
-                photo: google.photo,
-                derniereConnexion: new Date(),
-                ...(account.exists ? {} : { creeLe: new Date(), premium: legacyPremium }),
-                ...(account.exists && legacyPremium ? { premium: true } : {})
-            }, { merge: true });
+            // Premium déjà activé à la main sur l'ancienne fiche : transféré au compte Google.
+            await upsertGoogleAccount(store, google, req.tiktok.openId);
 
             const profile = (await cached(`user:${req.tiktok.openId}`, USER_CACHE_MS, () =>
                 apiCall(req.tiktok, `/user/info/?fields=${USER_FIELDS}`))).user;
