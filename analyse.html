@@ -30,7 +30,7 @@
 .bignum{font:700 34px 'Space Grotesk';letter-spacing:-.04em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
 .bignum.up{color:var(--green)}
 .bigsub{color:var(--muted);font-size:13px;margin-bottom:12px}
-.hist-period{margin:18px 0 0}
+.filters.hist-period{margin:18px 0 0}
 .hist-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px}
 .hist-box{padding:16px;border:1px solid #2c587050;border-radius:8px;background:#07172766;min-width:0}
 .hist-box h3{font:700 14px 'Space Grotesk';margin:0 0 4px}
@@ -132,7 +132,7 @@ th.n{text-align:right}
   <h2>L'analyse détaillée est réservée au premium</h2>
   <p>Le suivi en direct de tes vidéos reste gratuit. Avec le premium, tu débloques l'analyse complète de ton compte.</p>
   <ul>
-   <li>Relevé automatique de tes chiffres toutes les heures</li>
+   <li>Relevé automatique de tes chiffres toutes les 10 minutes</li>
    <li>Tes vraies heures et jours de vues</li>
    <li>Vues et abonnés gagnés sur 24 h, 7 et 30 jours</li>
    <li>Vidéos qui décollent et top de la semaine</li>
@@ -160,12 +160,12 @@ th.n{text-align:right}
  <div id="content" class="hidden">
   <section class="surface card" id="histCard" style="margin-top:0">
    <div class="hist-head">
-    <div><div class="micro">Suivi heure par heure</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2></div>
+    <div><div class="micro">Suivi en continu</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2></div>
     <span class="hist-upd" id="histUpd"><span class="dot"></span><span id="histUpdTxt">Chargement…</span></span>
    </div>
    <div id="histBody"></div>
   </section>
-  <p class="note">Toutes les données de cette page viennent uniquement des relevés de tes propres chiffres, enregistrés toutes les heures. Heures et jours : heure de Paris.</p>
+  <p class="note">Toutes les données de cette page viennent uniquement des relevés de tes propres chiffres, enregistrés toutes les 10 minutes (TikTok) ou toutes les heures (YouTube). Heures et jours : heure de Paris.</p>
  </div>
 </main>
 
@@ -377,13 +377,13 @@ async function loadHistory() {
 
   if (h.empty) {
     $('histUpdTxt').textContent = 'Premier relevé vers ' + fmtHour(h.nextUpdate);
-    $('hSub').textContent = 'Ton suivi démarre : les analyses se construisent à partir de tes relevés horaires.';
-    body.innerHTML = '<p class="hist-empty">Un relevé de tes chiffres est enregistré toutes les heures. Reviens après quelques relevés : tes vues gagnées, tes vraies heures de vues et la courbe de tes abonnés apparaîtront ici, et les conseils après environ 2 jours.</p>';
+    $('hSub').textContent = 'Ton suivi démarre : les analyses se construisent à partir de tes relevés.';
+    body.innerHTML = '<p class="hist-empty">Un relevé de tes chiffres est enregistré toutes les 10 minutes (toutes les heures pour YouTube). Reviens après quelques relevés : tes vues gagnées, tes vraies heures de vues et la courbe de tes abonnés apparaîtront ici, et les conseils après environ 2 jours.</p>';
     return;
   }
 
   $('histUpdTxt').textContent = 'Dernière mise à jour : ' + fmtDate(h.lastUpdate) + ' · prochaine vers ' + fmtHour(h.nextUpdate);
-  $('hSub').textContent = `Analyse basée sur ${fmt(h.count)} relevé${h.count > 1 ? 's' : ''} horaire${h.count > 1 ? 's' : ''} depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.`;
+  $('hSub').textContent = `Analyse basée sur ${fmt(h.count)} relevé${h.count > 1 ? 's' : ''} depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.`;
 
   const hourBars = barsHtml(h.hours, h.hours.map((_, i) => `${i} h – ${(i + 1) % 24} h`),
     (i, v) => `<b style="color:var(--cyan)">${fmt(v)} vues</b> gagnées en moyenne sur ce créneau<br>Calculé sur ${h.hoursN?.[i] || 0} relevé${(h.hoursN?.[i] || 0) > 1 ? 's' : ''}`);

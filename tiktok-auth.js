@@ -1256,9 +1256,9 @@ module.exports = function mountTikTokAuth(app) {
 
         if (!premium) return res.status(403).json({ error: "Réservé au premium" });
 
-        const next = new Date();
-        next.setUTCMinutes(5, 0, 0);
-        if (next <= new Date()) next.setUTCHours(next.getUTCHours() + 1);
+        // Prochain relevé : toutes les 10 min (TikTok), toutes les heures (YouTube), ~1 min après le déclenchement.
+        const step = (platform === "youtube" ? 60 : 10) * 60000;
+        const next = new Date(Math.floor(Date.now() / step) * step + step + 60000);
 
         try {
             res.json({ ...(await releves.summary(platform, id)), nextUpdate: next.getTime() });

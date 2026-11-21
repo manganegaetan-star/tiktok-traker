@@ -1,26 +1,37 @@
 // =====================================================
-// RELEVÉ HORAIRE (premium uniquement)
+// RELEVÉS (premium uniquement)
 // -----------------------------------------------------
-// Toutes les heures, Cloud Scheduler appelle POST /cron/releve
-// (jeton OIDC Google vérifié). Pour chaque compte Google PREMIUM,
-// on enregistre un instantané de chaque compte relié :
-//   historique/{plateforme}_{id}                 { uid, platform, accountId, maj }
-//   historique/{plateforme}_{id}/heures/{AAAAMMJJHH} { t, followers, likes, channelViews, videos: { id: [vues, likes, coms] } }
-//   historique/{plateforme}_{id}/jours/{AAAAMMJJ}    (même contenu, 1 par jour, au-delà de 30 jours)
+// Cloud Scheduler appelle POST /cron/releve toutes les 10 minutes
+// (jeton OIDC Google vérifié). Pour chaque compte Google PREMIUM :
+//   - TikTok : un relevé toutes les 10 minutes ;
+//   - YouTube : un relevé par heure (quota de l'API YouTube).
+//
+// Stockage : un « cahier » par jour et par compte relié.
+//   historique/{plateforme}_{id}              { uid, platform, accountId, maj }
+//   historique/{plateforme}_{id}/jours/{AAAA-MM-JJ}
+//       { d, releves: [ { t, f, l, cv, v: { idVidéo: "vues|likes|coms" } } ], compact }
+// Après 48 h, un cahier est allégé à 1 relevé par heure ; gardé ~13 mois.
 // Pas de premium (ou premium terminé) = tout l'historique est supprimé.
 // =====================================================
 
-const HOURLY_DAYS = 30;          // relevés horaires gardés 30 jours
-const DAILY_DAYS = 400;          // puis 1 relevé par jour, ~13 mois
+const { FieldValue } = require("@google-cloud/firestore");
+
+const FINE_HOURS = 48;           // relevés de 10 min gardés 48 h
+const KEEP_DAYS = 400;           // puis 1 par heure, ~13 mois
 const VIDEOS_PER_SNAPSHOT = 20;  // les 20 vidéos les plus récentes
-const AGG_CACHE_MS = 10 * 60 * 1000;
+const AGG_CACHE_MS = 5 * 60 * 1000;
+const SUMMARY_DAYS = 31;         // la page lit 31 cahiers au plus
 
 module.exports = function createReleves(d) {
     const aggCache = new Map();
 
     const key = (platform, id) => `${platform}_${String(id).replace(/\//g, "_")}`;
-    const hourKey = date => date.toISOString().slice(0, 13).replace(/[-T]/g, "");   // AAAAMMJJHH (UTC)
-    const dayKey = date => date.toISOString().slice(0, 10).replace(/-/g, "");       // AAAAMMJJ (UTC)
+    const dayKey = ms => new Date(ms).toISOString().slice(0, 10);   // AAAA-MM-JJ (UTC)
+
+    const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Europe/Paris" });
+    const parisHour = ms => Number(hourFmt.format(new Date(ms))) % 24;
+    const dayFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Paris" });
+    const parisDay = ms => dayFmt.format(new Date(ms));                 // AAAA-MM-JJ (Paris)
 
     async function deleteCollection(ref) {
         for (;;) {
@@ -37,14 +48,20 @@ module.exports = function createReleves(d) {
         const store = d.db();
         if (!store) return;
         const ref = store.collection("historique").doc(key(platform, id));
-        await deleteCollection(ref.collection("heures"));
         await deleteCollection(ref.collection("jours"));
+        await deleteCollection(ref.collection("heures")); // ancien format
         await ref.delete();
         aggCache.delete(key(platform, id));
     }
 
     // ---------- Instantanés ----------
-    async function snapshotTikTok(store, uid, doc, secret, c) {
+    const packVideos = list => {
+        const v = {};
+        for (const x of list) v[x.id] = `${x.views || 0}|${x.likes || 0}|${x.comments || 0}`;
+        return v;
+    };
+
+    async function snapshotTikTok(doc, secret, c) {
         let session = d.unseal(doc.get("jeton"), secret);
         if (!session || Date.now() >= session.refreshExpires) return null;
 
@@ -64,75 +81,64 @@ module.exports = function createReleves(d) {
             body: { max_count: VIDEOS_PER_SNAPSHOT }
         });
 
-        const videos = {};
-        for (const v of list.videos || []) {
-            videos[String(v.id)] = [Number(v.view_count) || 0, Number(v.like_count) || 0, Number(v.comment_count) || 0];
-        }
-
         return {
-            followers: user.follower_count ?? null,
-            likes: user.likes_count ?? null,
-            channelViews: null,
-            videos
+            f: user.follower_count ?? null,
+            l: user.likes_count ?? null,
+            cv: null,
+            v: packVideos((list.videos || []).map(x => ({ id: String(x.id), views: x.view_count, likes: x.like_count, comments: x.comment_count })))
         };
     }
 
     async function snapshotYouTube(store, uid, doc, secret) {
         const yt = await d.youtube.sessionForChannel(store, uid, doc.id, secret);
         if (!yt) return null;
-
         const me = await d.youtube.me(yt);
         const list = await d.youtube.videos(yt, VIDEOS_PER_SNAPSHOT, null);
-
-        const videos = {};
-        for (const v of list.videos || []) videos[v.id] = [v.views || 0, v.likes || 0, v.comments || 0];
-
-        return { followers: me.followers, likes: null, channelViews: me.channelViews, videos };
+        return { f: me.followers, l: null, cv: me.channelViews, v: packVideos(list.videos || []) };
     }
 
     async function writeSnapshot(store, uid, platform, id, data, now) {
         const ref = store.collection("historique").doc(key(platform, id));
-        await ref.set({ uid, platform, accountId: id, maj: now }, { merge: true });
-        await ref.collection("heures").doc(hourKey(now)).set({ t: now, ...data });
+        const dk = dayKey(now);
+        await ref.set({ uid, platform, accountId: id, maj: new Date(now) }, { merge: true });
+        await ref.collection("jours").doc(dk).set({ d: dk, releves: FieldValue.arrayUnion({ t: now, ...data }) }, { merge: true });
         aggCache.delete(key(platform, id));
     }
 
-    // Au-delà de 30 jours : on garde 1 relevé par jour.
+    // Après 48 h : 1 relevé par heure dans le cahier ; au-delà de ~13 mois : cahier supprimé.
     async function compact(store, platform, id, now) {
-        const ref = store.collection("historique").doc(key(platform, id));
-        const old = await ref.collection("heures")
-            .where("t", "<", new Date(now - HOURLY_DAYS * 86400000)).orderBy("t").limit(200).get();
-        if (old.empty) return;
+        const ref = store.collection("historique").doc(key(platform, id)).collection("jours");
+        const candidates = (await ref.where("d", "<", dayKey(now - FINE_HOURS * 3600000)).orderBy("d", "desc").limit(3).get())
+            .docs.filter(x => x.get("compact") !== true);
 
-        const batch = store.batch();
-        const seenDays = new Set();
-        for (const doc of old.docs) {
-            const t = doc.get("t").toDate();
-            const dk = dayKey(t);
-            if (!seenDays.has(dk)) {
-                seenDays.add(dk);
-                batch.set(ref.collection("jours").doc(dk), doc.data(), { merge: false });
-            }
-            batch.delete(doc.ref);
+        for (const doc of candidates) {
+            const seen = new Set();
+            const kept = (doc.get("releves") || []).sort((a, b) => a.t - b.t).filter(r => {
+                const h = Math.floor(r.t / 3600000);
+                if (seen.has(h)) return false;
+                seen.add(h);
+                return true;
+            });
+            await doc.ref.set({ d: doc.get("d"), releves: kept, compact: true });
         }
-        await batch.commit();
 
-        const tooOld = await ref.collection("jours")
-            .where("t", "<", new Date(now - DAILY_DAYS * 86400000)).limit(200).get();
+        const tooOld = await ref.where("d", "<", dayKey(now - KEEP_DAYS * 86400000)).limit(20).get();
         if (!tooOld.empty) {
-            const b2 = store.batch();
-            tooOld.docs.forEach(doc => b2.delete(doc.ref));
-            await b2.commit();
+            const batch = store.batch();
+            tooOld.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
         }
     }
 
-    // Le relevé complet (appelé toutes les heures).
+    // Le relevé complet (appelé toutes les 10 minutes).
     async function run() {
         const store = d.db();
         const c = d.config(null);
         if (!store || !c.secret) return { ok: false, reason: "config" };
 
-        const now = new Date();
+        const now = Date.now();
+        const youtubeTurn = new Date(now).getUTCMinutes() < 10;   // YouTube : 1 fois par heure
+        const compactTurn = new Date(now).getUTCMinutes() < 10;   // nettoyage : 1 fois par heure
         const res = { ok: true, comptes: 0, releves: 0, erreurs: 0, supprimes: 0 };
         const premiumUids = new Set();
 
@@ -144,11 +150,11 @@ module.exports = function createReleves(d) {
 
             const [tk, yt] = await Promise.all([
                 compte.ref.collection("tiktok").get(),
-                compte.ref.collection("youtube").get()
+                youtubeTurn ? compte.ref.collection("youtube").get() : Promise.resolve({ docs: [] })
             ]);
 
             const jobs = [
-                ...tk.docs.map(doc => ["tiktok", doc, () => snapshotTikTok(store, compte.id, doc, c.secret, c)]),
+                ...tk.docs.map(doc => ["tiktok", doc, () => snapshotTikTok(doc, c.secret, c)]),
                 ...yt.docs.map(doc => ["youtube", doc, () => snapshotYouTube(store, compte.id, doc, c.secret)])
             ];
 
@@ -157,7 +163,7 @@ module.exports = function createReleves(d) {
                     const data = await take();
                     if (!data) { res.erreurs++; continue; }
                     await writeSnapshot(store, compte.id, platform, doc.id, data, now);
-                    await compact(store, platform, doc.id, now);
+                    if (compactTurn) await compact(store, platform, doc.id, now);
                     res.releves++;
                 } catch (error) {
                     res.erreurs++;
@@ -180,28 +186,32 @@ module.exports = function createReleves(d) {
     }
 
     // ---------- Agrégats pour la page Analyse ----------
+    const unpack = s => { const [a, b, c] = String(s).split("|").map(Number); return [a || 0, b || 0, c || 0]; };
+
     function sumGain(a, b) {
-        // vues gagnées entre deux instantanés (vidéos présentes dans les deux)
+        // vues gagnées entre deux relevés (vidéos présentes dans les deux)
         let g = 0;
-        for (const [id, v] of Object.entries(b.videos || {})) {
-            const o = a.videos?.[id];
+        for (const [id, v] of Object.entries(b.videos)) {
+            const o = a.videos[id];
             if (o) g += Math.max(0, v[0] - o[0]);
         }
         return g;
     }
 
     function at(points, ms) {
-        // instantané le plus proche (avant ou égal) d'une date
+        // relevé le plus proche (avant ou égal) d'une date
         let best = null;
         for (const p of points) if (p.t <= ms) best = p; else break;
         return best;
     }
 
-    const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Europe/Paris" });
-    const parisHour = ms => Number(hourFmt.format(new Date(ms))) % 24;
-    const dayFmt = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Paris" });
-    const parisDay = ms => dayFmt.format(new Date(ms));                       // AAAA-MM-JJ (Paris)
-    const parisWeekday = ms => new Date(parisDay(ms) + "T12:00:00Z").getUTCDay(); // 0 = dimanche
+    // Intervalles consécutifs exploitables (trou de plus de 90 min ignoré).
+    function* pairs(points, maxGap = 90 * 60000) {
+        for (let i = 1; i < points.length; i++) {
+            const a = points[i - 1], b = points[i];
+            if (b.t - a.t <= maxGap) yield [a, b];
+        }
+    }
 
     async function summary(platform, id) {
         const k = key(platform, id);
@@ -209,16 +219,18 @@ module.exports = function createReleves(d) {
         if (hit && hit.expires > Date.now()) return hit.value;
 
         const store = d.db();
-        const ref = store.collection("historique").doc(k);
-        const [hours, days] = await Promise.all([
-            ref.collection("heures").orderBy("t").get(),
-            ref.collection("jours").orderBy("t").get()
-        ]);
+        const snap = await store.collection("historique").doc(k).collection("jours")
+            .where("d", ">=", dayKey(Date.now() - SUMMARY_DAYS * 86400000)).get();
 
-        const toPoint = doc => ({ t: doc.get("t").toDate().getTime(), followers: doc.get("followers"), likes: doc.get("likes"), channelViews: doc.get("channelViews"), videos: doc.get("videos") || {} });
-        const hourly = hours.docs.map(toPoint);
-        const daily = days.docs.map(toPoint);
-        const all = [...daily, ...hourly].sort((a, b) => a.t - b.t);
+        const all = [];
+        for (const doc of snap.docs) {
+            for (const r of doc.get("releves") || []) {
+                const videos = {};
+                for (const [vid, s] of Object.entries(r.v || {})) videos[vid] = unpack(s);
+                all.push({ t: r.t, followers: r.f ?? null, likes: r.l ?? null, channelViews: r.cv ?? null, videos });
+            }
+        }
+        all.sort((a, b) => a.t - b.t);
 
         if (!all.length) {
             const value = { empty: true };
@@ -228,71 +240,57 @@ module.exports = function createReleves(d) {
 
         const last = all[all.length - 1];
         const now = last.t;
-        const gain = ms => { const p = at(all, now - ms); return p && p !== last ? sumGain(p, last) : null; };
-        const fGain = ms => { const p = at(all, now - ms); return p && p !== last && p.followers != null && last.followers != null ? last.followers - p.followers : null; };
+        const gain = ms => { const p = at(all, now - ms); return p && p !== last && now - p.t >= ms * 0.9 ? sumGain(p, last) : null; };
+        const fGain = ms => { const p = at(all, now - ms); return p && p !== last && now - p.t >= ms * 0.9 && p.followers != null && last.followers != null ? last.followers - p.followers : null; };
 
-        // Heures de vues : vues gagnées entre deux relevés horaires consécutifs, par heure (heure de Paris).
-        const byHour = Array.from({ length: 24 }, () => ({ sum: 0, n: 0 }));
-        for (let i = 1; i < hourly.length; i++) {
-            const a = hourly[i - 1], b = hourly[i];
-            if (b.t - a.t > 90 * 60000) continue; // trou dans les relevés : ignoré
-            const h = parisHour(a.t);
-            byHour[h].sum += sumGain(a, b);
-            byHour[h].n++;
+        // Heures de vues : vues gagnées par heure de la journée (Paris), moyennées sur les jours suivis.
+        const perDayHour = new Map();   // "AAAA-MM-JJ|h" → vues gagnées
+        for (const [a, b] of pairs(all)) {
+            const kk = parisDay(a.t) + "|" + parisHour(a.t);
+            perDayHour.set(kk, (perDayHour.get(kk) || 0) + sumGain(a, b));
         }
+        const byHour = Array.from({ length: 24 }, () => ({ sum: 0, n: 0 }));
+        for (const [kk, g] of perDayHour) { const h = Number(kk.split("|")[1]); byHour[h].sum += g; byHour[h].n++; }
 
         // Vues gagnées heure par heure sur les dernières 24 h.
-        const last24 = [];
-        for (let i = 1; i < hourly.length; i++) {
-            const a = hourly[i - 1], b = hourly[i];
-            if (b.t <= now - 24 * 3600000 || b.t - a.t > 90 * 60000) continue;
-            last24.push({ t: a.t, gain: sumGain(a, b) });
+        const hourBuckets = new Map();
+        for (const [a, b] of pairs(all)) {
+            if (b.t <= now - 24 * 3600000) continue;
+            const hs = Math.floor(a.t / 3600000) * 3600000;
+            hourBuckets.set(hs, (hourBuckets.get(hs) || 0) + sumGain(a, b));
         }
+        const last24 = [...hourBuckets].sort((a, b) => a[0] - b[0]).map(([t, g]) => ({ t, gain: g }));
 
-        // Vues gagnées par jour (heure de Paris) et par jour de la semaine.
+        // Vues gagnées par jour (Paris) et par jour de la semaine.
         const perDay = new Map();
-        for (let i = 1; i < all.length; i++) {
-            const a = all[i - 1], b = all[i];
-            if (b.t - a.t > 26 * 3600000) continue; // trou trop long : ignoré
+        for (const [a, b] of pairs(all, 26 * 3600000)) {
             const dk = parisDay(a.t);
             perDay.set(dk, (perDay.get(dk) || 0) + sumGain(a, b));
         }
         const today = parisDay(now);
-        const dayGains = [...perDay].filter(([dk]) => dk !== today).sort().slice(-30).map(([d, gain]) => ({ d, gain }));
+        const dayGains = [...perDay].filter(([dk]) => dk !== today).sort().slice(-30).map(([dd, g]) => ({ d: dd, gain: g }));
         const wd = Array.from({ length: 7 }, () => ({ sum: 0, n: 0 }));
-        for (const { d, gain } of dayGains) { const w = new Date(d + "T12:00:00Z").getUTCDay(); wd[w].sum += gain; wd[w].n++; }
-        const weekdays = wd.map(x => (x.n ? Math.round(x.sum / x.n) : null));
+        for (const { d: dd, gain: g } of dayGains) { const w = new Date(dd + "T12:00:00Z").getUTCDay(); wd[w].sum += g; wd[w].n++; }
 
-        // Top de la semaine : vues gagnées sur 7 jours par vidéo.
+        const topBy = ref => ref && ref !== last
+            ? Object.entries(last.videos)
+                .map(([vid, v]) => ({ id: vid, views: v[0], gain: ref.videos[vid] ? v[0] - ref.videos[vid][0] : null }))
+                .filter(r => r.gain != null && r.gain > 0)
+                .sort((a, b) => b.gain - a.gain).slice(0, 5)
+            : [];
+
         const ref7 = at(all, now - 7 * 86400000);
-        const top7 = ref7 && ref7 !== last
-            ? Object.entries(last.videos)
-                .map(([vid, v]) => ({ id: vid, views: v[0], gain: ref7.videos?.[vid] ? v[0] - ref7.videos[vid][0] : null }))
-                .filter(r => r.gain != null && r.gain > 0)
-                .sort((a, b) => b.gain - a.gain).slice(0, 5)
-            : [];
-
-        // Semaine précédente (comparaison).
-        const p14 = at(all, now - 14 * 86400000), p7 = ref7;
-        const prevWeek = p14 && p7 && p14 !== p7
-            ? { views: sumGain(p14, p7), followers: p14.followers != null && p7.followers != null ? p7.followers - p14.followers : null }
+        const p14 = at(all, now - 14 * 86400000);
+        const prevWeek = p14 && ref7 && p14 !== ref7 && now - p14.t >= 13 * 86400000
+            ? { views: sumGain(p14, ref7), followers: p14.followers != null && ref7.followers != null ? ref7.followers - p14.followers : null }
             : null;
-
-        // Vidéos qui décollent : vues gagnées sur 24 h.
-        const ref24 = at(all, now - 24 * 3600000);
-        const rising = ref24 && ref24 !== last
-            ? Object.entries(last.videos)
-                .map(([vid, v]) => ({ id: vid, views: v[0], gain: ref24.videos?.[vid] ? v[0] - ref24.videos[vid][0] : null }))
-                .filter(r => r.gain != null && r.gain > 0)
-                .sort((a, b) => b.gain - a.gain).slice(0, 5)
-            : [];
 
         // Courbe des abonnés : tous les relevés des 7 derniers jours, puis 1 point par jour.
         const seenDays = new Set();
         const curve = all.filter(p => {
             if (p.followers == null) return false;
             if (p.t >= now - 7 * 86400000) return true;
-            const dk = dayKey(new Date(p.t));
+            const dk = parisDay(p.t);
             if (seenDays.has(dk)) return false;
             seenDays.add(dk);
             return true;
@@ -300,22 +298,23 @@ module.exports = function createReleves(d) {
 
         const value = {
             empty: false,
+            platform,
             since: all[0].t,
             lastUpdate: last.t,
-            count: hourly.length,
+            count: all.length,
             followers: last.followers,
             views: { h24: gain(24 * 3600000), d7: gain(7 * 86400000), d30: gain(30 * 86400000) },
             followersGain: { h24: fGain(24 * 3600000), d7: fGain(7 * 86400000), d30: fGain(30 * 86400000) },
             hours: byHour.map(h => (h.n ? Math.round(h.sum / h.n) : null)),
             hourSamples: byHour.reduce((m, h) => Math.min(m, h.n), Infinity),
             hoursN: byHour.map(h => h.n),
+            weekdays: wd.map(x => (x.n ? Math.round(x.sum / x.n) : null)),
             weekdaysN: wd.map(x => x.n),
             days: dayGains,
             last24,
-            weekdays,
-            top7,
+            top7: topBy(ref7),
             prevWeek,
-            rising,
+            rising: topBy(at(all, now - 24 * 3600000)),
             curve
         };
         aggCache.set(k, { value, expires: Date.now() + AGG_CACHE_MS });
