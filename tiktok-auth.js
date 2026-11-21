@@ -20,6 +20,7 @@
 const crypto = require("crypto");
 const createYouTube = require("./youtube");
 const createReleves = require("./releves");
+const { formuleOfDoc, isPaid } = require("./formules");
 
 const AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const API = "https://open.tiktokapis.com/v2";
@@ -202,7 +203,7 @@ async function tokenRequest(params) {
 // (id = open_id) : { pseudo, creeLe, premium }.
 // Le document est créé à la première visite avec premium: false.
 // Pour passer quelqu'un en premium : console Firestore →
-// utilisateurs → son document → premium = true.
+// utilisateurs → son document → premium = "Statistiques" ou "Createur".
 // Lecture mise en cache 1 min pour rester dans le quota gratuit.
 // Sans Firestore (ex. en local), tout le monde est gratuit.
 // =====================================================
@@ -238,14 +239,14 @@ async function premiumStatus(openId, username) {
 
             if (link.exists) {
                 const owner = await store.collection("comptes").doc(link.get("compte")).get();
-                value = owner.exists && owner.get("premium") === true;
+                value = isPaid(formuleOfDoc(owner));
             } else {
                 // 2) Sinon : ancienne fiche « utilisateurs » (premium activé à la main).
                 const ref = store.collection("utilisateurs").doc(openId);
                 const snap = await ref.get();
 
                 if (snap.exists) {
-                    value = snap.get("premium") === true;
+                    value = isPaid(formuleOfDoc(snap));
                 } else {
                     await ref.set({ pseudo: username || null, creeLe: new Date(), premium: false });
                 }
@@ -273,13 +274,13 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim() ||
     "792698279689-06tnp0anb1f27d6ii1761p21bhrmm5hq.apps.googleusercontent.com";
 const GOOGLE_COOKIE = "tp_google";
 // Formules : gratuit (1 compte relié), premium (2), créateur (5).
-// Firestore comptes/{googleId} : premium = true pour toute formule payante,
-// formule = "premium" | "createur" (absent = premium).
+// Firestore comptes/{googleId}.premium = "Statistiques" | "Createur" (absent ou false = gratuit).
+// Voir formules.js (les anciennes valeurs premium = true restent acceptées).
 const MAX_COMPTES = { gratuit: 1, premium: 2, createur: 5 };
 
 function planOf(account) {
-    if (!account?.exists || account.get("premium") !== true) return "gratuit";
-    return account.get("formule") === "createur" ? "createur" : "premium";
+    const f = formuleOfDoc(account);
+    return f === "statistiques" ? "premium" : f;
 }
 
 function maxFor(account) {
@@ -396,10 +397,12 @@ async function upsertGoogleAccount(store, google, legacyOpenId) {
     const accountRef = store.collection("comptes").doc(google.uid);
     const account = await accountRef.get();
 
-    let legacyPremium = false;
+    // Formule activée à la main sur l'ancienne fiche « utilisateurs » : reprise sur le compte Google.
+    let legacyValue = false;
     if (legacyOpenId) {
         const legacy = await store.collection("utilisateurs").doc(legacyOpenId).get();
-        legacyPremium = legacy.exists && legacy.get("premium") === true;
+        const f = formuleOfDoc(legacy);
+        if (isPaid(f)) legacyValue = f === "createur" ? "Createur" : "Statistiques";
     }
 
     await accountRef.set({
@@ -407,8 +410,8 @@ async function upsertGoogleAccount(store, google, legacyOpenId) {
         nom: google.nom,
         photo: google.photo,
         derniereConnexion: new Date(),
-        ...(account.exists ? {} : { creeLe: new Date(), premium: legacyPremium }),
-        ...(account.exists && legacyPremium ? { premium: true } : {})
+        ...(account.exists ? {} : { creeLe: new Date(), premium: legacyValue }),
+        ...(account.exists && legacyValue && !isPaid(formuleOfDoc(account)) ? { premium: legacyValue } : {})
     }, { merge: true });
 }
 
@@ -848,7 +851,7 @@ module.exports = function mountTikTokAuth(app) {
         let value = false;
         try {
             const a = await db()?.collection("comptes").doc(uid).get();
-            value = Boolean(a?.exists && a.get("premium") === true);
+            value = isPaid(formuleOfDoc(a));
         } catch (error) {
             console.warn("Lecture premium impossible :", error.message);
         }
@@ -976,7 +979,7 @@ module.exports = function mountTikTokAuth(app) {
             const account = await store.collection("comptes").doc(google.uid).get();
             if (!account.exists) { clearCookie(req, res, GOOGLE_COOKIE); return res.json({ google: null }); }
 
-            const premium = account.get("premium") === true;
+            const premium = isPaid(formuleOfDoc(account));
             res.json({
                 google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium, formule: planOf(account) },
                 count: await countAll(store, google.uid),
@@ -1067,7 +1070,7 @@ module.exports = function mountTikTokAuth(app) {
                 return res.json({ google: null, comptes: [] });
             }
 
-            const premium = account.get("premium") === true;
+            const premium = isPaid(formuleOfDoc(account));
             const activeYt = req.youtube?.channelId || null;
             const activeTk = req.tiktok?.openId || null;
 
@@ -1114,7 +1117,7 @@ module.exports = function mountTikTokAuth(app) {
         try {
             const accountRef = store.collection("comptes").doc(google.uid);
             const account = await accountRef.get();
-            if (!account.exists || account.get("premium") !== true) {
+            if (!isPaid(formuleOfDoc(account))) {
                 return res.status(403).json({ error: "Un abonnement permet de passer d'un compte à l'autre" });
             }
 
@@ -1231,7 +1234,7 @@ module.exports = function mountTikTokAuth(app) {
             const account = await accountRef.get();
 
             // Abonnement premium en cours : il faut d'abord le résilier (ou attendre sa fin).
-            if (account.exists && account.get("premium") === true) {
+            if (isPaid(formuleOfDoc(account))) {
                 return res.status(409).json({ error: "Ton abonnement est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." });
             }
 

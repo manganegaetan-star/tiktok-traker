@@ -3,19 +3,25 @@
 <title>TikTok Pulse — Connexion créateur</title>
 <link rel="stylesheet" href="premium.css">
 <style>
-.wrap{min-height:calc(100vh - 80px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:clamp(30px,5vw,80px);align-items:center;padding-block:60px}
-.headline{font:700 clamp(40px,5.6vw,80px)/.98 'Space Grotesk';letter-spacing:-.07em;margin:22px 0 20px}
-.headline em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 45%,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.lead{color:#8eafc2;line-height:1.8;max-width:560px;margin:0 0 30px}
-.perks{list-style:none;padding:0;margin:0;display:grid;gap:12px;max-width:560px}
-.perks li{display:flex;gap:14px;align-items:flex-start;padding:15px 17px;border:1px solid #2c587050;border-radius:6px;background:#07172799}
-.perks b{display:block;font:700 14px 'Space Grotesk';margin-bottom:3px}
-.perks span{color:#93b2c4;font-size:13px;line-height:1.55}
-.ic{flex:0 0 34px;height:34px;border-radius:6px;display:grid;place-items:center;background:#0b2233;border:1px solid #3bf7ef44;color:var(--cyan);font-size:16px}
-.card{padding:clamp(26px,4vw,44px);overflow:hidden}
-.card:before{content:"";position:absolute;left:0;top:0;width:160px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);box-shadow:0 0 20px var(--gold)}
-.card h2{font:700 28px 'Space Grotesk';letter-spacing:-.04em;margin:18px 0 10px}
-.card p{color:#8eafc2;line-height:1.7;margin:0 0 26px;font-size:14px}
+.lock{padding:44px 36px;text-align:center;max-width:720px;margin:10px auto 0}
+.lock .ic{font-size:34px;color:var(--gold);width:64px;height:64px;margin:auto;border-radius:50%;display:grid!important;place-items:center;background:#f7c56a12;border:1px solid #f7c56a55}
+.lock h2{font:700 clamp(24px,3vw,34px)/1.1 'Space Grotesk';letter-spacing:-.04em;margin:14px 0 10px}
+.lock p{color:#8eafc2;line-height:1.65;margin:0 auto 22px;max-width:520px}
+.lock ul{list-style:none;padding:0;margin:0 auto 26px;max-width:440px;text-align:left;display:grid;gap:10px}
+.lock li{color:#d7eef7;font-size:14px;padding-left:28px;position:relative}
+.lock li::before{content:'';position:absolute;left:6px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.lock .why{text-align:left;border-top:1px solid #2c587055;margin:4px auto 26px;padding-top:22px;max-width:560px}
+.lock .why p{margin:8px 0 14px;max-width:none;font-size:14px}
+.lock .why ul{max-width:none;margin:0}
+.lock .why li{font-size:13px;color:#a9c8d6;line-height:1.55}
+.lock .why li b{color:#e6f6fb}
+.lock .gbox{display:grid;justify-items:center;gap:10px;margin:0 auto 22px}
+.lock .gbtn{min-height:44px}
+.lock .gnote{font-size:12px;color:#93b2c4;margin:0}
+.lock .gdone{border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.6;margin:0 auto 22px;max-width:520px}
+.lock .gdone b{color:#fff}
+.lock .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.lock .soon{border:1px solid #f5c84c66;color:var(--gold);border-radius:4px;padding:11px 18px;font:700 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase}
 .tt-btn{width:100%;max-width:400px;height:40px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:4px;padding:0 16px;background:#fff;color:#1f1f1f;font:600 14px 'DM Sans';box-shadow:0 0 0 1px #ffffff22,0 10px 35px #3bf7ef22;transition:transform .2s,box-shadow .2s}
 .tt-btn:hover{transform:translateY(-2px);box-shadow:0 0 0 2px var(--cyan),0 14px 40px #3bf7ef33}
 .tt-btn svg{width:18px;height:18px}
@@ -28,50 +34,37 @@
 .ok.show{display:block}
 .scopes{margin:24px 0 0;padding:18px 0 0;border-top:1px solid #31546a52;display:grid;gap:9px;font-size:12px;color:#93b2c4}
 .scopes div{display:flex;gap:9px}.scopes div:before{content:"✓";color:var(--green);font-weight:900}
-.legal{margin-top:20px;font-size:12px;color:#86a6b8;line-height:1.6}
-.back{display:inline-block;margin-top:18px;font-size:12px;color:#93b2c4}.back:hover{color:var(--cyan)}
-@media(max-width:900px){.wrap{grid-template-columns:1fr;padding-block:40px}}
-</style><script src="pulse-ui.js"></script></head><body>
+.main{padding-block:40px 30px;max-width:900px}
+.lock .auth{display:grid;gap:0;margin:0 auto 18px;max-width:400px}
+.lock .scopes{text-align:left;max-width:400px;margin:22px auto 0}
+.lock .legal{margin:18px auto 0;max-width:460px;font-size:12px;color:#86a6b8;line-height:1.6}
+.lock .legal a{text-decoration:underline}
+.lock .error,.lock .ok{max-width:400px;margin:14px auto 0;text-align:left}
+</style><script src="pulse-ui.js"></script></head><body data-nav="connexion">
 
-<main class="shell wrap">
- <section>
-  <div class="eyebrow">TikTok Pulse · Espace créateur</div>
-  <h1 class="headline">Tes chiffres.<br><em>Au chiffre près.</em></h1>
-  <p class="lead">Suis tes vidéos en direct avec les statistiques officielles, au chiffre près : pas d'arrondi « 160,2K », pas d'intermédiaire qui tombe en panne.</p>
-  <ul class="perks">
-   <li><div class="ic" data-icon="eye"></div><div><b>Vues exactes, en direct</b><span>Le vrai compteur, unité par unité, directement depuis les API officielles.</span></div></li>
-   <li><div class="ic" data-icon="chart"></div><div><b>Analyse de ton compte</b><span>Meilleurs jours, créneaux, durées et hashtags : sache quoi publier et quand.</span></div></li>
-   <li><div class="ic" data-icon="swap"></div><div><b>Tous tes comptes au même endroit</b><span>Relie plusieurs comptes et passe de l'un à l'autre en un clic.</span></div></li>
-   <li><div class="ic" data-icon="shield"></div><div><b>Connexion sécurisée</b><span>Tu te connectes directement chez TikTok ou Google. Nous ne voyons jamais ton mot de passe et tu peux révoquer l'accès à tout moment.</span></div></li>
-  </ul>
- </section>
-
- <section class="surface card">
-  <div class="micro">Connexion</div>
-  <h2>Connecte ton compte</h2>
-  <p>Connecte-toi avec ton compte TikTok ou avec ton compte Google.</p>
-
-  <a class="tt-btn" id="loginBtn" href="/auth/tiktok">
+<main class="shell main">
+ <section class="surface lock" id="lock">
+  <h2>L'accès est réservé aux membres connectés</h2>
+  <p>Connecte ton compte TikTok, ou ton compte Google si tu as déjà un compte TikTok Pulse, pour suivre tes vidéos en direct et accéder à tes statistiques.</p>
+  <div class="auth">
+   <a class="tt-btn" id="loginBtn" href="/auth/tiktok">
    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25F4EE" d="M9.4 9.6v-.9a7 7 0 0 0-.9-.1 6.6 6.6 0 0 0-3.8 12 6.6 6.6 0 0 1 4.7-11z"/><path fill="#25F4EE" d="M9.6 19.8a3 3 0 0 0 3-2.9V2.7h2.7a5 5 0 0 1-.1-1h-3.6v14.3a3 3 0 0 1-3 2.9 3 3 0 0 1-1.4-.4 3 3 0 0 0 2.4 1.3zM20.4 7.5v-.9a5 5 0 0 1-2.7-.8 5 5 0 0 0 2.7 1.7z"/><path fill="#FE2C55" d="M17.7 5.8a5 5 0 0 1-1.2-3.3h-1a5 5 0 0 0 2.2 3.3zM8.5 12.8a3 3 0 0 0-1.4 5.7 3 3 0 0 1 3.3-4.9V9.9a6 6 0 0 0-.9-.1h-.2v2.8a3 3 0 0 0-.8.2z"/><path fill="#FE2C55" d="M20.4 7.5v2.8a8.5 8.5 0 0 1-5-1.6v7.2a6.6 6.6 0 0 1-10.3 5.5 6.6 6.6 0 0 0 11.4-4.5V9.7a8.5 8.5 0 0 0 5 1.6V7.6a5 5 0 0 1-1.1-.1z"/><path d="M15.4 16.9V9.7a8.5 8.5 0 0 0 5 1.6V8.5a5 5 0 0 1-2.7-1.7 5 5 0 0 1-2.2-3.3h-2.7v14.3a3 3 0 0 1-5.6 1.7 3 3 0 0 1 1.4-5.7 3 3 0 0 1 .9.1v-2.8a6.6 6.6 0 0 0-4.7 11.2 6.6 6.6 0 0 0 10.6-5.4z"/></svg>
    Continuer avec TikTok
   </a>
-
-  <div class="or">OU</div>
-  <div class="gwrap"><div id="gBtn"></div></div>
-
+   <div class="or">OU</div>
+   <div class="gwrap"><div id="gBtn"></div></div>
+  </div>
   <div id="ok" class="ok" role="status"></div>
   <div id="error" class="error" role="alert"></div>
-
   <div class="scopes">
    <div>Lecture de ton profil public (nom, photo, abonnés)</div>
    <div>Lecture des statistiques de tes vidéos publiques</div>
    <div>Aucune publication, aucun message en ton nom</div>
   </div>
-  <div class="legal">En continuant, tu acceptes nos <a href="/conditions.html" style="text-decoration:underline">conditions d'utilisation</a> et notre <a href="/confidentialite.html" style="text-decoration:underline">politique de confidentialité</a>. TikTok Pulse est un projet indépendant, non affilié à TikTok.</div>
+  <p class="legal">En continuant, tu acceptes nos <a href="/conditions.html">conditions d'utilisation</a> et notre <a href="/confidentialite.html">politique de confidentialité</a>. TikTok Pulse est un projet indépendant, non affilié à TikTok ni à Google.</p>
  </section>
 </main>
 
-<footer class="shell footer"><span>© TikTok Pulse · Espace créateur</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 
 <script>
 'use strict';

@@ -15,6 +15,7 @@
 // =====================================================
 
 const { FieldValue } = require("@google-cloud/firestore");
+const { formuleOfDoc, isPaid } = require("./formules");
 
 const FINE_HOURS = 48;           // relevés de 10 min gardés 48 h
 const KEEP_DAYS = 15;            // puis 1 par heure, 14 jours (2 semaines comparées)
@@ -144,7 +145,7 @@ module.exports = function createReleves(d) {
 
         const comptes = await store.collection("comptes").get();
         for (const compte of comptes.docs) {
-            if (compte.get("premium") !== true) continue;
+            if (!isPaid(formuleOfDoc(compte))) continue;
             premiumUids.add(compte.id);
             res.comptes++;
 

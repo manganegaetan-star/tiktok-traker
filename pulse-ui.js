@@ -402,8 +402,24 @@
     top.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a><div class="psw"></div>';
 
     document.body.prepend(side, top, bar);
-    if (window.matchMedia('(max-width: 900px)').matches) { side.querySelector('.psw').remove(); switcher(top.querySelector('.psw')); }
-    else { top.querySelector('.psw').remove(); switcher(side.querySelector('.psw')); }
+    const mobile = window.matchMedia('(max-width: 900px)').matches;
+    (mobile ? side : top).querySelector('.psw').remove();
+    const swEl = (mobile ? top : side).querySelector('.psw');
+
+    // Visiteur non connecté : pas de sélecteur, et « Se connecter » à la place du compte.
+    fetch('/auth/status', { cache: 'no-store', credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(st => {
+        if (st && st.connected) { switcher(swEl); return; }
+        swEl.remove();
+        const acc = foot.querySelector('.pside-account');
+        acc.href = '/connexion.html';
+        acc.querySelector('.pn-who b').textContent = 'Non connecté';
+        acc.querySelector('.pn-who small').textContent = 'Se connecter';
+        foot.querySelector('.pside-out').remove();
+        foot.dataset.anon = '1';
+      })
+      .catch(() => switcher(swEl));
     document.body.classList.add('has-pnav');
 
     // Formule et nom du compte Google (badge PRO, pied du menu).
@@ -415,6 +431,7 @@
         const has = !paid ? 'gratuit' : g.formule === 'createur' ? 'createur' : 'pro';
         document.querySelectorAll('.pn-tag.pro').forEach(t => { t.hidden = has === 'createur' || (has === 'pro' && t.classList.contains('plan-pro')); });
         const plan = !paid ? 'Gratuit' : g.formule === 'createur' ? 'Créateur' : 'Statistiques';
+        if (foot.dataset.anon) return;
         const who = foot.querySelector('.pn-who');
         who.querySelector('b').textContent = (g && g.nom) || 'Mon compte';
         const sm = who.querySelector('small');
