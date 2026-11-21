@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813">
+<title>TikTok Pulse — Automatisation</title>
+<link rel="stylesheet" href="premium.css">
+<style>
+.main{padding-block:40px 30px;max-width:980px}
+.title{font:700 clamp(30px,4.2vw,48px)/1.05 'Space Grotesk';letter-spacing:-.06em;margin:16px 0 10px}
+.title em{font-style:normal;color:var(--cyan)}
+.lead{color:var(--muted);line-height:1.7;margin:0 0 26px;max-width:660px}
+.soon{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid #f7c56a77;background:#f7c56a12;color:var(--gold);font:800 11px 'Space Grotesk';letter-spacing:.1em}
+.steps{display:grid;gap:12px;margin-top:8px}
+.step{display:flex;gap:16px;align-items:flex-start;padding:20px 22px}
+.step .n{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:10px;border:1px solid #3bf7ef66;background:#0b2033;color:var(--cyan);font:700 16px 'Space Grotesk'}
+.step h2{font:700 17px 'Space Grotesk';margin:2px 0 4px}
+.step p{color:var(--muted);font-size:14px;line-height:1.6;margin:0}
+.step .who{margin-top:8px;color:#9fc3d4;font-size:12px;font-weight:600}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:24px;padding:22px 24px}
+.cta p{flex:1;min-width:220px;margin:0;color:#d7eef7;line-height:1.6}
+.cta .btn{background:var(--cyan);border-color:var(--cyan);color:#041018;min-height:46px;padding:0 22px}
+.fine{color:var(--muted2);font-size:12px;line-height:1.6;margin-top:16px}
+.lock{padding:44px 36px;text-align:center;max-width:720px;margin:10px auto 0}
+.lock .ic{font-size:34px;color:var(--gold);width:64px;height:64px;margin:auto;border-radius:50%;display:grid!important;place-items:center;background:#f7c56a12;border:1px solid #f7c56a55}
+.lock h2{font:700 clamp(24px,3vw,34px)/1.1 'Space Grotesk';letter-spacing:-.04em;margin:14px 0 10px}
+.lock p{color:#8eafc2;line-height:1.65;margin:0 auto 22px;max-width:520px}
+.lock ul{list-style:none;padding:0;margin:0 auto 26px;max-width:440px;text-align:left;display:grid;gap:10px}
+.lock li{color:#d7eef7;font-size:14px;padding-left:28px;position:relative}
+.lock li::before{content:'';position:absolute;left:6px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.lock .why{text-align:left;border-top:1px solid #2c587055;margin:4px auto 26px;padding-top:22px;max-width:560px}
+.lock .why p{margin:8px 0 14px;max-width:none;font-size:14px}
+.lock .why ul{max-width:none;margin:0}
+.lock .why li{font-size:13px;color:#a9c8d6;line-height:1.55}
+.lock .why li b{color:#e6f6fb}
+.lock .gbox{display:grid;justify-items:center;gap:10px;margin:0 auto 22px}
+.lock .gbtn{min-height:44px}
+.lock .gnote{font-size:12px;color:#93b2c4;margin:0}
+.lock .gdone{border:1px solid #3ee0d066;background:#3ee0d00d;color:#cdf7f2;border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.6;margin:0 auto 22px;max-width:520px}
+.lock .gdone b{color:#fff}
+.lock .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.lock .soon{border:1px solid #f5c84c66;color:var(--gold);border-radius:4px;padding:11px 18px;font:700 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase}
+.headx p{color:var(--muted);margin:6px 0 0}
+</style><script src="pulse-ui.js"></script></head><body data-nav="automatisation">
+<main class="shell main">
+ <div class="eyebrow">Automatisation</div>
+ <h1 class="title">De tes stats à ta prochaine vidéo, <em>automatiquement.</em></h1>
+ <p class="lead">Idées, scripts et montage automatique, à partir de ce qui marche vraiment sur ton compte.</p>
+
+ <section class="surface lock hidden" id="lock">
+  <h2>L'automatisation est réservée à la formule Créateur</h2>
+  <p>Le suivi en direct reste gratuit et l'analyse complète est dans le premium. Avec la formule Créateur, tu automatises aussi la création de tes vidéos.</p>
+  <ul>
+   <li>Idées de vidéos tirées de tes vraies stats</li>
+   <li>Scripts et scènes écrits dans ton style, par ton IA</li>
+   <li>Montage automatique : ordre des scènes, sous-titres, musique, format vertical</li>
+   <li>Vidéo prête à télécharger ou envoyée dans tes brouillons TikTok</li>
+   <li>Tout le premium, et jusqu'à 5 comptes reliés</li>
+  </ul>
+  <div class="why">
+   <div class="micro">Pourquoi un compte Google pour la formule Créateur ?</div>
+   <p>Le suivi en direct marche avec ta connexion TikTok. Pour un abonnement, on te demandera en plus de te connecter avec Google, une seule fois :</p>
+   <ul>
+    <li><b>Ton abonnement t'appartient :</b> il reste actif même si tu changes ou perds ton compte TikTok.</li>
+    <li><b>Plusieurs comptes, un seul abonnement :</b> tu relies tous tes comptes (TikTok, YouTube) au même abonnement.</li>
+    <li><b>Factures et alertes par e-mail :</b> TikTok ne nous transmet pas ton adresse e-mail, Google oui (avec ton accord).</li>
+   </ul>
+  </div>
+  <div class="gbox" id="gBox">
+   <div id="gBtn" class="gbtn"></div>
+   <p class="gnote" id="gNote">Étape 1 : connecte ton compte Google. Le paiement de la formule Créateur arrive bientôt.</p>
+  </div>
+  <div class="gdone hidden" id="gDone"></div>
+  <div class="btns"><a class="btn" href="/tarifs.html" data-icon="star">Voir les formules</a></div>
+  <p class="gnote" style="margin-top:16px">L'automatisation utilisera tes propres abonnements d'IA (par exemple Claude ou ChatGPT), qui ne sont pas inclus.</p>
+ </section>
+
+ <div id="content" class="hidden">
+ <span class="soon">BIENTÔT · FORMULE CRÉATEUR</span>
+ <div class="steps" style="margin-top:22px">
+  <section class="surface step"><span class="n">1</span><div><h2>L’idée, à partir de tes vraies stats</h2><p>Tes vidéos qui décollent, tes meilleures heures et ce qui plaît à ton public servent de point de départ.</p></div></section>
+  <section class="surface step"><span class="n">2</span><div><h2>Le script et les scènes</h2><p>Ton IA écrit le script dans ton style, avec le hook, les dialogues et une description pour chaque scène.</p></div></section>
+  <section class="surface step"><span class="n">3</span><div><h2>Les images, les clips et la voix</h2><p>Tu les crées avec tes outils (ou tu tournes toi-même), puis tu les déposes scène par scène.</p></div></section>
+  <section class="surface step"><span class="n">4</span><div><h2>Le montage automatique</h2><p>Ordre des scènes, sous-titres, musique, format vertical : la vidéo est assemblée directement dans ton navigateur.</p></div></section>
+  <section class="surface step"><span class="n">5</span><div><h2>Prête dans tes brouillons</h2><p>La vidéo est téléchargée, ou envoyée dans tes brouillons TikTok. Tu la vérifies et tu la publies toi-même, à l’heure conseillée selon ton public.</p></div></section>
+ </div>
+
+ <p class="fine">L’automatisation utilisera tes propres abonnements d’IA (par exemple Claude ou ChatGPT), qui ne sont pas inclus dans TikTok Pulse.</p>
+ </div>
+ <div id="error" class="error" role="alert"></div>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const error = m => { $('error').textContent = m || ''; $('error').classList.toggle('show', !!m); };
+async function api(path) {
+  const r = await fetch(path, { cache: 'no-store', credentials: 'same-origin' });
+  if (r.status === 401) { location.replace('/connexion.html?erreur=session'); throw new Error('Session expirée'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erreur ' + r.status);
+  return d;
+}
+
+async function load() {
+  let me = null;
+  try { me = await api('/auth/google/me'); } catch (e) { error(e.message); }
+  const g = me && me.google;
+  const createur = !!(g && g.premium && g.formule === 'createur');
+  $('content').classList.toggle('hidden', !createur);
+  $('lock').classList.toggle('hidden', createur);
+  if (createur) return;
+
+  if (g) {
+    $('gBox').classList.add('hidden');
+    const d = $('gDone');
+    d.innerHTML = '';
+    d.append('✓ Compte Google relié : ');
+    const b = document.createElement('b'); b.textContent = g.email || ''; d.append(b);
+    d.append(document.createElement('br'), "Ton compte est prêt pour la formule Créateur. Le paiement arrive bientôt ; dès qu'il est activé, l'automatisation se débloque ici.");
+    d.classList.remove('hidden');
+    return;
+  }
+
+  let clientId;
+  try { clientId = (await api('/auth/google/config')).clientId; } catch { return; }
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async r => {
+        $('gNote').textContent = 'Connexion en cours…';
+        try {
+          const res = await fetch('/auth/google', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: r.credential }) });
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(out.error || 'Erreur ' + res.status);
+          if (out.warning) error(out.warning);
+          load();
+        } catch (e) { $('gNote').textContent = 'Connexion Google impossible : ' + e.message; }
+      }
+    });
+    google.accounts.id.renderButton($('gBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', locale: 'fr' });
+  };
+  document.head.append(s);
+}
+load();
+</script>
+</body></html>

@@ -233,7 +233,7 @@ module.exports = function createYouTube(d) {
     }
 
     // ---------- Routes OAuth ----------
-    function mountRoutes(app, { maxFor, countAll }) {
+    function mountRoutes(app, { maxFor, limitMessage, countAll }) {
         // Départ vers Google (consentement YouTube, lecture seule).
         app.get("/auth/youtube", (req, res) => {
             const c = d.config(req);
@@ -301,10 +301,9 @@ module.exports = function createYouTube(d) {
                     return back("Cette chaîne YouTube est déjà reliée à un autre compte TikTok Pulse.");
                 }
                 if (!existing.exists) {
-                    const premium = account.exists && account.get("premium") === true;
-                    if ((await countAll(store, google.uid)) >= maxFor(premium)) {
+                    if ((await countAll(store, google.uid)) >= maxFor(account)) {
                         revoke(t.refresh_token);
-                        return back(premium ? "Limite de comptes reliés atteinte." : "Passe au premium pour relier plusieurs comptes.");
+                        return back(limitMessage(account));
                     }
                 }
 

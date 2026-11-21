@@ -514,7 +514,8 @@ async function loadVideos() {
     if (!selected) {
       // Revenir sur la vidéo suivie la dernière fois (pour ce compte), sinon la dernière publiée.
       await meReady;
-      const saved = readTracked();
+      let latest = false; try { latest = localStorage.getItem('tp_open') === 'latest'; } catch { /* ignore */ }
+      const saved = latest ? null : readTracked();
       let again = saved ? data.videos.find(v => v.id === saved) : null;
       if (saved && !again) { try { again = await api('/api/me/video/' + encodeURIComponent(saved)); } catch { /* vidéo supprimée ou privée */ } }
       if (again && again.id) select(again);

@@ -59,7 +59,7 @@
   </article>
  </section>
 
- <a class="back hidden" id="back" href="/mon-compte.html" data-icon="back">Retour à mon compte</a>
+ <a class="back hidden" id="back" href="/parametres.html" data-icon="back">Retour aux paramètres</a>
 </main>
 <footer class="shell footer"><span>© TikTok Pulse</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 
@@ -98,9 +98,10 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   who.classList.remove('hidden');
 
   const plan = $('plan');
+  const planName = me.google.formule === 'createur' ? 'Créateur' : 'Premium';
   plan.innerHTML = me.google.premium
-    ? PulseUI.icon('star') + ` Premium : ${me.count} / ${me.max} comptes reliés`
-    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié · plusieurs comptes avec le premium`;
+    ? PulseUI.icon('star') + ` ${planName} : ${me.count} / ${me.max} comptes reliés`
+    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié · 2 comptes avec le premium, 5 avec Créateur`;
   plan.classList.toggle('prem', me.google.premium);
   plan.classList.remove('hidden');
 
@@ -110,7 +111,7 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   }
 
   if (me.count >= me.max) {
-    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.premium ? ' Limite de comptes atteinte' : ' Premium requis pour un 2ᵉ compte') + '</div>';
+    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.formule === 'createur' ? ' Limite de 5 comptes atteinte' : me.google.premium ? ' Formule Créateur requise pour un 3ᵉ compte' : ' Premium requis pour un 2ᵉ compte') + '</div>';
     $('tiktokAction').innerHTML = full;
     if (me.youtube) $('youtubeAction').innerHTML = full;
   }

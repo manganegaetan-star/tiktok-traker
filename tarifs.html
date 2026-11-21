@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#040813">
+<title>TikTok Pulse — Tarifs</title>
+<meta name="description" content="Les formules TikTok Pulse : Gratuit, Premium et Créateur.">
+<link rel="stylesheet" href="premium.css">
+<style>
+.main{padding-block:40px 30px;max-width:1080px}
+.title{font:700 clamp(30px,4.2vw,48px)/1.05 'Space Grotesk';letter-spacing:-.06em;margin:16px 0 10px}
+.lead{color:var(--muted);line-height:1.7;margin:0 0 28px;max-width:640px}
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.plan{position:relative;display:flex;flex-direction:column;padding:26px 24px}
+.plan.best{border-color:#3bf7ef88;box-shadow:0 0 0 1px #3bf7ef44,0 18px 50px #3bf7ef14}
+.plan .flag{position:absolute;top:-12px;left:24px;padding:5px 10px;border-radius:999px;background:var(--cyan);color:#041018;font:800 11px 'Space Grotesk';letter-spacing:.08em}
+.plan h2{font:700 20px 'Space Grotesk';margin:4px 0 6px}
+.plan .for{color:var(--muted);font-size:13px;line-height:1.5;min-height:40px;margin:0}
+.price{display:flex;align-items:baseline;gap:6px;margin:18px 0 4px}
+.price b{font:700 40px 'Space Grotesk';letter-spacing:-.04em}
+.price span{color:var(--muted);font-size:14px}
+.plan ul{list-style:none;padding:0;margin:16px 0 22px;display:grid;gap:10px;font-size:14px;color:#d7eef7;flex:1}
+.plan li{display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+.plan li .ico{width:17px;height:17px;flex:0 0 auto;margin-top:2px;color:var(--cyan)}
+.plan li.plus{color:#fff;font-weight:600}
+.plan .btn{width:100%;min-height:46px}
+.plan .btn.main-cta{background:var(--cyan);border-color:var(--cyan);color:#041018}
+.plan .btn[aria-disabled=true]{opacity:.55;cursor:default}
+.current{display:inline-flex;margin-left:8px;padding:3px 8px;border-radius:999px;border:1px solid #3bf7ef66;color:var(--cyan);font:700 10px 'Space Grotesk';letter-spacing:.08em;vertical-align:3px}
+.note{margin-top:22px;padding:16px 18px;border:1px solid #f7c56a55;border-radius:10px;background:#f7c56a0a;color:#f1dcae;font-size:13px;line-height:1.65}
+.faq{margin-top:28px;display:grid;gap:10px}
+.faq details{padding:14px 18px}
+.faq summary{cursor:pointer;font:700 15px 'Space Grotesk'}
+.faq p{color:var(--muted);font-size:14px;line-height:1.65;margin:10px 0 0}
+@media(max-width:900px){.plans{grid-template-columns:1fr}.plan .for{min-height:0}}
+</style><script src="pulse-ui.js"></script></head><body data-nav="tarifs">
+<main class="shell main">
+ <div class="eyebrow">Tarifs</div>
+ <h1 class="title">Une formule pour chaque créateur.</h1>
+ <p class="lead">Commence gratuitement avec le suivi en direct. Passe au premium pour suivre ton compte dans le temps, puis à Créateur pour automatiser tes vidéos.</p>
+
+ <div class="plans">
+  <section class="surface plan" data-plan="gratuit">
+   <h2>Gratuit</h2>
+   <p class="for">Pour suivre une vidéo en direct.</p>
+   <div class="price"><b>0 €</b><span>pour toujours</span></div>
+   <ul>
+    <li><span data-icon="check"></span>Statistiques en direct</li>
+    <li><span data-icon="check"></span>Vues, likes, commentaires, partages</li>
+    <li><span data-icon="check"></span>1 compte relié (TikTok ou YouTube)</li>
+   </ul>
+   <a class="btn" href="/">Commencer</a>
+  </section>
+
+  <section class="surface plan" data-plan="premium">
+   <h2>Premium</h2>
+   <p class="for">Pour comprendre ce qui marche sur ton compte.</p>
+   <div class="price"><b>4,99 €</b><span>/ mois</span></div>
+   <ul>
+    <li><span data-icon="check"></span>Tout le gratuit</li>
+    <li class="plus"><span data-icon="check"></span>Suivi en continu de tes chiffres</li>
+    <li class="plus"><span data-icon="check"></span>Analyse complète sur 24 h et 7 jours</li>
+    <li class="plus"><span data-icon="check"></span>Tes vraies heures et jours de vues, conseils</li>
+    <li class="plus"><span data-icon="check"></span>2 comptes reliés</li>
+   </ul>
+   <span class="btn" aria-disabled="true">Bientôt disponible</span>
+  </section>
+
+  <section class="surface plan best" data-plan="createur">
+   <span class="flag">LE PLUS COMPLET</span>
+   <h2>Créateur</h2>
+   <p class="for">Pour créer et publier plus, plus vite.</p>
+   <div class="price"><b>7,99 €</b><span>/ mois</span></div>
+   <ul>
+    <li><span data-icon="check"></span>Tout le premium</li>
+    <li class="plus"><span data-icon="check"></span>Automatisation des vidéos</li>
+    <li class="plus"><span data-icon="check"></span>Scripts écrits à partir de tes vraies stats</li>
+    <li class="plus"><span data-icon="check"></span>Montage automatique, prête dans tes brouillons</li>
+    <li class="plus"><span data-icon="check"></span>5 comptes reliés</li>
+   </ul>
+   <span class="btn main-cta" aria-disabled="true">Bientôt disponible</span>
+  </section>
+ </div>
+
+ <p class="note">Formule Créateur : l’automatisation utilise <strong>tes propres abonnements d’IA</strong> (par exemple Claude ou ChatGPT). Ils ne sont pas inclus dans TikTok Pulse.</p>
+
+ <div class="faq">
+  <details class="surface"><summary>Pourquoi un compte Google pour les formules payantes ?</summary><p>Ton abonnement est rattaché à ton compte Google : il te suit même si tu changes de compte TikTok, et il permet de relier plusieurs comptes (TikTok, YouTube) à un seul abonnement.</p></details>
+  <details class="surface"><summary>Je peux résilier quand je veux ?</summary><p>Oui, sans engagement. Ton abonnement reste actif jusqu’à la fin de la période payée.</p></details>
+  <details class="surface"><summary>Que deviennent mes données si j’arrête ?</summary><p>Quand le premium prend fin, l’historique de tes statistiques est supprimé. Le suivi en direct gratuit reste disponible.</p></details>
+ </div>
+</main>
+<script>
+// Met en avant la formule actuelle de l'utilisateur.
+fetch('/auth/google/me', { cache: 'no-store', credentials: 'same-origin' })
+  .then(r => (r.ok ? r.json() : null))
+  .then(d => {
+    const g = d && d.google;
+    const plan = !g || !g.premium ? 'gratuit' : g.formule === 'createur' ? 'createur' : 'premium';
+    const card = document.querySelector('.plan[data-plan="' + plan + '"]');
+    if (!card) return;
+    const tag = document.createElement('span'); tag.className = 'current'; tag.textContent = 'TA FORMULE';
+    card.querySelector('h2').append(tag);
+  })
+  .catch(() => {});
+</script>
+</body></html>

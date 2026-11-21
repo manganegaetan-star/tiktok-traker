@@ -30,6 +30,9 @@
 .btn.danger:hover{border-color:#ff4c9a;color:#fff}
 .btn[aria-disabled=true]{opacity:.5;pointer-events:none}
 .gbtn{min-height:44px;margin-top:6px}
+.headrow{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.headrow .title{margin-bottom:26px}
+.headrow .btn{margin-bottom:26px}
 .note{color:var(--muted2);font-size:12px;line-height:1.6;margin-top:10px}
 @media(max-width:560px){.card{padding:20px 18px}.acc{flex-wrap:wrap;gap:10px}.acc .who{flex:1 1 150px}.acc > span:not(.now){display:none}.acc .now,.acc .btn{margin-left:auto}}
 .tipwrap{position:relative;display:inline-flex}
@@ -46,7 +49,7 @@
 </style><script src="pulse-ui.js"></script></head><body data-nav="compte">
 <main class="shell main">
  <div class="eyebrow">Mon compte</div>
- <h1 class="title">Compte et abonnement</h1>
+ <div class="headrow"><h1 class="title">Compte et abonnement</h1><a class="btn" href="/parametres.html" data-icon="gear">Paramètres</a></div>
  <div class="ok hidden" id="info" role="status"></div>
  <div id="error" class="error" role="alert"></div>
 
@@ -55,17 +58,20 @@
   <div id="googleBody"><p class="sub skel" style="height:46px"></p></div>
  </section>
 
- <section class="surface card">
-  <div class="micro">Comptes reliés</div>
-  <h2>Mes comptes</h2>
-  <p class="sub" id="accSub">Les comptes que tu suis avec TikTok Pulse.</p>
-  <div class="list" id="accList"></div>
-  <div class="row"><a class="btn" id="addBtn" href="/relier.html" data-icon="plus">Ajouter un compte</a></div>
+ <section class="surface card" id="billing">
+  <div class="micro">Paiement</div>
+  <h2>Carte bancaire et factures</h2>
+  <p class="sub" data-state>Aucune carte enregistrée.</p>
+  <div class="row">
+   <span class="btn" aria-disabled="true" data-icon="card">Modifier ma carte</span>
+   <span class="btn" aria-disabled="true" data-icon="file">Mes factures</span>
+  </div>
+  <p class="note">Disponible avec le paiement en ligne, bientôt.</p>
  </section>
 
  <section class="surface card">
   <div class="micro">Session</div>
-  <h2>Déconnexion et données</h2>
+  <h2>Déconnexion et suppression</h2>
   <p class="sub">Se déconnecter ferme ta session sur cet appareil. Supprimer ton compte efface toutes tes données TikTok Pulse (compte Google, comptes reliés, infos TikTok enregistrées) et te déconnecte.</p>
   <div class="row">
    <button class="btn" id="logout" type="button" data-icon="logout">Se déconnecter</button>
@@ -116,8 +122,8 @@ async function render() {
 
   // ----- Compte Google / abonnement -----
   const gb = $('googleBody');
-  gb.textContent = '';
-  if (data.google) {
+  if (gb) gb.textContent = '';
+  if (!gb) { /* page Paramètres */ } else if (data.google) {
     const g = data.google;
     const wrap = document.createElement('div'); wrap.className = 'gprofile';
     const txt = document.createElement('div'); txt.className = 'grow';
@@ -126,17 +132,18 @@ async function render() {
     txt.append(n, e);
     const badge = document.createElement('span');
     badge.className = 'badge' + (g.premium ? ' prem' : '');
-    badge.innerHTML = g.premium ? PulseUI.icon('star') + ' PREMIUM' : 'GRATUIT';
+    badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR' : ' PREMIUM') : 'GRATUIT';
     wrap.append(img(g.photo), txt, badge);
     gb.append(wrap);
     const note = document.createElement('p'); note.className = 'note';
     note.textContent = g.premium
-      ? `Premium actif : analyse détaillée, filtre 7 jours et jusqu'à ${data.max} comptes reliés.`
+      ? `${g.formule === 'createur' ? 'Formule Créateur active' : 'Premium actif'} : suivi en continu, analyse détaillée et jusqu'à ${data.max} comptes reliés.`
       : 'Compte gratuit : suivi en direct d\'1 compte. Le premium (analyse détaillée, plusieurs comptes) arrive bientôt.';
     const sub = document.createElement('button'); sub.type = 'button'; sub.className = 'btn' + (g.premium ? ' gold' : ''); sub.style.marginTop = '12px';
     sub.innerHTML = PulseUI.icon('star') + ' Gérer mon abonnement';
     sub.addEventListener('click', () => openSub(g, data.max));
     gb.append(note, sub);
+    renderBilling(g);
     $('deleteWrap').classList.toggle('locked', !!g.premium);
     $('delete').setAttribute('aria-disabled', String(!!g.premium));
     $('deleteTip').textContent = g.premium ? "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." : '';
@@ -152,6 +159,7 @@ async function render() {
 
   // ----- Comptes reliés -----
   const list = $('accList');
+  if (!list) return;
   list.textContent = '';
   const accounts = data.google ? data.comptes : [{ platform: me.platform || 'tiktok', id: '', pseudo: me.username, nom: me.nickname, avatar: me.avatar, actif: true }];
   accounts.forEach(a => {
@@ -198,7 +206,7 @@ async function render() {
     $('accSub').textContent = 'Connecte Google pour relier d\'autres comptes (TikTok, YouTube, et bientôt Facebook Reels).';
     add.setAttribute('aria-disabled', 'true');
   } else if (data.comptes.length >= data.max) {
-    $('accSub').textContent = data.google.premium ? `Limite de ${data.max} comptes atteinte.` : 'Compte gratuit : 1 compte relié. Le premium permet d\'en relier plusieurs.';
+    $('accSub').textContent = data.google.formule === 'createur' ? `Limite de ${data.max} comptes atteinte.` : data.google.premium ? `Premium : ${data.max} comptes reliés au maximum. La formule Créateur permet d’en relier 5.` : 'Compte gratuit : 1 compte relié. Le premium permet d’en relier 2, la formule Créateur 5.';
     add.setAttribute('aria-disabled', 'true');
   } else {
     $('accSub').textContent = `${data.comptes.length} / ${data.max} compte${data.max > 1 ? 's' : ''} relié${data.comptes.length > 1 ? 's' : ''}.`;
@@ -206,10 +214,10 @@ async function render() {
   }
 }
 
-$('logout').addEventListener('click', async () => {
+$('logout')?.addEventListener('click', async () => {
   try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { location.replace('/connexion.html'); }
 });
-$('delete').addEventListener('click', async () => {
+$('delete')?.addEventListener('click', async () => {
   // Premium actif : bouton grisé, on affiche juste l'explication (utile au toucher sur téléphone).
   if ($('delete').getAttribute('aria-disabled') === 'true') {
     $('deleteWrap').classList.add('show');
@@ -238,23 +246,32 @@ async function setupGoogle() {
   document.head.append(s);
 }
 
+// Moyen de paiement et factures (arrivent avec le paiement en ligne).
+function renderBilling(g) {
+  const el = $('billing');
+  if (!el) return;
+  el.querySelector('[data-state]').textContent = g.premium
+    ? 'Ton premium est activé manuellement pour l’instant : aucune carte enregistrée.'
+    : 'Aucune carte enregistrée.';
+}
+
 function openSub(g, max) {
   const b = $('subBody');
   b.innerHTML = '';
   const badge = document.createElement('span'); badge.className = 'badge' + (g.premium ? ' prem' : '');
-  badge.innerHTML = g.premium ? PulseUI.icon('star') + ' PREMIUM ACTIF' : 'FORMULE GRATUITE';
+  badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR ACTIF' : ' PREMIUM ACTIF') : 'FORMULE GRATUITE';
   const ul = document.createElement('ul');
   (g.premium
-    ? ['Analyse détaillée de tes statistiques', 'Filtre sur les 7 derniers jours', `Jusqu'à ${max} comptes reliés et changement de compte en un clic`]
+    ? ['Suivi en continu et analyse détaillée de tes statistiques', 'Comparaison sur 24 h et 7 jours', `Jusqu'à ${max} comptes reliés et changement de compte en un clic`].concat(g.formule === 'createur' ? ['Automatisation des vidéos (bientôt)'] : [])
     : ['Suivi en direct d’1 compte', 'Vues exactes, favoris, animations en direct']).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); });
   const p = document.createElement('p');
   p.textContent = g.premium
     ? 'Ton premium est activé manuellement pour l’instant. Le paiement en ligne arrive bientôt : tu pourras alors changer de moyen de paiement, voir tes factures et résilier d’ici.'
-    : 'Le premium (analyse détaillée, plusieurs comptes) arrive bientôt. Tu pourras t’abonner et gérer ton abonnement ici.';
+    : 'Premium (4,99 €/mois : suivi en continu, analyse, 2 comptes) et Créateur (7,99 €/mois : tout le premium, automatisation des vidéos, 5 comptes) arrivent bientôt. Tu pourras t’abonner et gérer ton abonnement ici.';
   b.append(badge, ul, p);
   $('subDlg').showModal();
 }
-$('subClose').addEventListener('click', () => $('subDlg').close());
+$('subClose')?.addEventListener('click', () => $('subDlg').close());
 
 render();
 </script>

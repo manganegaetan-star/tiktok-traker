@@ -1,7 +1,7 @@
 // =====================================================
 // TIKTOK PULSE — éléments d'interface communs
 // - Icônes SVG (un seul jeu, trait fin) : <span data-icon="chart"></span>
-// - Barre d'onglets Direct / Analyse / Compte : <body data-nav="direct">
+// - Menu du site (latéral sur ordinateur, barre du bas sur téléphone) : <body data-nav="direct">
 // =====================================================
 (function () {
   'use strict';
@@ -35,7 +35,11 @@
     logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
     refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>',
     back: '<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>',
-    plus: '<path d="M12 5v14M5 12h14"/>'
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+    file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+    film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4M3 12h18"/>'
   };
 
 
@@ -121,28 +125,108 @@
     el.append(btn, menu);
   }
 
+  // Menu du site. Pour ajouter une page : une ligne dans MENU.
+  //   key : valeur de <body data-nav="…"> ;
+  //   plan : vignette de la formule (gratuit, pro, createur) ;
+  //   mobile: false : absent de la barre du bas ; mobileAt : position dans la barre du bas.
+  const PLANS = { gratuit: 'Gratuit', pro: 'Pro', createur: 'Créateur' };
+  const MENU = [
+    { title: 'Mes stats', items: [
+      { key: 'direct', href: '/', icon: 'live', label: 'En direct', short: 'Direct', live: true, plan: 'gratuit' },
+      { key: 'analyse', href: '/analyse.html', icon: 'chart', label: 'Analyse complète', short: 'Analyse', plan: 'pro' }
+    ] },
+    { title: 'Mes vidéos', items: [
+      { key: 'automatisation', href: '/automatisation.html', icon: 'film', label: 'Automatisation', short: 'Auto', plan: 'createur' }
+    ] },
+    { title: 'Mon compte', items: [
+      { key: 'tarifs', href: '/tarifs.html', icon: 'star', label: 'Abonnement', short: 'Tarifs', mobileAt: 3 },
+      { key: 'parametres', href: '/parametres.html', icon: 'gear', label: 'Paramètres', mobile: false },
+      { key: 'compte', href: '/mon-compte.html', icon: 'user', label: 'Mon compte', short: 'Compte', also: ['parametres'] }
+    ] }
+  ];
+
+  function link(it, current, compact) {
+    const a = document.createElement(it.soon ? 'span' : 'a');
+    a.className = 'pn-item' + (it.soon ? ' soon' : '');
+    if (!it.soon) a.href = it.href;
+    if (it.key === current || (compact && (it.also || []).includes(current))) a.setAttribute('aria-current', 'page');
+    if (it.soon) a.setAttribute('aria-disabled', 'true');
+    a.dataset.key = it.key;
+    a.innerHTML = '<span class="pn-ic">' + icon(it.icon) + (it.live && compact ? '<i class="pn-live"></i>' : '') + '</span><span class="pn-label">' + (compact && it.short ? it.short : it.label) + (it.live && !compact ? '<i class="pn-live"></i>' : '') + '</span>'
+      + (it.plan && !compact ? '<span class="pn-tag plan-' + it.plan + '">' + PLANS[it.plan] + '</span>' : '')
+      + (it.plan && it.plan !== 'gratuit' && compact ? '<span class="pn-tag pro plan-' + it.plan + '" hidden>' + PLANS[it.plan].toUpperCase() + '</span>' : '');
+    return a;
+  }
+
+  async function logout() {
+    if (!confirm('Te déconnecter de TikTok Pulse sur cet appareil ?')) return;
+    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch { /* ignore */ }
+    try { sessionStorage.clear(); } catch { /* ignore */ }
+    location.replace('/connexion.html');
+  }
+
   function nav() {
     const current = document.body.dataset.nav;
-    if (!current || document.querySelector('.pnav')) return;
-    const tabs = [
-      ['direct', '/', 'live', 'Direct'],
-      ['analyse', '/analyse.html', 'chart', 'Analyse'],
-      ['compte', '/mon-compte.html', 'user', 'Compte']
-    ];
-    const el = document.createElement('nav');
-    el.className = 'pnav';
-    el.setAttribute('aria-label', 'Navigation');
-    el.innerHTML = tabs.map(([key, href, ic, label]) =>
-      '<a href="' + href + '"' + (key === current ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + label + '</span></a>'
-    ).join('');
-    document.body.prepend(el);
+    if (!current || document.querySelector('.pside')) return;
+
+    // Ordinateur : menu latéral.
+    const side = document.createElement('nav');
+    side.className = 'pside';
+    side.setAttribute('aria-label', 'Menu');
+    side.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a>';
+    MENU.forEach(g => {
+      const sec = document.createElement('div');
+      sec.className = 'pside-group';
+      sec.innerHTML = '<div class="pside-title">' + g.title + '</div>';
+      g.items.forEach(it => sec.append(link(it, current)));
+      side.append(sec);
+    });
+    const foot = document.createElement('div');
+    foot.className = 'pside-foot';
+    foot.innerHTML = '<a class="pside-account" href="/mon-compte.html"><span class="pn-ava">' + icon('user') + '</span><span class="pn-who"><b>Mon compte</b><small>Gratuit</small></span></a>'
+      + '<button class="pside-out" type="button" title="Me déconnecter" aria-label="Me déconnecter">' + icon('logout') + '</button>';
+    foot.querySelector('.pside-out').addEventListener('click', logout);
+    side.append(foot);
+
+    // Téléphone : barre du bas (pages disponibles + Compte).
+    const bar = document.createElement('nav');
+    bar.className = 'pbar';
+    bar.setAttribute('aria-label', 'Navigation');
+    const all = MENU.flatMap(g => g.items).filter(it => it.mobile !== false);
+    const mob = all.filter(it => it.mobileAt == null);
+    all.filter(it => it.mobileAt != null).forEach(it => mob.splice(it.mobileAt, 0, it));
+    mob.forEach(it => bar.append(link(it, current, true)));
+
+    document.body.prepend(side, bar);
     document.body.classList.add('has-pnav');
 
-    // Pages des onglets préchargées au survol / toucher : le changement est quasi instantané.
+    // Formule et nom du compte Google (badge PRO, pied du menu).
+    fetch('/auth/google/me', { cache: 'no-store', credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const g = d && d.google;
+        const paid = !!(g && g.premium);
+        const has = !paid ? 'gratuit' : g.formule === 'createur' ? 'createur' : 'pro';
+        document.querySelectorAll('.pn-tag.pro').forEach(t => { t.hidden = has === 'createur' || (has === 'pro' && t.classList.contains('plan-pro')); });
+        const plan = !paid ? 'Gratuit' : g.formule === 'createur' ? 'Créateur' : 'Premium';
+        const who = foot.querySelector('.pn-who');
+        who.querySelector('b').textContent = (g && g.nom) || 'Mon compte';
+        const sm = who.querySelector('small');
+        sm.textContent = plan;
+        sm.classList.toggle('paid', paid);
+        if (g && typeof g.photo === 'string' && /^https:\/\//i.test(g.photo)) {
+          const img = document.createElement('img');
+          img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = g.photo;
+          const ava = foot.querySelector('.pn-ava'); ava.textContent = ''; ava.append(img);
+        }
+      })
+      .catch(() => { document.querySelectorAll('.pn-tag.pro').forEach(t => { t.hidden = false; }); });
+
+    // Pages du menu préchargées au survol / toucher : le changement est quasi instantané.
     if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
       const rules = document.createElement('script');
       rules.type = 'speculationrules';
-      rules.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: ['/', '/analyse.html', '/mon-compte.html'], eagerness: 'moderate' }] });
+      rules.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: ['/', '/analyse.html', '/automatisation.html', '/tarifs.html', '/mon-compte.html', '/parametres.html'], eagerness: 'moderate' }] });
       document.head.append(rules);
     }
   }

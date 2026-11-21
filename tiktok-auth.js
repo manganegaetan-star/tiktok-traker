@@ -272,8 +272,26 @@ async function premiumStatus(openId, username) {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID?.trim() ||
     "792698279689-06tnp0anb1f27d6ii1761p21bhrmm5hq.apps.googleusercontent.com";
 const GOOGLE_COOKIE = "tp_google";
-const MAX_TIKTOK_FREE = 1;
-const MAX_TIKTOK_PREMIUM = 5;
+// Formules : gratuit (1 compte relié), premium (2), créateur (5).
+// Firestore comptes/{googleId} : premium = true pour toute formule payante,
+// formule = "premium" | "createur" (absent = premium).
+const MAX_COMPTES = { gratuit: 1, premium: 2, createur: 5 };
+
+function planOf(account) {
+    if (!account?.exists || account.get("premium") !== true) return "gratuit";
+    return account.get("formule") === "createur" ? "createur" : "premium";
+}
+
+function maxFor(account) {
+    return MAX_COMPTES[planOf(account)];
+}
+
+function limitMessage(account) {
+    const plan = planOf(account);
+    if (plan === "gratuit") return "Passe au premium pour relier un 2ᵉ compte.";
+    if (plan === "premium") return `Le premium permet ${MAX_COMPTES.premium} comptes reliés. Passe à la formule Créateur pour en relier jusqu'à ${MAX_COMPTES.createur}.`;
+    return `Tu as atteint la limite de ${MAX_COMPTES.createur} comptes reliés.`;
+}
 
 let googleVerifier;
 
@@ -317,14 +335,7 @@ async function linkTikTok(store, uid, session, profile, secret) {
         }
 
         if (!existing.exists) {
-            const premium = account.exists && account.get("premium") === true;
-            const max = premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE;
-
-            if (all.size + yall.size >= max) {
-                return premium
-                    ? `Tu as atteint la limite de ${MAX_TIKTOK_PREMIUM} comptes TikTok.`
-                    : "Passe au premium pour relier plusieurs comptes TikTok.";
-            }
+            if (all.size + yall.size >= maxFor(account)) return limitMessage(account);
         }
 
         const old = existing.exists ? existing.data() : {};
@@ -533,7 +544,7 @@ function usernameFromShareUrl(url) {
 // Pages et routes accessibles SANS connexion. Tout le reste
 // du site exige d'être connecté avec TikTok.
 const PUBLIC_PATHS = new Set([
-    "/connexion.html", "/premium.css", "/pulse-ui.js", "/relier.html",
+    "/connexion.html", "/premium.css", "/pulse-ui.js", "/relier.html", "/tarifs.html",
     "/confidentialite.html", "/conditions.html",
     "/test"
 ]);
@@ -800,15 +811,13 @@ module.exports = function mountTikTokAuth(app) {
 
     // ---------- Compte Google (premium) + comptes reliés (TikTok, YouTube) ----------
 
-    const maxFor = premium => (premium ? MAX_TIKTOK_PREMIUM : MAX_TIKTOK_FREE);
-
     async function countAll(store, uid) {
         const ref = store.collection("comptes").doc(uid);
         const [t, y] = await Promise.all([ref.collection("tiktok").get(), ref.collection("youtube").get()]);
         return t.size + y.size;
     }
 
-    youtube.mountRoutes(app, { maxFor, countAll });
+    youtube.mountRoutes(app, { maxFor, limitMessage, countAll });
 
     // Affiche un compte relié (TikTok le plus récent, sinon YouTube) ; sinon page « Relier un compte ».
     async function activateAny(req, res, store, uid, secret) {
@@ -923,9 +932,9 @@ module.exports = function mountTikTokAuth(app) {
 
             const premium = account.get("premium") === true;
             res.json({
-                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
+                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium, formule: planOf(account) },
                 count: await countAll(store, google.uid),
-                max: maxFor(premium),
+                max: maxFor(account),
                 youtube: youtube.ready()
             });
         } catch (error) {
@@ -1017,8 +1026,8 @@ module.exports = function mountTikTokAuth(app) {
             const activeTk = req.tiktok?.openId || null;
 
             res.json({
-                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium },
-                max: maxFor(premium),
+                google: { email: account.get("email"), nom: account.get("nom"), photo: account.get("photo"), premium, formule: planOf(account) },
+                max: maxFor(account),
                 youtube: youtube.ready(),
                 comptes: [
                     ...tk.docs.map(d => ({

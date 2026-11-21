@@ -28,7 +28,7 @@ require("./tiktok-auth")(app);
 // créateur.
 const SITE_FILES = new Set([
     "/compte.html", "/analyse.html", "/connexion.html", "/premium.css", "/pulse-ui.js", "/relier.html", "/mon-compte.html",
-    "/confidentialite.html", "/conditions.html"
+    "/confidentialite.html", "/conditions.html", "/tarifs.html", "/automatisation.html", "/parametres.html"
 ]);
 
 const serveStatic = express.static(__dirname, { index: false });
