@@ -22,6 +22,15 @@
 .hist-kpis strong{display:block;font:700 22px 'Space Grotesk';margin-top:6px;font-variant-numeric:tabular-nums}
 .hist-kpis small{display:block;color:var(--muted2);font-size:12px;margin-top:3px}
 .hist-kpis .up{color:var(--green)}
+.bartip{position:fixed;z-index:40;display:none;pointer-events:none;max-width:240px;padding:9px 12px;border:1px solid #3bf7ef55;border-radius:8px;background:#071324f2;color:#d7eef7;font-size:12px;line-height:1.55;box-shadow:0 12px 30px #000a}
+.bartip b{color:#fff;font:700 13px 'Space Grotesk'}
+.bartip .gold{color:var(--gold);font-weight:700}
+.hbars i{cursor:pointer}
+.hbars i:hover{filter:brightness(1.4)}
+.bignum{font:700 34px 'Space Grotesk';letter-spacing:-.04em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.bignum.up{color:var(--green)}
+.bigsub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.hist-period{margin:18px 0 0}
 .hist-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-top:16px}
 .hist-box{padding:16px;border:1px solid #2c587050;border-radius:8px;background:#07172766;min-width:0}
 .hist-box h3{font:700 14px 'Space Grotesk';margin:0 0 4px}
@@ -275,17 +284,47 @@ function curveSvg(points) {
     <div class="hlabels"><span>${fmt(v0)} abonnés</span><span>${fmt(v1)} abonnés</span></div>`;
 }
 
+let HIST = null;
+let HPERIOD = (() => { try { return localStorage.getItem('tp_hperiod') === '7d' ? '7d' : '24h'; } catch { return '24h'; } })();
+
 const WEEK = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 const WEEK_LONG = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
-function barsHtml(values, labels, titleFn) {
+function barsHtml(values, labels, tipFn) {
   const vals = values.filter(v => v != null);
   const max = Math.max(...vals, 1);
-  const top = values.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]).slice(0, 3).map(x => x[1]);
+  const order = values.map((v, i) => [v, i]).filter(x => x[0] != null).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+  const top = order.slice(0, 3);
+  const rankTxt = i => { const r = order.indexOf(i); return r === 0 ? '🥇 Le meilleur' : r === 1 ? '🥈 2ᵉ meilleur' : r === 2 ? '🥉 3ᵉ meilleur' : ''; };
+  const attr = html => html.replace(/"/g, '&quot;');
   return values.map((v, i) => v == null
-    ? `<i class="none" title="${labels[i]} : pas encore de relevé"></i>`
-    : `<i class="${top.includes(i) ? 'top' : ''}" style="height:${Math.max(3, v / max * 100)}%" title="${titleFn(i, v)}"></i>`).join('');
+    ? `<i class="none" data-tip="${attr(`<b>${labels[i]}</b><br>Pas encore de relevé à ce moment-là.`)}"></i>`
+    : `<i class="${top.includes(i) ? 'top' : ''}" style="height:${Math.max(3, v / max * 100)}%" data-tip="${attr(`<b>${labels[i]}</b><br>${tipFn(i, v)}${rankTxt(i) ? '<br><span class=gold>' + rankTxt(i) + '</span>' : ''}`)}"></i>`).join('');
 }
+
+// Bulle d'info des barres (survol à la souris, toucher sur téléphone).
+(() => {
+  const tip = document.createElement('div');
+  tip.className = 'bartip';
+  document.body.append(tip);
+  const show = (el, x, y) => {
+    tip.innerHTML = el.dataset.tip;
+    tip.style.display = 'block';
+    const w = tip.offsetWidth, hgt = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(x - w / 2, innerWidth - w - 8)) + 'px';
+    tip.style.top = Math.max(8, y - hgt - 14) + 'px';
+  };
+  const hide = () => { tip.style.display = 'none'; };
+  document.addEventListener('mousemove', e => {
+    const el = e.target.closest?.('.hbars i[data-tip]');
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest?.('.hbars i[data-tip]');
+    if (el) { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); } else hide();
+  });
+  addEventListener('scroll', hide, { passive: true });
+})();
 
 function videoRows(list, suffix) {
   const byId = new Map((DATA?.videos || []).map(v => [String(v.id), v]));
@@ -346,28 +385,78 @@ async function loadHistory() {
   $('histUpdTxt').textContent = 'Dernière mise à jour : ' + fmtDate(h.lastUpdate) + ' · prochaine vers ' + fmtHour(h.nextUpdate);
   $('hSub').textContent = `Analyse basée sur ${fmt(h.count)} relevé${h.count > 1 ? 's' : ''} horaire${h.count > 1 ? 's' : ''} depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.`;
 
-  const kpi = (label, v, f, wait) => `<div><span>${label}</span><strong class="${v > 0 ? 'up' : ''}">${signed(v)}</strong><small>${v == null ? 'disponible après ' + wait + ' de suivi' : 'abonnés : ' + signed(f)}</small></div>`;
-  const hourBars = barsHtml(h.hours, h.hours.map((_, i) => i + ' h'), (i, v) => `${i} h–${(i + 1) % 24} h : ${fmt(v)} vues en moyenne`);
+  const hourBars = barsHtml(h.hours, h.hours.map((_, i) => `${i} h – ${(i + 1) % 24} h`),
+    (i, v) => `<b style="color:var(--cyan)">${fmt(v)} vues</b> gagnées en moyenne sur ce créneau<br>Calculé sur ${h.hoursN?.[i] || 0} relevé${(h.hoursN?.[i] || 0) > 1 ? 's' : ''}`);
   const order = [1, 2, 3, 4, 5, 6, 0];
   const wdVals = order.map(i => h.weekdays[i]);
-  const wdBars = barsHtml(wdVals, order.map(i => WEEK[i]), (k, v) => `${WEEK_LONG[order[k]]} : ${fmt(v)} vues en moyenne`);
-  const dayVals = h.days.map(d => d.gain);
-  const dayLabel = d => new Date(d + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  const dayBars = h.days.length ? barsHtml(dayVals, h.days.map(d => dayLabel(d.d)), (i, v) => `${dayLabel(h.days[i].d)} : ${fmt(v)} vues gagnées`) : '';
+  const wdBars = barsHtml(wdVals, order.map(i => WEEK_LONG[i].replace(/^./, c => c.toUpperCase())),
+    (k, v) => `<b style="color:var(--cyan)">${fmt(v)} vues</b> gagnées en moyenne ce jour-là<br>Calculé sur ${h.weekdaysN?.[order[k]] || 0} jour${(h.weekdaysN?.[order[k]] || 0) > 1 ? 's' : ''}`);
 
   body.innerHTML = `
-    <div class="hist-kpis">${kpi('Vues gagnées · 24 h', h.views.h24, h.followersGain.h24, '24 h')}${kpi('Vues gagnées · 7 jours', h.views.d7, h.followersGain.d7, '7 jours')}${kpi('Vues gagnées · 30 jours', h.views.d30, h.followersGain.d30, '30 jours')}</div>
+    <div class="filters hist-period" id="period"><span class="lbl">Période</span><button type="button" data-p="24h" aria-pressed="${HPERIOD === '24h'}">24 heures</button><button type="button" data-p="7d" aria-pressed="${HPERIOD === '7d'}">7 jours</button></div>
+    <div class="hist-grid" style="margin-top:12px">
+      <div class="hist-box" id="viewsBox"></div>
+      <div class="hist-box" id="followersBox"></div>
+    </div>
     <div class="hist-box" style="margin-top:16px"><h3>Ce que disent tes relevés</h3><p>Conseils calculés uniquement à partir de tes chiffres réels.</p><div class="tips">${adviceFrom(h)}</div></div>
     <div class="hist-grid">
       <div class="hist-box"><h3>Tes heures de vues</h3><p>Vues gagnées en moyenne à chaque heure de la journée.</p><div class="hbars">${hourBars}</div><div class="hlabels"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div></div>
       <div class="hist-box"><h3>Tes jours de vues</h3><p>Vues gagnées en moyenne selon le jour de la semaine.</p><div class="hbars">${wdBars}</div><div class="hlabels">${order.map(i => `<span>${WEEK[i]}</span>`).join('')}</div></div>
     </div>
-    <div class="hist-box" style="margin-top:16px"><h3>Vues gagnées par jour</h3><p>Les ${h.days.length || 30} derniers jours complets.</p>${h.days.length ? `<div class="hbars">${dayBars}</div><div class="hlabels"><span>${dayLabel(h.days[0].d)}</span><span>${dayLabel(h.days[h.days.length - 1].d)}</span></div>` : '<p class="hist-empty" style="margin:0">Disponible après la première journée complète de relevés.</p>'}</div>
     <div class="hist-grid">
       <div class="hist-box"><h3>Vidéos qui décollent</h3><p>Plus de vues gagnées sur les dernières 24 h.</p><div class="rise">${videoRows(h.rising, '') || '<p class="hist-empty" style="margin:0">Disponible après 24 h de relevés.</p>'}</div></div>
       <div class="hist-box"><h3>Top de la semaine</h3><p>Plus de vues gagnées sur les 7 derniers jours.</p><div class="rise">${videoRows(h.top7, '') || '<p class="hist-empty" style="margin:0">Disponible après 7 jours de relevés.</p>'}</div></div>
-    </div>
-    <div class="hist-box" style="margin-top:16px"><h3>Courbe des abonnés</h3><p>Depuis le ${new Date(h.since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}.</p>${curveSvg(h.curve)}</div>`;
+    </div>`;
+
+  HIST = h;
+  renderPeriod();
+  $('period').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    HPERIOD = b.dataset.p;
+    try { localStorage.setItem('tp_hperiod', HPERIOD); } catch { /* ignore */ }
+    $('period').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    renderPeriod();
+  }));
+}
+
+// Vues gagnées + courbe des abonnés sur la période choisie (24 h ou 7 jours).
+function renderPeriod() {
+  const h = HIST;
+  const is24 = HPERIOD === '24h';
+  const label = is24 ? '24 h' : '7 jours';
+  const views = is24 ? h.views.h24 : h.views.d7;
+  const fol = is24 ? h.followersGain.h24 : h.followersGain.d7;
+
+  // Graphique des vues gagnées : heure par heure (24 h) ou jour par jour (7 jours).
+  let bars = '', labels = '';
+  if (is24) {
+    const pts = h.last24 || [];
+    const i0 = x => pts.indexOf(x);
+    if (pts.length) {
+      bars = barsHtml(pts.map(x => x.gain), pts.map(x => `${fmtHour(pts[i0(x)].t)} – ${fmtHour(pts[i0(x)].t + 3600000)}`),
+        (i, v) => `<b style="color:var(--cyan)">+${fmt(v)} vues</b> gagnées pendant cette heure`);
+      labels = `<span>${fmtHour(pts[0].t)}</span><span>${fmtHour(pts[pts.length - 1].t)}</span>`;
+    }
+  } else {
+    const pts = (h.days || []).slice(-7);
+    const dl = d => new Date(d + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+    if (pts.length) {
+      bars = barsHtml(pts.map(x => x.gain), pts.map(x => new Date(x.d + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })),
+        (i, v) => `<b style="color:var(--cyan)">+${fmt(v)} vues</b> gagnées ce jour-là`);
+      labels = pts.map(x => `<span>${dl(x.d)}</span>`).join('');
+    }
+  }
+  $('viewsBox').innerHTML = `<h3>Vues gagnées · ${label}</h3>
+    <div class="bignum ${views > 0 ? 'up' : ''}">${views == null ? '—' : signed(views)}</div>
+    <div class="bigsub">${views == null ? 'Disponible après ' + label + ' de suivi.' : 'Sur tes vidéos les plus récentes.'}</div>
+    ${bars ? `<div class="hbars">${bars}</div><div class="hlabels">${labels}</div>` : '<p class="hist-empty" style="margin:0">Le graphique apparaîtra après quelques relevés.</p>'}`;
+
+  // Courbe des abonnés sur la même période.
+  const from = h.lastUpdate - (is24 ? 24 * 3600000 : 7 * 86400000);
+  const curve = (h.curve || []).filter(p => p[0] >= from);
+  $('followersBox').innerHTML = `<h3>Abonnés · ${label}</h3>
+    <div class="bignum ${fol > 0 ? 'up' : ''}">${fol == null ? '—' : signed(fol)}</div>
+    <div class="bigsub">${fol == null ? 'Disponible après ' + label + ' de suivi.' : fmt(h.followers) + ' abonnés aujourd’hui.'}</div>
+    ${curveSvg(curve)}`;
 }
 
 PulseUI.picker($('pickerSlot'));

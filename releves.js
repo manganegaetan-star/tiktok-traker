@@ -241,6 +241,14 @@ module.exports = function createReleves(d) {
             byHour[h].n++;
         }
 
+        // Vues gagnées heure par heure sur les dernières 24 h.
+        const last24 = [];
+        for (let i = 1; i < hourly.length; i++) {
+            const a = hourly[i - 1], b = hourly[i];
+            if (b.t <= now - 24 * 3600000 || b.t - a.t > 90 * 60000) continue;
+            last24.push({ t: a.t, gain: sumGain(a, b) });
+        }
+
         // Vues gagnées par jour (heure de Paris) et par jour de la semaine.
         const perDay = new Map();
         for (let i = 1; i < all.length; i++) {
@@ -300,7 +308,10 @@ module.exports = function createReleves(d) {
             followersGain: { h24: fGain(24 * 3600000), d7: fGain(7 * 86400000), d30: fGain(30 * 86400000) },
             hours: byHour.map(h => (h.n ? Math.round(h.sum / h.n) : null)),
             hourSamples: byHour.reduce((m, h) => Math.min(m, h.n), Infinity),
+            hoursN: byHour.map(h => h.n),
+            weekdaysN: wd.map(x => x.n),
             days: dayGains,
+            last24,
             weekdays,
             top7,
             prevWeek,
