@@ -17,10 +17,10 @@
 const { FieldValue } = require("@google-cloud/firestore");
 
 const FINE_HOURS = 48;           // relevés de 10 min gardés 48 h
-const KEEP_DAYS = 400;           // puis 1 par heure, ~13 mois
+const KEEP_DAYS = 15;            // puis 1 par heure, 14 jours (2 semaines comparées)
 const VIDEOS_PER_SNAPSHOT = 20;  // les 20 vidéos les plus récentes
 const AGG_CACHE_MS = 5 * 60 * 1000;
-const SUMMARY_DAYS = 31;         // la page lit 31 cahiers au plus
+const SUMMARY_DAYS = 15;         // la page lit 15 cahiers au plus
 
 module.exports = function createReleves(d) {
     const aggCache = new Map();
@@ -303,8 +303,8 @@ module.exports = function createReleves(d) {
             lastUpdate: last.t,
             count: all.length,
             followers: last.followers,
-            views: { h24: gain(24 * 3600000), d7: gain(7 * 86400000), d30: gain(30 * 86400000) },
-            followersGain: { h24: fGain(24 * 3600000), d7: fGain(7 * 86400000), d30: fGain(30 * 86400000) },
+            views: { h24: gain(24 * 3600000), d7: gain(7 * 86400000) },
+            followersGain: { h24: fGain(24 * 3600000), d7: fGain(7 * 86400000) },
             hours: byHour.map(h => (h.n ? Math.round(h.sum / h.n) : null)),
             hourSamples: byHour.reduce((m, h) => Math.min(m, h.n), Infinity),
             hoursN: byHour.map(h => h.n),
