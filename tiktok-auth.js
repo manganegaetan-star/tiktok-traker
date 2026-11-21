@@ -541,7 +541,8 @@ function isPublicPath(path) {
     return (
         PUBLIC_PATHS.has(path) ||
         path.startsWith("/auth/") ||
-        /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(path)
+        /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(path) ||
+        /^\/google[0-9a-f]{16}\.html$/.test(path)
     );
 }
 

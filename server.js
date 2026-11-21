@@ -42,8 +42,10 @@ app.use((req, res, next) => {
 
     // Fichiers de vérification TikTok (tiktokXXXX.txt)
     const isTikTokProof = /^\/tiktok[A-Za-z0-9]{10,64}\.txt$/.test(req.path);
+    // Fichier de vérification Google Search Console (googleXXXX.html)
+    const isGoogleProof = /^\/google[0-9a-f]{16}\.html$/.test(req.path);
 
-    if (!SITE_FILES.has(req.path) && !isTikTokProof) return next();
+    if (!SITE_FILES.has(req.path) && !isTikTokProof && !isGoogleProof) return next();
     serveStatic(req, res, next);
 });
 
