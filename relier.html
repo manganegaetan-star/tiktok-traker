@@ -3,8 +3,8 @@
 <title>TikTok Pulse — Relier un compte</title>
 <link rel="stylesheet" href="premium.css">
 <style>
-.main{padding-block:56px 20px;max-width:980px}
-.title{font:700 clamp(32px,4.6vw,56px)/1.02 'Space Grotesk';letter-spacing:-.06em;margin:18px 0 12px}
+.main{padding-block:34px 20px;max-width:980px}
+.title{font:700 clamp(28px,3.4vw,42px)/1.05 'Space Grotesk';letter-spacing:-.05em;margin:18px 0 10px}
 .title em{font-style:normal;background:linear-gradient(95deg,var(--cyan),#8efbf4 50%,#5aa8ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .lead{color:var(--muted);line-height:1.7;margin:0 0 8px;max-width:640px}
 .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin:18px 0 6px}
@@ -23,13 +23,14 @@
 .pf .go:hover{box-shadow:0 0 0 2px var(--cyan)}
 .pf .soon{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:6px;border:1px dashed #3c6c8988;color:var(--muted2);font:700 11px 'Space Grotesk';letter-spacing:.14em;text-transform:uppercase}
 .pf.off{opacity:.62}
+.pf .full.up{cursor:pointer;transition:background .15s,border-color .15s}
+.pf .full.up:hover{background:#f7c56a1f;border-color:var(--gold)}
 .pf .full{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border-radius:6px;border:1px solid #f7c56a66;color:var(--gold);font:700 12px 'Space Grotesk';background:#f7c56a0d}
-.back{display:inline-flex;align-items:center;gap:8px;margin-top:28px;color:#9fc3d4;font-size:13px}
-.back:hover{color:#fff}
+.back{margin-bottom:4px}
 @media(max-width:820px){.platforms{grid-template-columns:1fr}.pf{min-height:0}}
-</style><script src="pulse-ui.js"></script></head><body>
+</style><script src="pulse-ui.js"></script></head><body data-nav="parametres">
 <main class="shell main">
- <div class="eyebrow">TikTok Pulse · Relier un compte</div>
+ <a class="btn back hidden" id="back" href="/parametres.html" data-icon="back">Retour aux paramètres</a>
  <h1 class="title">Quel compte veux-tu <em>suivre ?</em></h1>
  <p class="lead">Choisis la plateforme du compte à suivre. Tu te connectes directement chez elle : nous ne voyons jamais ton mot de passe.</p>
 
@@ -59,7 +60,6 @@
   </article>
  </section>
 
- <a class="back hidden" id="back" href="/parametres.html" data-icon="back">Retour aux paramètres</a>
 </main>
 <footer class="shell footer"><span>© TikTok Pulse</span><span><a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">Conditions</a></span></footer>
 
@@ -111,7 +111,10 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   }
 
   if (me.count >= me.max) {
-    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.formule === 'createur' ? ' Limite de 5 comptes atteinte' : me.google.premium ? ' Formule Créateur requise pour un 3ᵉ compte' : ' Formule Statistiques requise pour un 2ᵉ compte') + '</div>';
+    // Limite atteinte : bouton vers les formules (sauf formule Créateur, déjà au maximum).
+    const full = me.google.formule === 'createur'
+      ? '<div class="full">' + PulseUI.icon('lock') + ' Limite de 5 comptes atteinte</div>'
+      : '<a class="full up" href="/tarifs.html" title="' + (me.google.premium ? 'La formule Créateur permet de relier 5 comptes' : 'La formule Statistiques permet de relier 2 comptes') + '">' + PulseUI.icon('star') + ' Mettre à niveau</a>';
     $('tiktokAction').innerHTML = full;
     if (me.youtube) $('youtubeAction').innerHTML = full;
   }
