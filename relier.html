@@ -101,7 +101,7 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   const planName = me.google.formule === 'createur' ? 'Créateur' : 'Statistiques';
   plan.innerHTML = me.google.premium
     ? PulseUI.icon('star') + ` ${planName} : ${me.count} / ${me.max} comptes reliés`
-    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié · 2 comptes avec Statistiques, 5 avec Créateur`;
+    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié`;
   plan.classList.toggle('prem', me.google.premium);
   plan.classList.remove('hidden');
 

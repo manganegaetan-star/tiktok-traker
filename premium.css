@@ -247,3 +247,7 @@ html.pcookie-lock,html.pcookie-lock body{overflow:hidden}
 .pdlg-danger:hover{color:#fff;filter:brightness(1.08)}
 @keyframes pdlg-in{from{opacity:0}}
 @media(max-width:560px){.pdlg-btns .btn{flex:1 1 auto}}
+
+/* Bouton « Mettre à niveau » (doré) */
+.btn.upgrade{border-color:#f7c56a66;color:var(--gold);background:#f7c56a0d;font-family:'Space Grotesk'}
+.btn.upgrade:hover{border-color:var(--gold);background:#f7c56a1f;color:var(--gold)}
