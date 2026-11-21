@@ -12,6 +12,7 @@ const Anthropic = AnthropicSDK.default || AnthropicSDK;
 
 const XAI = "https://api.x.ai/v1";
 const OPENAI = "https://api.openai.com/v1";
+const ARK = "https://ark.ap-southeast.bytepluses.com/api/v3";   // Seedance (BytePlus ModelArk)
 const TICKS_PER_USD = 1e10;
 const DEFAULT_BUDGET = 10;
 
@@ -59,10 +60,21 @@ const CATALOG = {
                 "grok-imagine-video-1.5-lite": { label: "Grok Imagine Vidéo 1.5 lite (Éco)", parSec: 0.02 },
                 "grok-imagine-video-1.5": { label: "Grok Imagine Vidéo 1.5 (Max)", parSec: 0.08 }
             }
+        },
+        seedance: {
+            nom: "Seedance", modeles: {
+                "dreamina-seedance-2-5-260628": { label: "Seedance 2.5", tokRate: 10.7, parSec: 0.22, audio: true },
+                "dreamina-seedance-2-5-flash-261115": { label: "Seedance 2.5 Flash", tokRate: 7.0, parSec: 0.144, audio: true },
+                "dreamina-seedance-2-0-260128": { label: "Seedance 2.0", tokRate: 7.0, parSec: 0.144, audio: true },
+                "dreamina-seedance-2-0-fast-260128": { label: "Seedance 2.0 Fast", tokRate: 5.6, parSec: 0.115, audio: true },
+                "dreamina-seedance-2-0-mini-260615": { label: "Seedance 2.0 Mini", tokRate: 3.5, parSec: 0.072, audio: true },
+                "seedance-1-0-pro-250528": { label: "Seedance 1.0 Pro · sans voix", tokRate: 2.5, parSec: 0.051, audio: false },
+                "seedance-1-0-pro-fast-251015": { label: "Seedance 1.0 Pro Fast · sans voix", tokRate: 1.0, parSec: 0.021, audio: false }
+            }
         }
     }
 };
-const PROVIDERS = ["claude", "openai", "grok"];
+const PROVIDERS = ["claude", "openai", "grok", "seedance"];
 
 // Tarifs Claude par modèle ($ / million de tokens) : sert si l'API a répondu avec un modèle de repli.
 const CLAUDE_RATES = {
@@ -116,7 +128,7 @@ module.exports = function mountStudio(app, d) {
     }
     function needKey(x, res, p) {
         if (x.keys[p]) return true;
-        res.status(400).json({ error: `Ajoute ta clé API ${CATALOG.texte[p]?.nom || p} dans les réglages du Studio.` });
+        res.status(400).json({ error: `Ajoute ta clé API ${{ claude: "Claude", openai: "ChatGPT", grok: "Grok", seedance: "Seedance (BytePlus)" }[p] || p} dans Paramètres → Tes IA.` });
         return false;
     }
 
@@ -136,7 +148,7 @@ module.exports = function mountStudio(app, d) {
     }
 
     // Message clair : quelle IA, quelle étape, et ce que l'IA a répondu exactement.
-    const LABEL = { claude: "Claude", openai: "ChatGPT (OpenAI)", grok: "Grok (xAI)" };
+    const LABEL = { claude: "Claude", openai: "ChatGPT (OpenAI)", grok: "Grok (xAI)", seedance: "Seedance (BytePlus)" };
     function fail(res, error, what, p) {
         const status = error.status ?? (error instanceof Anthropic.APIError ? error.status : undefined);
         console.warn(`[STUDIO] ${what} :`, status || "", error.message);
@@ -176,6 +188,8 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
             if (info.api_key_blocked || info.api_key_disabled || info.team_blocked) { const e = new Error("clé bloquée"); e.status = 403; throw e; }
         } else if (p === "openai") {
             await http(OPENAI, key, "/models", { timeout: 12000 });
+        } else if (p === "seedance") {
+            await http(ARK, key, "/contents/generations/tasks?page_num=1&page_size=1", { timeout: 12000 });
         } else {
             const client = new Anthropic({ apiKey: key, timeout: 12000, maxRetries: 0 });
             await client.models.list({ limit: 1 });
@@ -316,76 +330,110 @@ Réponse de l'IA : « ${raw} »` : ""}`.trim() });
         } catch (error) { fail(res, error, "image", p); }
     });
 
-    // ---------- Clip vidéo (image → vidéo avec les voix, Grok) ----------
+    // ---------- Clip vidéo (image → vidéo, avec les voix) : Grok ou Seedance ----------
+    const VIDEO_P = ["grok", "seedance"];
+    const vp = v => (VIDEO_P.includes(v) ? v : "grok");
+
+    // Lecture d'une tâche, ramenée à un format commun.
+    async function readTask(x, p, id) {
+        if (p === "seedance") {
+            const j = await http(ARK, x.keys.seedance, "/contents/generations/tasks/" + encodeURIComponent(id), { timeout: 30000 });
+            const st = j.status === "succeeded" ? "done" : ["failed", "cancelled", "expired"].includes(j.status) ? "failed" : "pending";
+            return { status: st, url: j.content?.video_url, model: j.model, duration: Number(j.duration) || null, tokens: Number(j.usage?.completion_tokens) || null, error: j.error?.message, progress: 0 };
+        }
+        const j = await http(XAI, x.keys.grok, "/videos/" + encodeURIComponent(id), { timeout: 30000 });
+        const st = j.status === "done" ? "done" : j.status === "failed" || j.status === "expired" ? "failed" : "pending";
+        return { status: st, url: j.video?.url, model: j.model, duration: Number(j.video?.duration) || null, ticks: Number(j.usage?.cost_in_usd_ticks) || null, error: j.error?.message, progress: j.progress || 0 };
+    }
+
     app.post("/api/studio/video", async (req, res) => {
+        const p = vp(req.body?.fournisseur);
         const image = typeof req.body?.image === "string" ? req.body.image : "";
         const prompt = String(req.body?.prompt || "").slice(0, 4000);
         const modelId = req.body?.modele;
-        const m = CATALOG.video.grok.modeles[modelId];
-        const duration = Math.min(15, Math.max(1, Math.round(Number(req.body?.duree) || 6)));
+        const m = CATALOG.video[p].modeles[modelId];
+        const duration = Math.min(12, Math.max(2, Math.round(Number(req.body?.duree) || 6)));
         if (!m) return res.status(400).json({ error: "Modèle vidéo invalide" });
         if (!/^data:image\/(png|jpeg|webp);base64,/.test(image) || image.length > 15e6) return res.status(400).json({ error: "Image de départ manquante ou trop lourde" });
         try {
             const x = await ctx(req, res); if (!x) return;
-            if (!needKey(x, res, "grok")) return;
+            if (!needKey(x, res, p)) return;
             const estimate = duration * m.parSec;
             if (!(await checkBudget(x, res, estimate))) return;
-            const j = await http(XAI, x.keys.grok, "/videos/generations", {
-                body: { model: modelId, prompt, image: { url: image }, duration, resolution: "720p" },
-                timeout: 60000
-            });
-            if (!j.request_id) throw new Error("pas d'identifiant de génération");
+            let id;
+            if (p === "seedance") {
+                const j = await http(ARK, x.keys.seedance, "/contents/generations/tasks", {
+                    body: {
+                        model: modelId,
+                        content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: image } }],
+                        ratio: "adaptive", resolution: "720p", duration,
+                        ...(m.audio ? { generate_audio: true } : {}),
+                        watermark: false
+                    },
+                    timeout: 60000
+                });
+                id = j.id;
+            } else {
+                const j = await http(XAI, x.keys.grok, "/videos/generations", {
+                    body: { model: modelId, prompt, image: { url: image }, duration, resolution: "720p" },
+                    timeout: 60000
+                });
+                id = j.request_id;
+            }
+            if (!id) throw new Error("pas d'identifiant de génération");
             // Habitudes : combien de clips sont des régénérations (pour des devis réalistes).
             await x.ref.set({ studio: { habitudes: { clips: FieldValue.increment(1), regenerations: FieldValue.increment(req.body?.regen === true ? 1 : 0) } } }, { merge: true });
-            res.json({ id: j.request_id, estimation: estimate });
-        } catch (error) { fail(res, error, "vidéo", "grok"); }
+            res.json({ id, estimation: estimate });
+        } catch (error) { fail(res, error, "vidéo", p); }
     });
 
     const counted = new Set();
     app.get("/api/studio/video/:id", async (req, res) => {
+        const p = vp(req.query.p);
         const id = String(req.params.id);
         if (!/^[A-Za-z0-9_\-]{6,120}$/.test(id)) return res.status(400).json({ error: "Identifiant invalide" });
         res.set("Cache-Control", "no-store");
         try {
             const x = await ctx(req, res); if (!x) return;
-            if (!needKey(x, res, "grok")) return;
-            const j = await http(XAI, x.keys.grok, "/videos/" + encodeURIComponent(id), { timeout: 30000 });
-            if (j.status === "done") {
-                if (!j.video?.url) return res.json({ status: "failed", error: "Vidéo refusée par la modération de Grok." });
+            if (!needKey(x, res, p)) return;
+            const t = await readTask(x, p, id);
+            if (t.status === "done") {
+                if (!t.url) return res.json({ status: "failed", error: "Vidéo refusée par la modération." });
                 let usd = null, source = null;
                 const k = x.ref.id + ":" + id;
                 if (!counted.has(k)) {
                     counted.add(k);
-                    const m = CATALOG.video.grok.modeles[j.model] || CATALOG.video.grok.modeles["grok-imagine-video-1.5-lite"];
-                    const ticks = Number(j.usage?.cost_in_usd_ticks);
-                    const secs = Number(j.video.duration) || 6;
-                    source = Number.isFinite(ticks) && ticks > 0 ? "exact" : "estimation";
-                    usd = source === "exact" ? ticks / TICKS_PER_USD : secs * m.parSec;
-                    const modelKey = "grok:" + (CATALOG.video.grok.modeles[j.model] ? j.model : "grok-imagine-video-1.5-lite");
-                    await record(x.ref, usd, "videos", modelKey, secs);
+                    const models = CATALOG.video[p].modeles;
+                    const modelId = models[t.model] ? t.model : Object.keys(models).find(mid => String(t.model || "").startsWith(mid.replace(/-\d{6}$/, ""))) || Object.keys(models)[0];
+                    const m = models[modelId];
+                    const secs = t.duration || 6;
+                    if (p === "grok" && t.ticks) { usd = t.ticks / TICKS_PER_USD; source = "exact"; }
+                    else if (p === "seedance" && t.tokens) { usd = t.tokens * m.tokRate / 1e6; source = "tokens"; }
+                    else { usd = secs * m.parSec; source = "estimation"; }
+                    await record(x.ref, usd, "videos", p + ":" + modelId, secs);
                 }
-                return res.json({ status: "done", cout: usd, source, duree: j.video.duration });
+                return res.json({ status: "done", cout: usd, source, duree: t.duration });
             }
-            if (j.status === "failed" || j.status === "expired") return res.json({ status: "failed", error: j.error?.message || "Génération échouée." });
-            res.json({ status: "pending", progress: j.progress || 0 });
-        } catch (error) { fail(res, error, "suivi de la vidéo", "grok"); }
+            if (t.status === "failed") return res.json({ status: "failed", error: t.error || "Génération échouée." });
+            res.json({ status: "pending", progress: t.progress || 0 });
+        } catch (error) { fail(res, error, "suivi de la vidéo", p); }
     });
 
     app.get("/api/studio/video/:id/fichier", async (req, res) => {
+        const p = vp(req.query.p);
         const id = String(req.params.id);
         if (!/^[A-Za-z0-9_\-]{6,120}$/.test(id)) return res.status(400).end();
         try {
             const x = await ctx(req, res); if (!x) return;
-            if (!needKey(x, res, "grok")) return;
-            const j = await http(XAI, x.keys.grok, "/videos/" + encodeURIComponent(id), { timeout: 30000 });
-            const url = j.video?.url;
-            if (!url || !/^https:\/\//.test(url)) return res.status(404).json({ error: "Vidéo indisponible" });
-            const r = await fetch(url, { signal: AbortSignal.timeout(120000) });
+            if (!needKey(x, res, p)) return;
+            const t = await readTask(x, p, id);
+            if (!t.url || !/^https:\/\//.test(t.url)) return res.status(404).json({ error: "Vidéo indisponible" });
+            const r = await fetch(t.url, { signal: AbortSignal.timeout(120000) });
             if (!r.ok) return res.status(502).json({ error: "Téléchargement impossible" });
             res.set("Content-Type", r.headers.get("content-type") || "video/mp4");
             res.set("Cache-Control", "no-store");
             res.send(Buffer.from(await r.arrayBuffer()));
-        } catch (error) { fail(res, error, "téléchargement de la vidéo", "grok"); }
+        } catch (error) { fail(res, error, "téléchargement de la vidéo", p); }
     });
 };
 module.exports.CATALOG = CATALOG;

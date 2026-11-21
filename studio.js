@@ -74,7 +74,7 @@
   const model = step => (choice[step].p === SUB ? null : cfg.catalogue[step]?.[choice[step].p]?.modeles?.[choice[step].m]);
   const isApi = step => choice[step].p !== SUB && !!model(step);
   const hasKey = p => !!cfg.cles?.[p];
-  const PNAME = { claude: 'Claude', openai: 'ChatGPT', grok: 'Grok' };
+  const PNAME = { claude: 'Claude', openai: 'ChatGPT', grok: 'Grok', seedance: 'Seedance' };
 
   function loadChoice() {
     const c = cfg.choix;
@@ -134,7 +134,7 @@
   }
 
   function renderChoices() {
-    const SUBLABEL = { texte: 'Mon abonnement · je copie-colle', image: 'Mon abonnement · je dépose mes images', video: 'Mon abonnement · je dépose mes clips' };
+    const SUBLABEL = { texte: 'Mon abonnement · je copie-colle', image: 'Mon abonnement · je dépose mes images', video: 'Mon abonnement · je dépose mes clips (Grok, Seedance…)' };
     ['texte', 'image', 'video'].forEach(step => {
       const sel = $('stIa-' + step);
       sel.innerHTML = '';
@@ -163,7 +163,7 @@
     needed.forEach(p => {
       const row = document.createElement('div');
       row.className = 'st-keyline' + (hasKey(p) ? ' ok' : ' missing');
-      const link = { claude: 'https://platform.claude.com', openai: 'https://platform.openai.com/api-keys', grok: 'https://console.x.ai' }[p];
+      const link = { claude: 'https://platform.claude.com', openai: 'https://platform.openai.com/api-keys', grok: 'https://console.x.ai', seedance: 'https://console.byteplus.com/ark' }[p];
       row.innerHTML = hasKey(p)
         ? `<span><b>${PNAME[p]}</b> · clé ••••${esc(cfg.cles[p])} ${PulseUI.icon('check')}</span><button type="button" class="st-link" data-x>Retirer</button>`
         : `<span><b>${PNAME[p]}</b> · clé manquante (<a href="${link}" target="_blank" rel="noopener">obtenir une clé</a>)</span><input type="password" class="st-input" placeholder="Colle ta clé API ${PNAME[p]}" autocomplete="off"><button type="button" class="btn st-main" data-s>Enregistrer</button>`;
@@ -469,7 +469,8 @@ Réponds uniquement avec ce JSON :
     if (media.has(i) && !forceVideo) return;
     sceneState(i, 'Vidéo…');
     const regen = media.has(i);
-    const start = await api('/api/studio/video', { image: img, prompt: videoPrompt(s), duree: s.duree, modele: choice.video.m, regen });
+    const vprov = choice.video.p;
+    const start = await api('/api/studio/video', { image: img, prompt: videoPrompt(s), duree: s.duree, fournisseur: vprov, modele: choice.video.m, regen });
     cfg.habitudes = cfg.habitudes || { clips: 0, regenerations: 0 };
     cfg.habitudes.clips++; if (regen) cfg.habitudes.regenerations++;
     const firsts = cfg.habitudes.clips - cfg.habitudes.regenerations;
@@ -477,7 +478,7 @@ Réponds uniquement avec ce JSON :
     const t0 = Date.now();
     for (;;) {
       await new Promise(r => setTimeout(r, 5000));
-      const st = await api('/api/studio/video/' + encodeURIComponent(start.id));
+      const st = await api('/api/studio/video/' + encodeURIComponent(start.id) + '?p=' + vprov);
       if (st.status === 'done') {
         if (st.cout) { addCost(st.cout); learn('video', Number(st.duree) || s.duree, st.cout); s.cout = (s.cout || 0) + st.cout; save(); }
         break;
@@ -487,7 +488,7 @@ Réponds uniquement avec ce JSON :
       if (Date.now() - t0 > 10 * 60000) throw new Error('La génération prend trop de temps. Réessaie.');
     }
     sceneState(i, 'Téléchargement…');
-    const r = await fetch('/api/studio/video/' + encodeURIComponent(start.id) + '/fichier', { credentials: 'same-origin' });
+    const r = await fetch('/api/studio/video/' + encodeURIComponent(start.id) + '/fichier?p=' + vprov, { credentials: 'same-origin' });
     if (!r.ok) throw new Error('Téléchargement du clip impossible.');
     await setMedia(i, await r.blob(), 'video');
   }
