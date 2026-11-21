@@ -148,13 +148,13 @@ async function render() {
     txt.append(n, e);
     const badge = document.createElement('span');
     badge.className = 'badge' + (g.premium ? ' prem' : '');
-    badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR' : ' PREMIUM') : 'GRATUIT';
+    badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR' : ' STATISTIQUES') : 'GRATUIT';
     wrap.append(img(g.photo), txt, badge);
     gb.append(wrap);
     const note = document.createElement('p'); note.className = 'note';
     note.textContent = g.premium
-      ? `${g.formule === 'createur' ? 'Formule Créateur active' : 'Premium actif'} : suivi en continu, analyse détaillée et jusqu'à ${data.max} comptes reliés.`
-      : 'Compte gratuit : suivi en direct d\'1 compte. Le premium (analyse détaillée, plusieurs comptes) arrive bientôt.';
+      ? `${g.formule === 'createur' ? 'Formule Créateur active' : 'Formule Statistiques active'} : suivi en continu, analyse détaillée et jusqu'à ${data.max} comptes reliés.`
+      : 'Compte gratuit : suivi en direct d\'1 compte. Les formules payantes (analyse complète, plusieurs comptes) arrivent bientôt.';
     const sub = document.createElement('button'); sub.type = 'button'; sub.className = 'btn' + (g.premium ? ' gold' : ''); sub.style.marginTop = '12px';
     sub.innerHTML = PulseUI.icon('star') + ' Gérer mon abonnement';
     sub.addEventListener('click', () => openSub(g, data.max));
@@ -162,12 +162,12 @@ async function render() {
     renderBilling(g);
     $('deleteWrap').classList.toggle('locked', !!g.premium);
     $('delete').setAttribute('aria-disabled', String(!!g.premium));
-    $('deleteTip').textContent = g.premium ? "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." : '';
+    $('deleteTip').textContent = g.premium ? "Ton abonnement est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." : '';
     if (g.premium) $('delete').setAttribute('aria-describedby', 'deleteTip'); else $('delete').removeAttribute('aria-describedby');
   } else {
     const h = document.createElement('h2'); h.textContent = 'Pas encore de compte TikTok Pulse';
     const p = document.createElement('p'); p.className = 'sub';
-    p.textContent = 'Connecte ton compte Google pour passer premium plus tard, relier plusieurs comptes et garder ton abonnement même si tu changes de compte TikTok.';
+    p.textContent = 'Connecte ton compte Google pour t’abonner plus tard, relier plusieurs comptes et garder ton abonnement même si tu changes de compte TikTok.';
     const btn = document.createElement('div'); btn.className = 'gbtn'; btn.id = 'gBtn';
     gb.append(h, p, btn);
     setupGoogle();
@@ -222,7 +222,7 @@ async function render() {
     $('accSub').textContent = 'Connecte Google pour relier d\'autres comptes (TikTok, YouTube, et bientôt Facebook Reels).';
     add.setAttribute('aria-disabled', 'true');
   } else if (data.comptes.length >= data.max) {
-    $('accSub').textContent = data.google.formule === 'createur' ? `Limite de ${data.max} comptes atteinte.` : data.google.premium ? `Premium : ${data.max} comptes reliés au maximum. La formule Créateur permet d’en relier 5.` : 'Compte gratuit : 1 compte relié. Le premium permet d’en relier 2, la formule Créateur 5.';
+    $('accSub').textContent = data.google.formule === 'createur' ? `Limite de ${data.max} comptes atteinte.` : data.google.premium ? `Statistiques : ${data.max} comptes reliés au maximum. La formule Créateur permet d’en relier 5.` : 'Compte gratuit : 1 compte relié. La formule Statistiques permet d’en relier 2, la formule Créateur 5.';
     add.setAttribute('aria-disabled', 'true');
   } else {
     $('accSub').textContent = `${data.comptes.length} / ${data.max} compte${data.max > 1 ? 's' : ''} relié${data.comptes.length > 1 ? 's' : ''}.`;
@@ -267,7 +267,7 @@ function renderBilling(g) {
   const el = $('billing');
   if (!el) return;
   el.querySelector('[data-state]').textContent = g.premium
-    ? 'Ton premium est activé manuellement pour l’instant : aucune carte enregistrée.'
+    ? 'Ton abonnement est activé manuellement pour l’instant : aucune carte enregistrée.'
     : 'Aucune carte enregistrée.';
 }
 
@@ -275,15 +275,15 @@ function openSub(g, max) {
   const b = $('subBody');
   b.innerHTML = '';
   const badge = document.createElement('span'); badge.className = 'badge' + (g.premium ? ' prem' : '');
-  badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR ACTIF' : ' PREMIUM ACTIF') : 'FORMULE GRATUITE';
+  badge.innerHTML = g.premium ? PulseUI.icon('star') + (g.formule === 'createur' ? ' CRÉATEUR ACTIF' : ' STATISTIQUES ACTIF') : 'FORMULE GRATUITE';
   const ul = document.createElement('ul');
   (g.premium
     ? ['Suivi en continu et analyse détaillée de tes statistiques', 'Comparaison sur 24 h et 7 jours', `Jusqu'à ${max} comptes reliés et changement de compte en un clic`].concat(g.formule === 'createur' ? ['Automatisation des vidéos (bientôt)'] : [])
     : ['Suivi en direct d’1 compte', 'Vues exactes, favoris, animations en direct']).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); });
   const p = document.createElement('p');
   p.textContent = g.premium
-    ? 'Ton premium est activé manuellement pour l’instant. Le paiement en ligne arrive bientôt : tu pourras alors changer de moyen de paiement, voir tes factures et résilier d’ici.'
-    : 'Premium (4,99 €/mois : suivi en continu, analyse, 2 comptes) et Créateur (7,99 €/mois : tout le premium, automatisation des vidéos, 5 comptes) arrivent bientôt. Tu pourras t’abonner et gérer ton abonnement ici.';
+    ? 'Ton abonnement est activé manuellement pour l’instant. Le paiement en ligne arrive bientôt : tu pourras alors changer de moyen de paiement, voir tes factures et résilier d’ici.'
+    : 'Statistiques (4,99 €/mois : suivi en continu, analyse, 2 comptes) et Créateur (7,99 €/mois : toute la formule Statistiques, automatisation des vidéos, 5 comptes) arrivent bientôt. Tu pourras t’abonner et gérer ton abonnement ici.';
   b.append(badge, ul, p);
   $('subDlg').showModal();
 }

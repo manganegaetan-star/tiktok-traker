@@ -13,6 +13,7 @@
 .kpi{padding:20px 22px}
 .kpi strong{display:block;font:700 clamp(22px,2.4vw,32px) 'Space Grotesk';margin-top:12px;font-variant-numeric:tabular-nums;color:#f0fdff}
 .kpi span{display:block;font-size:12px;color:#8aa9bb;margin-top:5px}
+.hist-sub{margin:6px 0 0;color:var(--muted);font-size:13px}
 .hist-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .hist-upd{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #3bf7ef44;border-radius:999px;background:#0b2033;color:#cfe9f3;font-size:12px}
 .hist-upd .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
@@ -116,19 +117,11 @@ th.n{text-align:right}
 </style><script src="pulse-ui.js"></script></head><body data-nav="analyse">
 
 <main class="shell main">
- <section class="head">
-  <div>
-   <div class="eyebrow">Analyse des statistiques</div>
-   <h1 id="hTitle">Ton compte <em>à la loupe.</em></h1>
-   <p id="hSub">Analyse calculée à partir de toutes tes vidéos publiques.</p>
-  </div>
-  <div class="head-actions"><div id="pickerSlot"></div></div>
- </section>
 
  
  <section class="surface lock hidden" id="lock">
-  <h2>L'analyse détaillée est réservée au premium</h2>
-  <p>Le suivi en direct de tes vidéos reste gratuit. Avec le premium, tu débloques l'analyse complète de ton compte.</p>
+  <h2>L'analyse complète est réservée à la formule Statistiques</h2>
+  <p>Le suivi en direct de tes vidéos reste gratuit. Avec la formule Statistiques, tu débloques l'analyse complète de ton compte.</p>
   <ul>
    <li>Relevé automatique de tes chiffres toutes les 10 minutes</li>
    <li>Tes vraies heures et jours de vues</li>
@@ -137,17 +130,17 @@ th.n{text-align:right}
    <li>Conseils calculés uniquement sur tes données</li>
   </ul>
   <div class="why">
-   <div class="micro">Pourquoi un compte Google pour le premium ?</div>
-   <p>Le suivi en direct marche avec ta connexion TikTok. Pour le premium, on te demandera en plus de te connecter avec Google, une seule fois :</p>
+   <div class="micro">Pourquoi un compte Google pour t'abonner ?</div>
+   <p>Le suivi en direct marche avec ta connexion TikTok. Pour un abonnement, on te demandera en plus de te connecter avec Google, une seule fois :</p>
    <ul>
-    <li><b>Ton premium t'appartient :</b> il reste actif même si tu changes ou perds ton compte TikTok.</li>
-    <li><b>Plusieurs comptes TikTok, un seul abonnement :</b> tu relies tous tes comptes au même premium.</li>
+    <li><b>Ton abonnement t'appartient :</b> il reste actif même si tu changes ou perds ton compte TikTok.</li>
+    <li><b>Plusieurs comptes TikTok, un seul abonnement :</b> tu relies tous tes comptes au même abonnement.</li>
     <li><b>Factures et alertes par e-mail :</b> TikTok ne nous transmet pas ton adresse e-mail, Google oui (avec ton accord).</li>
    </ul>
   </div>
   <div class="gbox" id="gBox">
    <div id="gBtn" class="gbtn"></div>
-   <p class="gnote" id="gNote">Étape 1 : connecte ton compte Google. Le paiement du premium arrive bientôt.</p>
+   <p class="gnote" id="gNote">Étape 1 : connecte ton compte Google. Le paiement des abonnements arrive bientôt.</p>
   </div>
   <div class="gdone hidden" id="gDone"></div>
  </section>
@@ -158,7 +151,7 @@ th.n{text-align:right}
  <div id="content" class="hidden">
   <section class="surface card" id="histCard" style="margin-top:0">
    <div class="hist-head">
-    <div><div class="micro">Suivi en continu</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2></div>
+    <div><div class="micro">Suivi en continu</div><h2 style="margin:6px 0 0">Ton compte au fil du temps</h2><p class="hist-sub" id="hSub"></p></div>
     <span class="hist-upd" id="histUpd"><span class="dot"></span><span id="histUpdTxt">Chargement…</span></span>
    </div>
    <div id="histBody"></div>
@@ -198,7 +191,7 @@ async function api(path) {
 
 // Toutes les vidéos publiques (20 par page, 10 pages max = 200 vidéos).
 async function fetchAll(force) {
-  // Le statut premium est revérifié à chaque ouverture ; seules les vidéos sont gardées en cache.
+  // Le formule d’abonnement est revérifié à chaque ouverture ; seules les vidéos sont gardées en cache.
   const me = await api('/api/me');
   if (!me.premium) { try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ } return { t: Date.now(), me, videos: [] }; }
   if (!force) {
@@ -251,10 +244,9 @@ async function load(force) {
       $('loading').classList.add('hidden');
       $('content').classList.remove('hidden');
       const name = DATA.me.nickname || DATA.me.username || 'Ton compte';
-      $('hTitle').innerHTML = `${esc(name)} <em>à la loupe.</em>`;
       loadHistory();
     }
-    else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); $('hSub').textContent = 'Analyse complète de ton compte TikTok.'; setupGoogle(); }
+    else { $('loading').classList.add('hidden'); $('content').classList.add('hidden'); setupGoogle(); }
   }
   catch (e) { $('loading').classList.add('hidden'); error('Impossible de charger l\'analyse : ' + e.message); }
 }
@@ -454,7 +446,6 @@ function renderPeriod() {
     ${curveSvg(curve)}`;
 }
 
-PulseUI.picker($('pickerSlot'));
 
 // ---------- Connexion Google (passage premium) ----------
 async function setupGoogle() {
@@ -467,7 +458,7 @@ async function setupGoogle() {
     d.innerHTML = '';
     d.append('✓ Compte Google relié : ');
     const b = document.createElement('b'); b.textContent = comptes.google.email || ''; d.append(b);
-    d.append(document.createElement('br'), "Ton compte est prêt pour le premium. Le paiement arrive bientôt ; dès qu'il est activé, l'analyse se débloque ici.");
+    d.append(document.createElement('br'), "Ton compte est prêt pour la formule Statistiques. Le paiement arrive bientôt ; dès qu'il est activé, l'analyse se débloque ici.");
     d.classList.remove('hidden');
     return;
   }

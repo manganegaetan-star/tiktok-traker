@@ -98,10 +98,10 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   who.classList.remove('hidden');
 
   const plan = $('plan');
-  const planName = me.google.formule === 'createur' ? 'Créateur' : 'Premium';
+  const planName = me.google.formule === 'createur' ? 'Créateur' : 'Statistiques';
   plan.innerHTML = me.google.premium
     ? PulseUI.icon('star') + ` ${planName} : ${me.count} / ${me.max} comptes reliés`
-    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié · 2 comptes avec le premium, 5 avec Créateur`;
+    : PulseUI.icon('user') + ` Gratuit : ${me.count} / ${me.max} compte relié · 2 comptes avec Statistiques, 5 avec Créateur`;
   plan.classList.toggle('prem', me.google.premium);
   plan.classList.remove('hidden');
 
@@ -111,7 +111,7 @@ if (info) { $('info').textContent = info; $('info').classList.add('show'); }
   }
 
   if (me.count >= me.max) {
-    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.formule === 'createur' ? ' Limite de 5 comptes atteinte' : me.google.premium ? ' Formule Créateur requise pour un 3ᵉ compte' : ' Premium requis pour un 2ᵉ compte') + '</div>';
+    const full = '<div class="full">' + PulseUI.icon('lock') + (me.google.formule === 'createur' ? ' Limite de 5 comptes atteinte' : me.google.premium ? ' Formule Créateur requise pour un 3ᵉ compte' : ' Formule Statistiques requise pour un 2ᵉ compte') + '</div>';
     $('tiktokAction').innerHTML = full;
     if (me.youtube) $('youtubeAction').innerHTML = full;
   }

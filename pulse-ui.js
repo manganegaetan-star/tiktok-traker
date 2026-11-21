@@ -36,6 +36,7 @@
     refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>',
     back: '<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    cookie: '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5z"/><path d="M8.5 8.5v.01M16 15.5v.01M12 12v.01M11 17v.01M7 14v.01"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
     file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
@@ -67,7 +68,8 @@
     img.alt = ''; img.referrerPolicy = 'no-referrer';
     if (typeof a.avatar === 'string' && /^https:\/\//i.test(a.avatar)) img.src = a.avatar;
     const t = document.createElement('span');
-    t.textContent = a.pseudo ? '@' + a.pseudo : (a.nom || 'Compte');
+    t.textContent = a.nom || (a.pseudo ? '@' + a.pseudo : 'Compte');
+    if (a.nom && a.pseudo) t.title = '@' + a.pseudo;
     frag.append(img, t);
     return frag;
   }
@@ -129,7 +131,7 @@
   //   key : valeur de <body data-nav="…"> ;
   //   plan : vignette de la formule (gratuit, pro, createur) ;
   //   mobile: false : absent de la barre du bas ; mobileAt : position dans la barre du bas.
-  const PLANS = { gratuit: 'Gratuit', pro: 'Pro', createur: 'Créateur' };
+  const PLANS = { gratuit: 'Gratuit', pro: 'Statistiques', createur: 'Créateur' };
   const MENU = [
     { title: 'Mes stats', items: [
       { key: 'direct', href: '/', icon: 'live', label: 'En direct', short: 'Direct', live: true, plan: 'gratuit' },
@@ -142,20 +144,172 @@
       { key: 'tarifs', href: '/tarifs.html', icon: 'star', label: 'Abonnement', short: 'Tarifs', mobileAt: 3 },
       { key: 'parametres', href: '/parametres.html', icon: 'gear', label: 'Paramètres', mobile: false },
       { key: 'compte', href: '/mon-compte.html', icon: 'user', label: 'Mon compte', short: 'Compte', also: ['parametres'] }
+    ] },
+    { title: 'Légal', small: true, items: [
+      { key: 'cgu', href: '/conditions.html', icon: 'file', label: 'Conditions d’utilisation', mobile: false },
+      { key: 'confidentialite', href: '/confidentialite.html', icon: 'shield', label: 'Confidentialité', mobile: false },
+      { key: 'cookies', href: '#cookies', icon: 'cookie', label: 'Gérer les cookies', mobile: false, action: 'cookies' }
     ] }
   ];
 
   function link(it, current, compact) {
-    const a = document.createElement(it.soon ? 'span' : 'a');
+    const a = document.createElement(it.soon ? 'span' : it.action ? 'button' : 'a');
+    if (it.action) { a.type = 'button'; a.addEventListener('click', e => { e.preventDefault(); cookies(true); }); }
     a.className = 'pn-item' + (it.soon ? ' soon' : '');
-    if (!it.soon) a.href = it.href;
+    if (!it.soon && !it.action) a.href = it.href;
     if (it.key === current || (compact && (it.also || []).includes(current))) a.setAttribute('aria-current', 'page');
     if (it.soon) a.setAttribute('aria-disabled', 'true');
     a.dataset.key = it.key;
     a.innerHTML = '<span class="pn-ic">' + icon(it.icon) + (it.live && compact ? '<i class="pn-live"></i>' : '') + '</span><span class="pn-label">' + (compact && it.short ? it.short : it.label) + (it.live && !compact ? '<i class="pn-live"></i>' : '') + '</span>'
       + (it.plan && !compact ? '<span class="pn-tag plan-' + it.plan + '">' + PLANS[it.plan] + '</span>' : '')
-      + (it.plan && it.plan !== 'gratuit' && compact ? '<span class="pn-tag pro plan-' + it.plan + '" hidden>' + PLANS[it.plan].toUpperCase() + '</span>' : '');
+      + (it.plan && it.plan !== 'gratuit' && compact ? '<span class="pn-tag pro plan-' + it.plan + '" hidden title="' + PLANS[it.plan] + '">★</span>' : '');
     return a;
+  }
+
+  // ---------- Cookies : choix enregistré une fois par compte ----------
+  // Essentiels : toujours actifs (connexion, sécurité, mémorisation de ce choix).
+  // Préférences : mémorisation de la vidéo suivie, de la période de l'analyse, etc. (stockage local « tp_… »).
+  const CONSENT_KEY = 'tp_consent';
+  function readConsent() { try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); } catch { return null; } }
+  function prefsAllowed() { const c = readConsent(); return !c || c.prefs !== false; }
+
+  // Préférences refusées : on n'enregistre plus rien en « tp_… » (sauf le choix lui-même).
+  (function guardStorage() {
+    try {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (this === window.localStorage && typeof k === 'string' && k.startsWith('tp_') && k !== CONSENT_KEY && !prefsAllowed()) return;
+        return orig.call(this, k, v);
+      };
+    } catch { /* ignore */ }
+  })();
+  function clearPrefs() {
+    try { Object.keys(localStorage).filter(k => k.startsWith('tp_') && k !== CONSENT_KEY).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+  }
+
+  async function saveConsent(prefs) {
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs, t: Date.now() })); } catch { /* ignore */ }
+    if (!prefs) clearPrefs();
+    try { await fetch('/auth/consentement', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefs }) }); } catch { /* ignore */ }
+  }
+
+  function cookies(manage) {
+    if (document.querySelector('.pcookie')) return;
+    const cur = readConsent();
+    const box = document.createElement('div');
+    box.className = 'pcookie';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', 'Cookies');
+    box.innerHTML = '<div class="pcookie-card">'
+      + '<div class="pcookie-head">' + icon('cookie') + '<b>Cookies et stockage</b></div>'
+      + '<p>TikTok Pulse utilise uniquement des cookies essentiels (connexion, sécurité) et, si tu l’acceptes, un stockage de tes préférences d’affichage. Aucun cookie publicitaire ni de mesure d’audience. <a href="/confidentialite.html#cookies">En savoir plus</a></p>'
+      + '<div class="pcookie-opts" hidden>'
+      + '<label class="pcookie-opt"><span><b>Essentiels</b><small>Connexion, sécurité, mémorisation de ce choix. Toujours actifs.</small></span><input type="checkbox" checked disabled></label>'
+      + '<label class="pcookie-opt"><span><b>Préférences</b><small>Vidéo suivie, période de l’analyse et autres réglages, sur cet appareil.</small></span><input type="checkbox" id="pcPrefs"></label>'
+      + '</div>'
+      + '<div class="pcookie-btns"><button type="button" class="btn" data-a="refuse">Tout refuser</button><button type="button" class="btn" data-a="custom">Personnaliser</button><button type="button" class="btn pcookie-ok" data-a="accept">Tout accepter</button></div>'
+      + '</div>';
+    document.body.append(box);
+    const opts = box.querySelector('.pcookie-opts');
+    const chk = box.querySelector('#pcPrefs');
+    chk.checked = cur ? cur.prefs !== false : true;
+    const custom = box.querySelector('[data-a=custom]');
+    const open = () => { opts.hidden = false; custom.textContent = 'Enregistrer mon choix'; custom.dataset.a = 'save'; };
+    if (manage) open();
+    box.addEventListener('click', async e => {
+      const b = e.target.closest('button[data-a]'); if (!b) return;
+      const a = b.dataset.a;
+      if (a === 'custom') return open();
+      const prefs = a === 'accept' ? true : a === 'refuse' ? false : chk.checked;
+      box.remove();
+      await saveConsent(prefs);
+    });
+  }
+
+  async function consentCheck() {
+    // Déjà choisi pour ce compte (ou sur cet appareil hors connexion) : on ne redemande pas.
+    let d = null;
+    try { const r = await fetch('/auth/consentement', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) d = await r.json(); } catch { /* ignore */ }
+    if (d && d.choix) {
+      try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ prefs: d.choix.prefs, t: d.choix.date || Date.now() })); } catch { /* ignore */ }
+      if (!d.choix.prefs) clearPrefs();
+      return;
+    }
+    const local = readConsent();
+    if (local) {
+      // Choix fait avant la connexion : on le rattache au compte.
+      if (d && d.compte) saveConsent(local.prefs !== false);
+      return;
+    }
+    cookies(false);
+  }
+
+  // Sélecteur du compte affiché : en haut du menu (ordinateur) et de la barre du haut (téléphone).
+  let comptesData = null;
+  async function comptes() {
+    if (comptesData) return comptesData;
+    comptesData = (async () => {
+      let d = null;
+      try { const r = await fetch('/api/comptes', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) d = await r.json(); } catch { /* ignore */ }
+      if (d && d.comptes && d.comptes.length) return d;
+      // Sans compte Google : le compte connecté seul.
+      try {
+        const r = await fetch('/api/me', { cache: 'no-store', credentials: 'same-origin' });
+        if (r.ok) { const m = await r.json(); return { google: d && d.google, comptes: [{ platform: m.platform || 'tiktok', id: '', pseudo: m.username, nom: m.nickname, avatar: m.avatar, actif: true }] }; }
+      } catch { /* ignore */ }
+      return null;
+    })();
+    return comptesData;
+  }
+
+  async function switcher(el) {
+    const d = await comptes();
+    if (!d || !d.comptes || !d.comptes.length) { el.remove(); return; }
+    const cur = d.comptes.find(a => a.actif) || d.comptes[0];
+    const canSwitch = !!(d.google && d.google.premium) && d.comptes.length > 1;
+    el.textContent = '';
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'psw-btn';
+    btn.setAttribute('aria-haspopup', 'menu'); btn.setAttribute('aria-expanded', 'false');
+    btn.title = 'Compte affiché';
+    btn.insertAdjacentHTML('beforeend', brand(cur.platform || 'tiktok'));
+    btn.append(chip(cur));
+    btn.insertAdjacentHTML('beforeend', icon('chevron'));
+    const menu = document.createElement('div');
+    menu.className = 'psw-menu'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+    const head = document.createElement('div'); head.className = 'psw-title'; head.textContent = canSwitch ? 'Changer de compte' : 'Compte affiché';
+    menu.append(head);
+    d.comptes.forEach(a => {
+      const item = document.createElement('button');
+      item.type = 'button'; item.className = 'picker-item' + (a.actif ? ' on' : '');
+      item.setAttribute('role', 'menuitem');
+      item.insertAdjacentHTML('beforeend', brand(a.platform || 'tiktok'));
+      item.append(chip(a));
+      if (a.actif) item.insertAdjacentHTML('beforeend', icon('check'));
+      else if (!canSwitch) { item.disabled = true; item.title = 'Passe à la formule Statistiques pour changer de compte en un clic'; }
+      item.addEventListener('click', async () => {
+        if (a.actif || !canSwitch) { menu.hidden = true; return; }
+        item.disabled = true;
+        try {
+          const r = await fetch('/auth/switch', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ platform: a.platform || 'tiktok', id: a.id || a.openId }) });
+          const out = await r.json().catch(() => ({}));
+          if (!r.ok) { if (out.reconnect) location.href = '/relier.html'; else alert(out.error || 'Changement impossible'); return; }
+          try { sessionStorage.clear(); } catch { /* ignore */ }
+          location.reload();
+        } finally { item.disabled = false; }
+      });
+      menu.append(item);
+    });
+    const add = document.createElement('a');
+    add.className = 'picker-item add'; add.href = '/relier.html';
+    add.innerHTML = icon('plus') + '<span>Ajouter un compte</span>';
+    const manage = document.createElement('a');
+    manage.className = 'picker-item'; manage.href = '/parametres.html';
+    manage.innerHTML = icon('gear') + '<span>Gérer mes comptes</span>';
+    menu.append(add, manage);
+    btn.addEventListener('click', e => { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
+    document.addEventListener('click', e => { if (!el.contains(e.target)) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
+    el.append(btn, menu);
   }
 
   async function logout() {
@@ -173,10 +327,10 @@
     const side = document.createElement('nav');
     side.className = 'pside';
     side.setAttribute('aria-label', 'Menu');
-    side.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a>';
+    side.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a><div class="psw"></div>';
     MENU.forEach(g => {
       const sec = document.createElement('div');
-      sec.className = 'pside-group';
+      sec.className = 'pside-group' + (g.small ? ' small' : '');
       sec.innerHTML = '<div class="pside-title">' + g.title + '</div>';
       g.items.forEach(it => sec.append(link(it, current)));
       side.append(sec);
@@ -197,7 +351,14 @@
     all.filter(it => it.mobileAt != null).forEach(it => mob.splice(it.mobileAt, 0, it));
     mob.forEach(it => bar.append(link(it, current, true)));
 
-    document.body.prepend(side, bar);
+    // Téléphone : petite barre du haut (logo + compte affiché).
+    const top = document.createElement('header');
+    top.className = 'ptop';
+    top.innerHTML = '<a class="pside-brand" href="/"><span class="brand-mark">↗</span><span>TikTok <b>Pulse</b></span></a><div class="psw"></div>';
+
+    document.body.prepend(side, top, bar);
+    if (window.matchMedia('(max-width: 900px)').matches) { side.querySelector('.psw').remove(); switcher(top.querySelector('.psw')); }
+    else { top.querySelector('.psw').remove(); switcher(side.querySelector('.psw')); }
     document.body.classList.add('has-pnav');
 
     // Formule et nom du compte Google (badge PRO, pied du menu).
@@ -208,7 +369,7 @@
         const paid = !!(g && g.premium);
         const has = !paid ? 'gratuit' : g.formule === 'createur' ? 'createur' : 'pro';
         document.querySelectorAll('.pn-tag.pro').forEach(t => { t.hidden = has === 'createur' || (has === 'pro' && t.classList.contains('plan-pro')); });
-        const plan = !paid ? 'Gratuit' : g.formule === 'createur' ? 'Créateur' : 'Premium';
+        const plan = !paid ? 'Gratuit' : g.formule === 'createur' ? 'Créateur' : 'Statistiques';
         const who = foot.querySelector('.pn-who');
         who.querySelector('b').textContent = (g && g.nom) || 'Mon compte';
         const sm = who.querySelector('small');
@@ -231,8 +392,8 @@
     }
   }
 
-  window.PulseUI = { icon, brand, hydrate, picker };
-  const start = () => { nav(); hydrate(); };
+  window.PulseUI = { icon, brand, hydrate, picker, cookies, prefsAllowed };
+  const start = () => { nav(); hydrate(); consentCheck(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();

@@ -249,7 +249,6 @@ body:after{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:5;
   <div class="account-handle skel" id="meHandle">@chargement</div>
   <div class="account-bio skel" id="meBio">Chargement de la bio du compte</div>
  </div>
- <div class="account-actions" id="pickerSlot"></div>
  <div class="account-stats">
   <div><strong id="followers" class="skel">000</strong><span>Abonnés</span></div>
   <div><strong id="following" class="skel">000</strong><span>Abonnements</span></div>
@@ -434,7 +433,6 @@ function chipImg(url) {
 function loadAccounts() {
   const info = new URLSearchParams(location.search).get('info');
   if (info) { $('infoBanner').textContent = info; $('infoBanner').classList.remove('hidden'); window.history.replaceState(null, '', '/'); }
-  PulseUI.picker($('pickerSlot'));
 }
 
 // Compte YouTube affiché : pas de partages ni de favoris dans l'API, relevé toutes les 60 s.

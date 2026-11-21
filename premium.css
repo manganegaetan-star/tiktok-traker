@@ -50,7 +50,7 @@ body:after{background:linear-gradient(90deg,transparent,var(--cyan) 30%,#5aa8ff 
 .btn.gold:hover{border-color:var(--gold);color:#ffe2a8}
 
 /* Menu du site : latéral sur ordinateur, barre du bas sur téléphone */
-.pside{position:fixed;inset:0 auto 0 0;z-index:20;width:288px;display:flex;flex-direction:column;gap:26px;padding:24px 16px 16px;overflow:hidden;border-right:1px solid #2d536c66;background:linear-gradient(180deg,#07111ff2,#050c17f2);backdrop-filter:blur(10px)}
+.pside{position:fixed;inset:0 auto 0 0;z-index:20;width:300px;display:flex;flex-direction:column;gap:26px;padding:24px 16px 16px;overflow:hidden;border-right:1px solid #2d536c66;background:linear-gradient(180deg,#07111ff2,#050c17f2);backdrop-filter:blur(10px)}
 .pside-brand{display:flex;align-items:center;gap:11px;padding:0 8px;font:700 18px 'Space Grotesk';color:#fff;letter-spacing:-.01em}
 .pside-brand .brand-mark{width:36px;height:36px;font-size:20px;flex:0 0 auto}
 .pside-brand b{color:var(--cyan);font-weight:700}
@@ -87,7 +87,7 @@ body:after{background:linear-gradient(90deg,transparent,var(--cyan) 30%,#5aa8ff 
 .pn-who small{color:#7e9aab;font-size:12px}
 .pn-who small.paid{color:var(--gold)}
 .pbar{display:none}
-body.has-pnav{padding-left:288px}
+body.has-pnav{padding-left:300px}
 @media(max-width:900px){
  .pside{display:none}
  body.has-pnav{padding-left:0;padding-bottom:78px}
@@ -135,3 +135,72 @@ body.has-pnav{padding-left:288px}
 @keyframes pv-out{to{opacity:0;transform:translateY(-6px)}}
 @keyframes pv-in{from{opacity:0;transform:translateY(8px)}}
 @media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
+.pside .pn-item{gap:10px;font-size:14.5px}
+.pside .pn-tag{padding:2px 6px;font-size:9.5px}
+
+/* Menu : section Légal plus discrète */
+.pside{overflow-y:auto}
+.pside-group.small .pn-item{min-height:34px;font-size:13px;color:#8fb0c1}
+.pside-group.small .pn-ic .ico{width:17px;height:17px}
+button.pn-item{width:100%;border:0;background:transparent;text-align:left;cursor:pointer}
+
+/* Fenêtre cookies */
+.pcookie{position:fixed;inset:auto 0 0 0;z-index:60;display:flex;justify-content:center;padding:16px;pointer-events:none}
+.pcookie-card{pointer-events:auto;width:min(620px,100%);padding:20px 22px;border:1px solid #2d536c;border-radius:14px;background:#081424f7;backdrop-filter:blur(12px);box-shadow:0 20px 60px #000c;color:#d7eef7}
+.pcookie-head{display:flex;align-items:center;gap:10px;font:700 17px 'Space Grotesk';color:#fff}
+.pcookie-head .ico{width:22px;height:22px;color:var(--gold)}
+.pcookie p{margin:10px 0 14px;font-size:14px;line-height:1.6;color:#a9c8d6}
+.pcookie p a{color:var(--cyan);text-decoration:underline}
+.pcookie-opts{display:grid;gap:8px;margin-bottom:14px}
+.pcookie-opts[hidden]{display:none}
+.pcookie-opt{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid #2c587055;border-radius:10px;background:#ffffff05;cursor:pointer}
+.pcookie-opt b{display:block;font-size:14px;color:#fff}
+.pcookie-opt small{color:#8fb0c1;font-size:12px}
+.pcookie-opt input{width:20px;height:20px;accent-color:var(--cyan);flex:0 0 auto}
+.pcookie-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.pcookie-btns .btn{min-height:42px}
+.pcookie-ok{background:var(--cyan);border-color:var(--cyan);color:#041018}
+.pcookie-ok:hover{color:#041018;filter:brightness(1.08)}
+body.has-pnav .pcookie{padding-left:316px}
+@media(max-width:900px){body.has-pnav .pcookie{padding-left:16px}.pcookie{bottom:78px}.pcookie-btns .btn{flex:1 1 auto}}
+/* Pages légales dans le site : le menu remplace l'en-tête */
+body.has-pnav > header.topbar{display:none}
+
+/* Sélecteur du compte affiché */
+.psw{position:relative}
+.psw-btn{display:flex;align-items:center;gap:9px;width:100%;min-height:50px;padding:6px 10px;border:1px solid #2d536c88;border-radius:12px;background:#0b1d2e;color:#fff;font:600 14px 'DM Sans';cursor:pointer;text-align:left}
+.psw-btn:hover{border-color:#3bf7ef88}
+.psw-btn img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#0b2233;flex:0 0 auto}
+.psw-btn > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.psw-btn .brand-ico{width:18px;height:18px}
+.psw-btn .ico{width:16px;height:16px;color:#8fb0c1;flex:0 0 auto}
+.psw-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;display:grid;gap:2px;padding:6px;border:1px solid #2d536c;border-radius:12px;background:#081424;box-shadow:0 18px 45px #000b}
+.psw-menu[hidden]{display:none}
+.psw-title{padding:6px 10px 4px;color:#7b98a9;font:600 12px 'DM Sans'}
+.psw-menu .picker-item[disabled]{opacity:.55;cursor:default}
+.ptop{display:none}
+@media(max-width:900px){
+ .ptop{position:sticky;top:0;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid #2d536c66;background:#060e1bf2;backdrop-filter:blur(10px)}
+ .ptop .pside-brand{padding:0;font-size:16px;white-space:nowrap;flex:0 0 auto}
+ .ptop .pside-brand .brand-mark{width:32px;height:32px;font-size:18px}
+ .ptop .psw{max-width:58%}
+ .ptop .psw-btn{min-height:40px;padding:4px 8px;border-radius:999px}
+ .ptop .psw-btn img{width:26px;height:26px}
+ .ptop .psw-menu{left:auto;width:260px}
+}
+/* Grands écrans : menu plus grand */
+@media(min-width:1500px){
+ .pside{width:340px;padding:28px 20px 18px;gap:30px}
+ body.has-pnav{padding-left:340px}
+ body.has-pnav .pcookie{padding-left:356px}
+ .pside-brand{font-size:21px}
+ .pside-brand .brand-mark{width:42px;height:42px;font-size:23px}
+ .pside-title{font-size:13px}
+ .pside .pn-item{min-height:52px;font-size:16.5px;gap:13px}
+ .pside .pn-ic,.pside .pn-ic .ico{width:24px;height:24px}
+ .pside .pn-tag{font-size:11px;padding:3px 8px}
+ .pside-group.small .pn-item{min-height:38px;font-size:14px}
+ .pside .pn-item[aria-current=page]::before{left:-20px}
+ .psw-btn{min-height:56px;font-size:15px}
+ .psw-btn img{width:34px;height:34px}
+}

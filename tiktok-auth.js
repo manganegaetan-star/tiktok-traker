@@ -288,8 +288,8 @@ function maxFor(account) {
 
 function limitMessage(account) {
     const plan = planOf(account);
-    if (plan === "gratuit") return "Passe au premium pour relier un 2ᵉ compte.";
-    if (plan === "premium") return `Le premium permet ${MAX_COMPTES.premium} comptes reliés. Passe à la formule Créateur pour en relier jusqu'à ${MAX_COMPTES.createur}.`;
+    if (plan === "gratuit") return "Passe à la formule Statistiques pour relier un 2ᵉ compte.";
+    if (plan === "premium") return `La formule Statistiques permet ${MAX_COMPTES.premium} comptes reliés. Passe à la formule Créateur pour en relier jusqu'à ${MAX_COMPTES.createur}.`;
     return `Tu as atteint la limite de ${MAX_COMPTES.createur} comptes reliés.`;
 }
 
@@ -918,6 +918,48 @@ module.exports = function mountTikTokAuth(app) {
     });
 
     // Compte Google connecté (cookie), sans exiger d'autre session : page « Relier un compte ».
+    // ---------- Choix des cookies (une fois par compte) ----------
+    // Compte Google → comptes/{uid}.consentement ; sinon compte TikTok → utilisateurs/{openId}.consentement.
+    const CONSENT_VERSION = 1;
+
+    function consentRef(req) {
+        const c = config(req);
+        const store = db();
+        if (!c.ready || !store) return null;
+        const google = readGoogle(req, c.secret);
+        if (google) return store.collection("comptes").doc(google.uid);
+        const session = readSession(req);
+        if (session) return store.collection("utilisateurs").doc(session.openId);
+        return null;
+    }
+
+    app.get("/auth/consentement", async (req, res) => {
+        res.set("Cache-Control", "no-store");
+        const ref = consentRef(req);
+        if (!ref) return res.json({ compte: false, choix: null });
+        try {
+            const snap = await ref.get();
+            const ch = snap.exists ? snap.get("consentement") : null;
+            res.json({ compte: true, choix: ch && ch.version === CONSENT_VERSION ? { prefs: ch.prefs === true, date: ch.date?.toMillis?.() || null } : null });
+        } catch (error) {
+            console.warn("[CONSENTEMENT] Lecture impossible :", error.message);
+            res.json({ compte: true, choix: null });
+        }
+    });
+
+    app.post("/auth/consentement", async (req, res) => {
+        const prefs = req.body?.prefs === true;
+        const ref = consentRef(req);
+        if (!ref) return res.json({ ok: true, compte: false });
+        try {
+            await ref.set({ consentement: { prefs, version: CONSENT_VERSION, date: new Date() } }, { merge: true });
+            res.json({ ok: true, compte: true });
+        } catch (error) {
+            console.warn("[CONSENTEMENT] Enregistrement impossible :", error.message);
+            res.status(500).json({ error: "Choix non enregistré" });
+        }
+    });
+
     app.get("/auth/google/me", async (req, res) => {
         const c = config(req);
         const google = c.ready ? readGoogle(req, c.secret) : null;
@@ -1069,7 +1111,7 @@ module.exports = function mountTikTokAuth(app) {
             const accountRef = store.collection("comptes").doc(google.uid);
             const account = await accountRef.get();
             if (!account.exists || account.get("premium") !== true) {
-                return res.status(403).json({ error: "Le premium permet de passer d'un compte à l'autre" });
+                return res.status(403).json({ error: "Un abonnement permet de passer d'un compte à l'autre" });
             }
 
             if (platform === "youtube") {
@@ -1186,7 +1228,7 @@ module.exports = function mountTikTokAuth(app) {
 
             // Abonnement premium en cours : il faut d'abord le résilier (ou attendre sa fin).
             if (account.exists && account.get("premium") === true) {
-                return res.status(409).json({ error: "Le premium est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." });
+                return res.status(409).json({ error: "Ton abonnement est actif : résilie-le ou attends la fin de la période en cours pour supprimer ton compte." });
             }
 
             // YouTube : accès révoqués, chaînes déliées.
@@ -1263,7 +1305,7 @@ module.exports = function mountTikTokAuth(app) {
         const id = req.youtube ? req.youtube.channelId : req.tiktok.openId;
         const premium = req.youtube ? await googlePremium(req.youtube.uid) : await premiumStatus(req.tiktok.openId);
 
-        if (!premium) return res.status(403).json({ error: "Réservé au premium" });
+        if (!premium) return res.status(403).json({ error: "Réservé aux abonnés" });
 
         // Prochain relevé : toutes les 10 min (TikTok), toutes les heures (YouTube), ~1 min après le déclenchement.
         const step = (platform === "youtube" ? 60 : 10) * 60000;
